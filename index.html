@@ -10,11 +10,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="MedicinePro">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/vx96Xb8Q/budget.png">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/N6db36Sf/medicine.png">
 
     <!-- Manifest Base64 -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJpdCIsCiAgIm5hbWUiOiAiR2VzdGlvbmUgU3Blc2UgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJTcGVzZVBybyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmliYi5jby92eDk2WGI4US9idWRnZXQucG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9CiAgXSwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjNmNGY2IiwKICAidGhlbWVfY29sb3IiOiAiIzI1NjNmMSIKfQ==">
-   
+    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJpdCIsCiAgIm5hbWUiOiAiR2VzdGlvbmUgU3Blc2UgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJTcGVzZVBybyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmliYi5jby9ONmRiMzZTZi9tZWRpY2luZS5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmM2Y0ZjYiLAogICJ0aGVtZV9jb2xvciI6ICIjMjU2M2YxIgp9">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -95,6 +95,13 @@
         @media (min-width: 400px) {
             .xs\:inline { display: inline; }
         }
+
+        /* Stile pulsante selezionato */
+        .time-btn.selected {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -165,7 +172,7 @@
                 <p>Nessun farmaco aggiunto.</p>
             </div>
 
-            <button onclick="app.showModal('modal-add-med')" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl active:scale-90 transition-transform z-30" aria-label="Aggiungi Farmaco">
+            <button onclick="app.showModal('modal-med')" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl active:scale-90 transition-transform z-30" aria-label="Aggiungi Farmaco">
                 <i class="fa-solid fa-plus"></i>
             </button>
         </section>
@@ -222,14 +229,14 @@
                     <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1 compressa, 5ml">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Orario Assunzione</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Orari Assunzione (Selezione multipla)</label>
                     <div class="grid grid-cols-3 gap-2" id="med-time-selectors">
-                        <button onclick="app.selectTime('Mattina', this)" class="time-btn p-2 border rounded-lg text-sm text-center hover:bg-blue-50 border-slate-300" data-val="Mattina">Mattina</button>
-                        <button onclick="app.selectTime('Pomeriggio', this)" class="time-btn p-2 border rounded-lg text-sm text-center hover:bg-blue-50 border-slate-300" data-val="Pomeriggio">Pom.</button>
-                        <button onclick="app.selectTime('Sera', this)" class="time-btn p-2 border rounded-lg text-sm text-center hover:bg-blue-50 border-slate-300" data-val="Sera">Sera</button>
+                        <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn p-2 border rounded-lg text-sm text-center border-slate-300 transition-colors" data-val="Mattina">Mattina</button>
+                        <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn p-2 border rounded-lg text-sm text-center border-slate-300 transition-colors" data-val="Pomeriggio">Pom.</button>
+                        <button onclick="app.toggleTimeSelection('Sera', this)" class="time-btn p-2 border rounded-lg text-sm text-center border-slate-300 transition-colors" data-val="Sera">Sera</button>
                     </div>
-                    <input type="hidden" id="input-med-time">
                     <input type="hidden" id="input-med-edit-id">
+                    <input type="hidden" id="input-med-original-time"> <!-- Usato per l'editing -->
                 </div>
             </div>
             <div class="flex justify-end gap-3 mt-6">
@@ -246,6 +253,7 @@
                 profiles: []
             },
             currentProfileId: null,
+            selectedTimes: [], // Array per gestire selezione multipla
 
             init: function() {
                 this.loadData();
@@ -410,7 +418,7 @@
                             <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl font-bold">${p.name.charAt(0).toUpperCase()}</div>
                             <div>
                                 <h3 class="font-bold text-lg text-slate-800">${p.name}</h3>
-                                <p class="text-xs text-slate-500">${totalMeds} farmaci</p>
+                                <p class="text-xs text-slate-500">${totalMeds} assunzioni previste</p>
                             </div>
                         </div>
                         <div class="text-right">
@@ -423,9 +431,8 @@
 
             // --- GESTIONE FARMACI ---
 
-            showModal: function(id, mode = 'add', medId = null) {
-                if (id === 'modal-add-med') { // Shortcut per compatibilità vecchio pulsante
-                    id = 'modal-med';
+            showModal: function(id) {
+                if (id === 'modal-med') {
                     this.resetMedModal();
                     document.getElementById('med-modal-title').textContent = "Nuovo Farmaco";
                 }
@@ -436,7 +443,9 @@
                 document.getElementById('input-med-name').value = '';
                 document.getElementById('input-med-dose').value = '';
                 document.getElementById('input-med-edit-id').value = '';
-                this.resetTimeSelection();
+                document.getElementById('input-med-original-time').value = '';
+                this.selectedTimes = [];
+                this.updateTimeUI();
             },
 
             openEditMedModal: function(medId) {
@@ -447,8 +456,12 @@
                     document.getElementById('input-med-name').value = med.name;
                     document.getElementById('input-med-dose').value = med.dose;
                     document.getElementById('input-med-edit-id').value = med.id;
-                    const timeBtn = Array.from(document.querySelectorAll('.time-btn')).find(b => b.dataset.val === med.time);
-                    if(timeBtn) this.selectTime(med.time, timeBtn);
+                    document.getElementById('input-med-original-time').value = med.time;
+                    
+                    // In fase di modifica, mostriamo solo l'orario specifico selezionato inizialmente per semplicità di logica
+                    // (L'utente può comunque cambiare l'orario di QUELLA specifica istanza)
+                    this.selectedTimes = [med.time];
+                    this.updateTimeUI();
                     this.showModal('modal-med');
                 }
             },
@@ -456,22 +469,69 @@
             handleMedicationSubmit: function() {
                 const name = document.getElementById('input-med-name').value.trim();
                 const dose = document.getElementById('input-med-dose').value.trim();
-                const time = document.getElementById('input-med-time').value;
                 const editId = document.getElementById('input-med-edit-id').value;
 
-                if (!name || !dose || !time) return alert("Compila tutti i campi.");
+                if (!name || !dose || this.selectedTimes.length === 0) {
+                    return alert("Compila tutti i campi e seleziona almeno un orario.");
+                }
 
                 const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                
                 if (editId) {
+                    // Modalità MODIFICA: Aggiorniamo la singola istanza
                     const med = profile.meds.find(m => m.id === editId);
-                    Object.assign(med, { name, dose, time });
+                    if (med) {
+                        med.name = name;
+                        med.dose = dose;
+                        med.time = this.selectedTimes[0]; // Prende il primo (o unico) selezionato
+                    }
                 } else {
-                    profile.meds.push({ id: this.generateId(), name, dose, time, taken: false });
+                    // Modalità NUOVO: Crea un'istanza per ogni orario selezionato
+                    this.selectedTimes.forEach(time => {
+                        profile.meds.push({
+                            id: this.generateId(),
+                            name: name,
+                            dose: dose,
+                            time: time,
+                            taken: false
+                        });
+                    });
                 }
 
                 this.saveData();
                 this.closeModal('modal-med');
                 this.renderMedications();
+            },
+
+            toggleTimeSelection: function(time, btn) {
+                const index = this.selectedTimes.indexOf(time);
+                
+                // Se stiamo modificando, permettiamo solo una scelta (cambio orario)
+                const isEditing = !!document.getElementById('input-med-edit-id').value;
+                if (isEditing) {
+                    this.selectedTimes = [time];
+                } else {
+                    // Se stiamo creando, permettiamo selezione multipla
+                    if (index > -1) {
+                        this.selectedTimes.splice(index, 1);
+                    } else {
+                        this.selectedTimes.push(time);
+                    }
+                }
+                this.updateTimeUI();
+            },
+
+            updateTimeUI: function() {
+                document.querySelectorAll('.time-btn').forEach(btn => {
+                    const val = btn.dataset.val;
+                    if (this.selectedTimes.includes(val)) {
+                        btn.classList.add('selected');
+                        btn.classList.remove('text-slate-700', 'bg-white');
+                    } else {
+                        btn.classList.remove('selected');
+                        btn.classList.add('text-slate-700', 'bg-white');
+                    }
+                });
             },
 
             toggleMedication: function(medId) {
@@ -538,21 +598,6 @@
             // --- UI HELPERS ---
 
             closeModal: function(id) { document.getElementById(id).classList.add('hidden'); },
-
-            selectTime: function(time, btn) {
-                document.querySelectorAll('.time-btn').forEach(b => {
-                    b.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
-                    b.classList.add('text-slate-700', 'hover:bg-blue-50');
-                });
-                btn.classList.remove('text-slate-700', 'hover:bg-blue-50');
-                btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
-                document.getElementById('input-med-time').value = time;
-            },
-
-            resetTimeSelection: function() {
-                document.getElementById('input-med-time').value = '';
-                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('bg-blue-600', 'text-white', 'border-blue-600'));
-            },
 
             setupManifest: function() {
                 const manifest = {
