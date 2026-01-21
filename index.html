@@ -13,7 +13,7 @@
     <link rel="apple-touch-icon" href="https://i.ibb.co/N6db36Sf/medicine.png">
 
     <!-- Manifest Base64 -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJpdCIsCiAgIm5hbWUiOiAiR2VzdGlvbmUgU3Blc2UgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJTcGVzZVBybyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmliYi5jby9ONmRiMzZTZi9tZWRpY2luZS5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmM2Y0ZjYiLAogICJ0aGVtZV9jb2xvciI6ICIjMjU2M2YxIgp9">
+    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJpdCIsCiAgIm5hbWUiOiAiR2VzdGlvbmUgU3Blc2UgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJTcGVzZVBybyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmliYi5jby9ONmRiMzZTZi9tZWRpY2luZS5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmM2Y0ZjYiLAogICJ0aGVtZV9jb2xvciI6ICIjMjU2M2YxIgp9">    
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -89,6 +89,9 @@
             color: white;
             border-color: #2563eb;
         }
+        
+        .xs\:inline { display: none; }
+        @media (min-width: 400px) { .xs\:inline { display: inline; } }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -144,11 +147,8 @@
                     <p id="current-date-display" class="text-xs text-slate-500 uppercase font-semibold tracking-wider mt-1"></p>
                 </div>
                 <div class="flex flex-col gap-2 items-end">
-                    <button id="btn-deselect-all" onclick="app.deselectAllMeds()" class="hidden text-amber-600 text-xs px-3 py-1.5 border border-amber-200 rounded-lg hover:bg-amber-50 flex items-center gap-1 transition-all">
-                        <i class="fa-solid fa-rotate-left"></i> Svuota tutti
-                    </button>
                     <button onclick="app.deleteCurrentProfile()" class="text-red-500 text-xs px-3 py-1.5 border border-red-200 rounded-lg hover:bg-red-50 flex items-center gap-1 transition-all">
-                        <i class="fa-solid fa-trash"></i> Elimina Profilo
+                        <i class="fa-solid fa-trash"></i> <span class="xs:inline">Elimina Profilo</span>
                     </button>
                 </div>
             </div>
@@ -159,7 +159,7 @@
 
             <div id="med-empty-state" class="hidden flex flex-col items-center justify-center py-12 text-slate-400">
                 <i class="fa-solid fa-prescription-bottle-medical text-5xl mb-4 text-slate-200"></i>
-                <p>Nessun farmaco in questo profilo.</p>
+                <p>Nessun farmaco aggiunto.</p>
             </div>
 
             <button onclick="app.showModal('modal-med')" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl active:scale-90 transition-transform z-30">
@@ -194,7 +194,7 @@
         </div>
     </div>
 
-    <!-- MODALE FARMACO -->
+    <!-- MODALE FARMACO (Aggiunta/Modifica) -->
     <div id="modal-med" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h3 id="med-modal-title" class="text-xl font-bold mb-4 text-slate-800">Farmaco</h3>
@@ -205,10 +205,10 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Dose</label>
-                    <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1000mg, 1 bustina">
+                    <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1 compressa">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Orari (Multipli)</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Orari Assunzione</label>
                     <div class="grid grid-cols-3 gap-2">
                         <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Mattina">Mattina</button>
                         <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Pomeriggio">Pom.</button>
@@ -219,7 +219,7 @@
             <input type="hidden" id="input-med-edit-id">
             <div class="flex justify-end gap-3 mt-8">
                 <button onclick="app.closeModal('modal-med')" class="px-4 py-2 text-slate-500">Chiudi</button>
-                <button onclick="app.handleMedicationSubmit()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium">Conferma</button>
+                <button onclick="app.handleMedicationSubmit()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium">Salva</button>
             </div>
         </div>
     </div>
@@ -354,12 +354,11 @@
                             <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">${p.name.charAt(0).toUpperCase()}</div>
                             <div>
                                 <h3 class="font-bold text-slate-800">${p.name}</h3>
-                                <p class="text-xs text-slate-400">${total} farmaci previsti</p>
+                                <p class="text-xs text-slate-500">${total} farmaci</p>
                             </div>
                         </div>
                         <div class="text-right">
                              <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>
-                             <p class="text-[10px] text-slate-300 uppercase tracking-tighter">Oggi</p>
                         </div>`;
                     container.appendChild(div);
                 });
@@ -367,11 +366,12 @@
 
             // FARMACI
             showModal(id) {
-                if (id === 'modal-med') { this.resetMedModal(); document.getElementById('med-modal-title').textContent = "Nuovo Farmaco"; }
+                if (id === 'modal-med') { this.resetMedModal(); }
                 document.getElementById(id).classList.remove('hidden');
             },
 
             resetMedModal() {
+                document.getElementById('med-modal-title').textContent = "Nuovo Farmaco";
                 document.getElementById('input-med-name').value = '';
                 document.getElementById('input-med-dose').value = '';
                 document.getElementById('input-med-edit-id').value = '';
@@ -383,7 +383,7 @@
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 const med = profile.meds.find(m => m.id === medId);
                 if (med) {
-                    document.getElementById('med-modal-title').textContent = "Modifica Voce";
+                    document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
                     document.getElementById('input-med-name').value = med.name;
                     document.getElementById('input-med-dose').value = med.dose;
                     document.getElementById('input-med-edit-id').value = med.id;
@@ -398,27 +398,26 @@
                 const dose = document.getElementById('input-med-dose').value.trim();
                 const editId = document.getElementById('input-med-edit-id').value;
 
-                if (!name || !dose || this.selectedTimes.length === 0) return alert("Compila tutti i dati.");
+                if (!name || !dose || this.selectedTimes.length === 0) return alert("Compila tutti i campi.");
 
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
+                
                 if (editId) {
                     const med = profile.meds.find(m => m.id === editId);
-                    if (med) { med.name = name; med.dose = dose; med.time = this.selectedTimes[0]; }
-                } else {
-                    this.selectedTimes.forEach(t => profile.meds.push({ id: this.generateId(), name, dose, time: t, taken: false }));
-                }
-                this.saveData(); this.closeModal('modal-med'); this.renderMedications();
-            },
-
-            deselectAllMeds() {
-                if(confirm("Vuoi deselezionare tutti i farmaci presi per oggi?")) {
-                    const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
-                    if(profile) {
-                        profile.meds.forEach(m => m.taken = false);
-                        this.saveData();
-                        this.renderMedications();
+                    if (med) {
+                        med.name = name;
+                        med.dose = dose;
+                        med.time = this.selectedTimes[0];
                     }
+                } else {
+                    this.selectedTimes.forEach(t => {
+                        profile.meds.push({ id: this.generateId(), name, dose, time: t, taken: false });
+                    });
                 }
+                
+                this.saveData(); 
+                this.closeModal('modal-med'); 
+                this.renderMedications();
             },
 
             toggleMedication(id) {
@@ -442,11 +441,9 @@
 
                 const times = ['Mattina', 'Pomeriggio', 'Sera'];
                 let hasMeds = false;
-                let anyTaken = false;
 
                 times.forEach(time => {
-                    const listId = `med-list-${time.toLowerCase()}`;
-                    const container = document.getElementById(listId);
+                    const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
                     const meds = profile.meds.filter(m => m.time === time);
                     
@@ -459,18 +456,20 @@
                         container.appendChild(header);
 
                         meds.forEach(med => {
-                            if (med.taken) anyTaken = true;
                             const card = document.createElement('div');
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${med.taken ? 'bg-green-50 border-green-200' : 'bg-white border-transparent'}`;
                             card.innerHTML = `
-                                <div class="flex items-center gap-4 overflow-hidden">
+                                <div class="flex items-center gap-4 flex-1 overflow-hidden">
                                     <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
-                                    <div class="overflow-hidden ${med.taken ? 'opacity-40' : ''}" onclick="app.openEditMedModal('${med.id}')">
+                                    <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}" onclick="app.openEditMedModal('${med.id}')">
                                         <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
                                         <p class="text-xs text-slate-500 truncate">${med.dose}</p>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-1 shrink-0">
+                                <div class="flex items-center gap-1">
+                                    <button onclick="app.openEditMedModal('${med.id}')" class="w-8 h-8 text-slate-300 hover:text-blue-500 transition-colors">
+                                        <i class="fa-solid fa-pencil text-sm"></i>
+                                    </button>
                                     <button onclick="app.deleteMedication('${med.id}')" class="w-8 h-8 text-slate-300 hover:text-red-500 transition-colors">
                                         <i class="fa-solid fa-trash-can text-sm"></i>
                                     </button>
@@ -479,17 +478,16 @@
                         });
                     }
                 });
-
                 document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
-                document.getElementById('btn-deselect-all').classList.toggle('hidden', !anyTaken);
             },
 
             // UI
             closeModal(id) { document.getElementById(id).classList.add('hidden'); },
             toggleTimeSelection(time, btn) {
                 const isEdit = !!document.getElementById('input-med-edit-id').value;
-                if (isEdit) { this.selectedTimes = [time]; }
-                else {
+                if (isEdit) { 
+                    this.selectedTimes = [time]; 
+                } else {
                     const idx = this.selectedTimes.indexOf(time);
                     idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
                 }
@@ -498,8 +496,8 @@
             updateTimeUI() {
                 document.querySelectorAll('.time-btn').forEach(b => {
                     const val = b.dataset.val;
-                    if (this.selectedTimes.includes(val)) { b.classList.add('selected'); b.classList.remove('bg-white', 'text-slate-700'); }
-                    else { b.classList.remove('selected'); b.classList.add('bg-white', 'text-slate-700'); }
+                    if (this.selectedTimes.includes(val)) { b.classList.add('selected'); }
+                    else { b.classList.remove('selected'); }
                 });
             },
 
