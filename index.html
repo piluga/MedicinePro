@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MedicinePro</title>
+    
+    <!-- Meta Tags per PWA su iOS/Android -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="MedicinePro">
+
+    <!-- Tailwind CSS (Via CDN per styling rapido e moderno) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome (Icone) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts (Inter per leggibilità) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Manifest Inline (Generato dinamicamente via JS per aggirare limitazioni singolo file, ma qui predisposto) -->
+    <link rel="manifest" id="my-manifest">
+
+    <style>
+        /* CSS Personalizzato */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Grigio chiarissimo medico */
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none; /* Previene pull-to-refresh su mobile */
+        }
+
+        /* Transizioni fluide */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Checkbox personalizzato grande */
+        .med-checkbox {
+            appearance: none;
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 3px solid #cbd5e1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: white;
+        }
+        
+        .med-checkbox:checked {
+            background-color: #22c55e; /* Verde successo */
+            border-color: #22c55e;
+        }
+
+        .med-checkbox:checked::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        /* Card styles */
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Utility per nascondere scrollbar ma permettere scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Modale overlay */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+        }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- HEADER FISSO -->
+    <header class="bg-blue-600 text-white p-4 shadow-md z-20 flex justify-between items-center shrink-0 h-16">
+        <div class="flex items-center gap-3">
+            <button id="btn-back" class="hidden text-xl p-1 active:scale-95 transition-transform" aria-label="Indietro">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+                <i class="fa-solid fa-pills"></i> MedicinePro
+            </h1>
+        </div>
+        
+        <!-- Pulsanti Import/Export -->
+        <div class="flex gap-2">
+            <button onclick="app.triggerImport()" class="text-sm bg-blue-500 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors border border-blue-400 shadow-sm" title="Carica Backup">
+                <i class="fa-solid fa-file-import"></i> <span class="hidden sm:inline ml-1">Carica</span>
+            </button>
+            <button onclick="app.exportData()" class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors border border-blue-500 shadow-sm" title="Esporta Backup">
+                <i class="fa-solid fa-download"></i> <span class="hidden sm:inline ml-1">Salva</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Input file nascosto per l'importazione -->
+    <input type="file" id="import-file" accept=".json" class="hidden" onchange="app.handleImport(this)">
+
+    <!-- MAIN CONTENT AREA -->
+    <main id="app-container" class="flex-1 overflow-y-auto no-scrollbar relative p-4 max-w-lg mx-auto w-full">
+        
+        <!-- VISTA 1: LISTA PROFILI -->
+        <section id="view-profiles" class="fade-in space-y-4">
+            <div class="bg-white p-6 rounded-2xl card-shadow text-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Benvenuto</h2>
+                <p class="text-slate-500">Seleziona un profilo per gestire le terapie.</p>
+            </div>
+
+            <div id="profiles-list" class="space-y-3">
+                <!-- I profili verranno inseriti qui via JS -->
+            </div>
+
+            <button onclick="app.showModal('modal-add-profile')" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-user-plus"></i> Aggiungi Profilo
+            </button>
+        </section>
+
+        <!-- VISTA 2: DETTAGLIO PROFILO (Farmaci) -->
+        <section id="view-medications" class="hidden fade-in pb-24">
+            <div class="flex justify-between items-end mb-4">
+                <div>
+                    <h2 id="current-profile-name" class="text-2xl font-bold text-slate-800">Nome Profilo</h2>
+                    <p id="current-date-display" class="text-sm text-slate-500 uppercase font-semibold tracking-wider mt-1"></p>
+                </div>
+                <button onclick="app.deleteCurrentProfile()" class="text-red-500 text-xs px-2 py-1 border border-red-200 rounded hover:bg-red-50">
+                    <i class="fa-solid fa-trash"></i> Elimina Profilo
+                </button>
+            </div>
+
+            <!-- Sezioni orarie -->
+            <div id="med-list-mattina" class="mb-6"></div>
+            <div id="med-list-pomeriggio" class="mb-6"></div>
+            <div id="med-list-sera" class="mb-6"></div>
+
+            <!-- Empty State -->
+            <div id="med-empty-state" class="hidden flex flex-col items-center justify-center py-10 text-slate-400">
+                <i class="fa-solid fa-prescription-bottle-medical text-5xl mb-3 text-slate-200"></i>
+                <p>Nessun farmaco aggiunto.</p>
+            </div>
+
+            <!-- FAB (Floating Action Button) -->
+            <button onclick="app.showModal('modal-add-med')" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl active:scale-90 transition-transform z-30" aria-label="Aggiungi Farmaco">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </section>
+
+    </main>
+
+    <!-- MODALE: AGGIUNGI PROFILO -->
+    <div id="modal-add-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-[fadeIn_0.2s_ease-out]">
+            <h3 class="text-xl font-bold mb-4">Nuovo Profilo</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nome</label>
+                    <input type="text" id="input-profile-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-lg" placeholder="Es. Mamma, Mario">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="app.closeModal('modal-add-profile')" class="px-4 py-2 text-slate-600 font-medium">Annulla</button>
+                <button onclick="app.createProfile()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">Crea</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE: AGGIUNGI FARMACO -->
+    <div id="modal-add-med" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-[fadeIn_0.2s_ease-out]">
+            <h3 class="text-xl font-bold mb-4">Nuovo Farmaco</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nome Farmaco</label>
+                    <input type="text" id="input-med-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Aspirina">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Dose / Quantità</label>
+                    <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1 compressa, 5ml">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Orario Assunzione</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="app.selectTime('Mattina', this)" class="time-btn p-2 border rounded-lg text-sm text-center hover:bg-blue-50 border-slate-300" data-val="Mattina">Mattina</button>
+                        <button onclick="app.selectTime('Pomeriggio', this)" class="time-btn p-2 border rounded-lg text-sm text-center hover:bg-blue-50 border-slate-300" data-val="Pomeriggio">Pom.</button>
+                        <button onclick="app.selectTime('Sera', this)" class="time-btn p-2 border rounded-lg text-sm text-center hover:bg-blue-50 border-slate-300" data-val="Sera">Sera</button>
+                    </div>
+                    <input type="hidden" id="input-med-time">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="app.closeModal('modal-add-med')" class="px-4 py-2 text-slate-600 font-medium">Annulla</button>
+                <button onclick="app.addMedication()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * LOGICA APPLICAZIONE (Vanilla JS)
+         */
+        const app = {
+            data: {
+                lastOpened: null,
+                profiles: []
+            },
+            currentProfileId: null,
+            timeSelection: null,
+
+            // Inizializzazione
+            init: function() {
+                this.loadData();
+                this.checkDailyReset();
+                this.renderProfiles();
+                this.setupManifest();
+                
+                // Mostra data odierna
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
+                
+                // Back button listener
+                document.getElementById('btn-back').addEventListener('click', () => this.goHome());
+            },
+
+            // --- GESTIONE DATI (LocalStorage) ---
+
+            loadData: function() {
+                const stored = localStorage.getItem('MedicineProData');
+                if (stored) {
+                    try {
+                        this.data = JSON.parse(stored);
+                    } catch (e) {
+                        console.error("Dati corrotti", e);
+                        this.resetData();
+                    }
+                } else {
+                    this.resetData();
+                }
+            },
+
+            resetData: function() {
+                this.data = {
+                    lastOpened: new Date().toDateString(),
+                    profiles: []
+                };
+                this.saveData();
+            },
+
+            saveData: function() {
+                localStorage.setItem('MedicineProData', JSON.stringify(this.data));
+            },
+
+            // Esporta backup JSON
+            exportData: function() {
+                const dataStr = JSON.stringify(this.data, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const date = new Date().toISOString().slice(0,10);
+                a.href = url;
+                a.download = `MedicinePro_Backup_${date}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            },
+
+            // --- IMPORTAZIONE BACKUP ---
+            triggerImport: function() {
+                document.getElementById('import-file').click();
+            },
+
+            handleImport: function(input) {
+                const file = input.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const json = JSON.parse(e.target.result);
+                        
+                        // Validazione di base
+                        if (json && Array.isArray(json.profiles)) {
+                            if(confirm("ATTENZIONE: Il caricamento del backup sostituirà TUTTI i dati attuali (profili e farmaci). Vuoi continuare?")) {
+                                this.data = json;
+                                this.saveData();
+                                
+                                // Reset stato UI
+                                this.currentProfileId = null;
+                                this.goHome(); // Torna alla home e ricarica i profili
+                                alert("Backup caricato con successo!");
+                            }
+                        } else {
+                            alert("Errore: Il file selezionato non è un backup valido di MedicinePro.");
+                        }
+                    } catch (err) {
+                        alert("Errore nella lettura del file: " + err);
+                    }
+                    // Reset input per permettere di ricaricare lo stesso file se necessario
+                    input.value = '';
+                };
+                reader.readAsText(file);
+            },
+
+            // --- LOGICA DI BUSINESS ---
+
+            checkDailyReset: function() {
+                const today = new Date().toDateString();
+                // Assicuriamoci che lastOpened esista
+                if (!this.data.lastOpened) {
+                    this.data.lastOpened = today;
+                    this.saveData();
+                    return;
+                }
+
+                if (this.data.lastOpened !== today) {
+                    // È un nuovo giorno: resetta tutti i farmaci
+                    console.log("Nuovo giorno rilevato: reset terapie.");
+                    this.data.profiles.forEach(profile => {
+                        profile.meds.forEach(med => {
+                            med.taken = false;
+                        });
+                    });
+                    this.data.lastOpened = today;
+                    this.saveData();
+                }
+            },
+
+            generateId: function() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            },
+
+            // --- NAVIGAZIONE ---
+
+            openProfile: function(profileId) {
+                this.currentProfileId = profileId;
+                document.getElementById('view-profiles').classList.add('hidden');
+                document.getElementById('view-medications').classList.remove('hidden');
+                document.getElementById('btn-back').classList.remove('hidden');
+                this.renderMedications();
+            },
+
+            goHome: function() {
+                this.currentProfileId = null;
+                document.getElementById('view-profiles').classList.remove('hidden');
+                document.getElementById('view-medications').classList.add('hidden');
+                document.getElementById('btn-back').classList.add('hidden');
+                this.renderProfiles(); // Aggiorna in caso di modifiche
+            },
+
+            // --- PROFILI ---
+
+            createProfile: function() {
+                const input = document.getElementById('input-profile-name');
+                const name = input.value.trim();
+                if (!name) return alert("Inserisci un nome.");
+
+                const newProfile = {
+                    id: this.generateId(),
+                    name: name,
+                    meds: []
+                };
+
+                this.data.profiles.push(newProfile);
+                this.saveData();
+                input.value = '';
+                this.closeModal('modal-add-profile');
+                this.renderProfiles();
+            },
+
+            renderProfiles: function() {
+                const container = document.getElementById('profiles-list');
+                container.innerHTML = '';
+
+                if (this.data.profiles.length === 0) {
+                    container.innerHTML = `<div class="text-center text-slate-400 py-4">Nessun profilo creato.</div>`;
+                    return;
+                }
+
+                this.data.profiles.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = "bg-white p-4 rounded-xl card-shadow flex justify-between items-center cursor-pointer hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200";
+                    div.onclick = () => this.openProfile(p.id);
+                    
+                    // Calcolo statistiche rapide
+                    const totalMeds = p.meds.length;
+                    const takenMeds = p.meds.filter(m => m.taken).length;
+                    const percent = totalMeds === 0 ? 0 : Math.round((takenMeds/totalMeds)*100);
+                    const colorClass = percent === 100 ? 'text-green-500' : 'text-blue-500';
+
+                    div.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl font-bold">
+                                ${p.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800">${p.name}</h3>
+                                <p class="text-xs text-slate-500">${totalMeds} farmaci in terapia</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <div class="font-bold ${colorClass}">${percent}%</div>
+                             <div class="text-xs text-slate-400">Completato</div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            deleteCurrentProfile: function() {
+                if(confirm("Sei sicuro di voler eliminare questo profilo e tutti i suoi dati?")) {
+                    this.data.profiles = this.data.profiles.filter(p => p.id !== this.currentProfileId);
+                    this.saveData();
+                    this.goHome();
+                }
+            },
+
+            // --- FARMACI ---
+
+            addMedication: function() {
+                const nameInput = document.getElementById('input-med-name');
+                const doseInput = document.getElementById('input-med-dose');
+                const timeInput = document.getElementById('input-med-time');
+
+                if (!nameInput.value || !doseInput.value || !timeInput.value) {
+                    alert("Compila tutti i campi (Nome, Dose, Orario).");
+                    return;
+                }
+
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                if (profile) {
+                    profile.meds.push({
+                        id: this.generateId(),
+                        name: nameInput.value.trim(),
+                        dose: doseInput.value.trim(),
+                        time: timeInput.value,
+                        taken: false
+                    });
+                    this.saveData();
+                    
+                    // Reset inputs
+                    nameInput.value = '';
+                    doseInput.value = '';
+                    this.resetTimeSelection();
+                    this.closeModal('modal-add-med');
+                    this.renderMedications();
+                }
+            },
+
+            toggleMedication: function(medId) {
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                const med = profile.meds.find(m => m.id === medId);
+                if (med) {
+                    med.taken = !med.taken;
+                    this.saveData();
+                    this.renderMedications(); // Re-render per aggiornare UI
+                }
+            },
+
+            deleteMedication: function(medId) {
+                if(confirm("Eliminare questo farmaco?")) {
+                    const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                    profile.meds = profile.meds.filter(m => m.id !== medId);
+                    this.saveData();
+                    this.renderMedications();
+                }
+            },
+
+            renderMedications: function() {
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                if (!profile) return;
+
+                document.getElementById('current-profile-name').textContent = profile.name;
+
+                const times = ['Mattina', 'Pomeriggio', 'Sera'];
+                let hasMeds = false;
+
+                times.forEach(time => {
+                    const container = document.getElementById(`med-list-${time.toLowerCase()}`);
+                    container.innerHTML = '';
+                    
+                    // Filtra farmaci per questo orario
+                    const medsInTime = profile.meds.filter(m => m.time === time);
+
+                    if (medsInTime.length > 0) {
+                        hasMeds = true;
+                        
+                        // Header Sezione
+                        const header = document.createElement('div');
+                        header.className = "flex items-center gap-2 mb-3 text-slate-500 font-bold uppercase text-xs tracking-wider pl-1";
+                        let icon = time === 'Mattina' ? 'fa-sun' : (time === 'Pomeriggio' ? 'fa-cloud-sun' : 'fa-moon');
+                        let color = time === 'Mattina' ? 'text-orange-400' : (time === 'Pomeriggio' ? 'text-yellow-500' : 'text-indigo-400');
+                        header.innerHTML = `<i class="fa-solid ${icon} ${color}"></i> ${time}`;
+                        container.appendChild(header);
+
+                        medsInTime.forEach(med => {
+                            const card = document.createElement('div');
+                            // Stile condizionale se preso
+                            const opacityClass = med.taken ? 'bg-green-50 border-green-200' : 'bg-white border-transparent';
+                            const textClass = med.taken ? 'text-green-800' : 'text-slate-800';
+                            
+                            card.className = `p-4 rounded-xl card-shadow border ${opacityClass} mb-3 flex items-center justify-between transition-all duration-300`;
+                            
+                            card.innerHTML = `
+                                <div class="flex items-center gap-4 flex-1">
+                                    <label class="relative cursor-pointer">
+                                        <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
+                                    </label>
+                                    <div class="${med.taken ? 'opacity-50 line-through' : ''}">
+                                        <h4 class="font-bold text-lg leading-tight ${textClass}">${med.name}</h4>
+                                        <p class="text-sm text-slate-500 mt-1">${med.dose}</p>
+                                    </div>
+                                </div>
+                                <button onclick="app.deleteMedication('${med.id}')" class="ml-2 w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            `;
+                            container.appendChild(card);
+                        });
+                    }
+                });
+
+                // Toggle Empty State
+                const emptyState = document.getElementById('med-empty-state');
+                if (!hasMeds) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    emptyState.classList.add('hidden');
+                }
+            },
+
+            // --- UI HELPERS ---
+
+            showModal: function(id) {
+                document.getElementById(id).classList.remove('hidden');
+            },
+
+            closeModal: function(id) {
+                document.getElementById(id).classList.add('hidden');
+            },
+
+            selectTime: function(time, btn) {
+                // Reset visual selection
+                document.querySelectorAll('.time-btn').forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+                    b.classList.add('text-slate-700', 'hover:bg-blue-50');
+                });
+                
+                // Select active
+                btn.classList.remove('text-slate-700', 'hover:bg-blue-50');
+                btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                
+                document.getElementById('input-med-time').value = time;
+            },
+
+            resetTimeSelection: function() {
+                document.getElementById('input-med-time').value = '';
+                document.querySelectorAll('.time-btn').forEach(b => {
+                    b.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+                });
+            },
+
+            // --- PWA MANIFEST GENERATOR ---
+            setupManifest: function() {
+                const manifest = {
+                    "name": "MedicinePro",
+                    "short_name": "MedPro",
+                    "start_url": ".",
+                    "display": "standalone",
+                    "background_color": "#f3f4f6",
+                    "theme_color": "#2563eb",
+                    "orientation": "portrait",
+                    "icons": [
+                        {
+                            "src": "https://img.icons8.com/color/192/pills-bottle.png",
+                            "sizes": "192x192",
+                            "type": "image/png"
+                        },
+                        {
+                            "src": "https://img.icons8.com/color/512/pills-bottle.png",
+                            "sizes": "512x512",
+                            "type": "image/png"
+                        }
+                    ]
+                };
+                const stringManifest = JSON.stringify(manifest);
+                const blob = new Blob([stringManifest], {type: 'application/json'});
+                const manifestURL = URL.createObjectURL(blob);
+                document.getElementById('my-manifest').setAttribute('href', manifestURL);
+            }
+        };
+
+        // Avvio app al caricamento
+        window.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+
+    </script>
+</body>
+</html>
