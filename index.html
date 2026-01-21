@@ -10,11 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="MedicinePro">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/N6db36Sf/medicine.png">
 
-    <!-- Manifest Base64 -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJpdCIsCiAgIm5hbWUiOiAiR2VzdGlvbmUgU3Blc2UgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJTcGVzZVBybyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmliYi5jby9ONmRiMzZTZi9tZWRpY2luZS5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmM2Y0ZjYiLAogICJ0aGVtZV9jb2xvciI6ICIjMjU2M2YxIgp9">
-    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -137,14 +133,19 @@
         <!-- VISTA DETTAGLIO PROFILO -->
         <section id="view-medications" class="hidden fade-in pb-24">
             <div class="flex justify-between items-start mb-4">
-                <div>
+                <div class="flex-1">
                     <div class="flex items-center gap-2">
                         <h2 id="current-profile-name" class="text-2xl font-bold text-slate-800 truncate max-w-[180px]">Profilo</h2>
                         <button onclick="app.openEditProfileModal()" class="text-slate-400 hover:text-blue-600 p-1.5 transition-colors">
                             <i class="fa-solid fa-pencil text-sm"></i>
                         </button>
                     </div>
-                    <p id="current-date-display" class="text-xs text-slate-500 uppercase font-semibold tracking-wider mt-1"></p>
+                    <div class="flex items-center gap-3 mt-1">
+                        <p id="current-date-display" class="text-[10px] text-slate-500 uppercase font-bold tracking-wider"></p>
+                        <button id="btn-uncheck-all" onclick="app.uncheckAllMeds()" class="hidden text-[10px] text-red-500 uppercase font-bold tracking-wider hover:underline">
+                            Deseleziona tutto
+                        </button>
+                    </div>
                 </div>
                 <div class="flex flex-col gap-2 items-end">
                     <button onclick="app.deleteCurrentProfile()" class="text-red-500 text-xs px-3 py-1.5 border border-red-200 rounded-lg hover:bg-red-50 flex items-center gap-1 transition-all">
@@ -386,17 +387,12 @@
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 const med = profile.meds.find(m => m.id === medId);
                 if (med) {
-                    // Imposta i valori nei campi
                     document.getElementById('input-med-edit-id').value = med.id;
                     document.getElementById('input-med-name').value = med.name;
                     document.getElementById('input-med-dose').value = med.dose;
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
-                    
-                    // Imposta gli orari e aggiorna l'interfaccia pulsanti
                     this.selectedTimes = [med.time];
                     this.updateTimeUI();
-                    
-                    // Mostra la modale
                     this.showModal('modal-med');
                 }
             },
@@ -425,7 +421,7 @@
                 
                 this.saveData(); 
                 this.closeModal('modal-med'); 
-                this.resetMedModal(); // Importante pulire dopo il salvataggio
+                this.resetMedModal();
                 this.renderMedications();
             },
 
@@ -433,6 +429,15 @@
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 const med = profile.meds.find(m => m.id === id);
                 if (med) { med.taken = !med.taken; this.saveData(); this.renderMedications(); }
+            },
+
+            uncheckAllMeds() {
+                const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
+                if (profile && confirm("Vuoi deselezionare tutti i farmaci presi oggi?")) {
+                    profile.meds.forEach(m => m.taken = false);
+                    this.saveData();
+                    this.renderMedications();
+                }
             },
 
             deleteMedication(id) {
@@ -450,6 +455,7 @@
 
                 const times = ['Mattina', 'Pomeriggio', 'Sera'];
                 let hasMeds = false;
+                let anyTaken = false;
 
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
@@ -465,6 +471,7 @@
                         container.appendChild(header);
 
                         meds.forEach(med => {
+                            if (med.taken) anyTaken = true;
                             const card = document.createElement('div');
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${med.taken ? 'bg-green-50 border-green-200' : 'bg-white border-transparent'}`;
                             card.innerHTML = `
@@ -487,21 +494,22 @@
                         });
                     }
                 });
+                
+                // Mostra/Nascondi pulsante deseleziona tutto
+                document.getElementById('btn-uncheck-all').classList.toggle('hidden', !anyTaken);
                 document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
             },
 
             // UI
             closeModal(id) { 
                 document.getElementById(id).classList.add('hidden');
-                if (id === 'modal-med') this.resetMedModal(); // Pulisce i campi alla chiusura
+                if (id === 'modal-med') this.resetMedModal();
             },
             toggleTimeSelection(time, btn) {
                 const editId = document.getElementById('input-med-edit-id').value;
                 if (editId) { 
-                    // In modalità modifica, permetti solo una selezione (sostituzione)
                     this.selectedTimes = [time]; 
                 } else {
-                    // In modalità nuovo, selezione multipla
                     const idx = this.selectedTimes.indexOf(time);
                     idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
                 }
