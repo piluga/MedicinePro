@@ -13,8 +13,8 @@
     <link rel="apple-touch-icon" href="https://i.ibb.co/N6db36Sf/medicine.png">
 
     <!-- Manifest Base64 -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJpdCIsCiAgIm5hbWUiOiAiR2VzdGlvbmUgU3Blc2UgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJTcGVzZVBybyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmliYi5jby9ONmRiMzZTZi9tZWRpY2luZS5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmM2Y0ZjYiLAogICJ0aGVtZV9jb2xvciI6ICIjMjU2M2YxIgp9">    
-
+    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJpdCIsCiAgIm5hbWUiOiAiR2VzdGlvbmUgU3Blc2UgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJTcGVzZVBybyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmliYi5jby9ONmRiMzZTZi9tZWRpY2luZS5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmM2Y0ZjYiLAogICJ0aGVtZV9jb2xvciI6ICIjMjU2M2YxIgp9">
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -366,7 +366,10 @@
 
             // FARMACI
             showModal(id) {
-                if (id === 'modal-med') { this.resetMedModal(); }
+                if (id === 'modal-med') { 
+                    const editId = document.getElementById('input-med-edit-id').value;
+                    if (!editId) this.resetMedModal(); 
+                }
                 document.getElementById(id).classList.remove('hidden');
             },
 
@@ -383,12 +386,17 @@
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 const med = profile.meds.find(m => m.id === medId);
                 if (med) {
-                    document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
+                    // Imposta i valori nei campi
+                    document.getElementById('input-med-edit-id').value = med.id;
                     document.getElementById('input-med-name').value = med.name;
                     document.getElementById('input-med-dose').value = med.dose;
-                    document.getElementById('input-med-edit-id').value = med.id;
+                    document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
+                    
+                    // Imposta gli orari e aggiorna l'interfaccia pulsanti
                     this.selectedTimes = [med.time];
                     this.updateTimeUI();
+                    
+                    // Mostra la modale
                     this.showModal('modal-med');
                 }
             },
@@ -417,6 +425,7 @@
                 
                 this.saveData(); 
                 this.closeModal('modal-med'); 
+                this.resetMedModal(); // Importante pulire dopo il salvataggio
                 this.renderMedications();
             },
 
@@ -482,12 +491,17 @@
             },
 
             // UI
-            closeModal(id) { document.getElementById(id).classList.add('hidden'); },
+            closeModal(id) { 
+                document.getElementById(id).classList.add('hidden');
+                if (id === 'modal-med') this.resetMedModal(); // Pulisce i campi alla chiusura
+            },
             toggleTimeSelection(time, btn) {
-                const isEdit = !!document.getElementById('input-med-edit-id').value;
-                if (isEdit) { 
+                const editId = document.getElementById('input-med-edit-id').value;
+                if (editId) { 
+                    // In modalità modifica, permetti solo una selezione (sostituzione)
                     this.selectedTimes = [time]; 
                 } else {
+                    // In modalità nuovo, selezione multipla
                     const idx = this.selectedTimes.indexOf(time);
                     idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
                 }
@@ -496,8 +510,11 @@
             updateTimeUI() {
                 document.querySelectorAll('.time-btn').forEach(b => {
                     const val = b.dataset.val;
-                    if (this.selectedTimes.includes(val)) { b.classList.add('selected'); }
-                    else { b.classList.remove('selected'); }
+                    if (this.selectedTimes.includes(val)) { 
+                        b.classList.add('selected'); 
+                    } else { 
+                        b.classList.remove('selected'); 
+                    }
                 });
             },
 
