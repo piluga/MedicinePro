@@ -234,6 +234,9 @@
             data: { lastOpened: null, profiles: [] },
             currentProfileId: null,
             selectedTimes: [],
+            // Variabili per gestire lo swipe
+            touchStartX: 0,
+            touchStartY: 0,
 
             init() {
                 this.loadData();
@@ -242,7 +245,39 @@
                 this.setupManifest();
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                 document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
+                
+                // Event Listeners
                 document.getElementById('btn-back').addEventListener('click', () => this.goHome());
+
+                // Gestione Swipe (Touch)
+                document.addEventListener('touchstart', e => {
+                    this.touchStartX = e.changedTouches[0].screenX;
+                    this.touchStartY = e.changedTouches[0].screenY;
+                }, {passive: true});
+
+                document.addEventListener('touchend', e => {
+                    const touchEndX = e.changedTouches[0].screenX;
+                    const touchEndY = e.changedTouches[0].screenY;
+                    this.handleSwipe(touchEndX, touchEndY);
+                }, {passive: true});
+            },
+
+            // Funzione per gestire la logica dello swipe
+            handleSwipe(endX, endY) {
+                // Se non siamo in un profilo o c'è una modale aperta, non fare nulla
+                if (!this.currentProfileId || document.querySelector('.modal-overlay:not(.hidden)')) return;
+
+                const diffX = endX - this.touchStartX;
+                const diffY = endY - this.touchStartY;
+
+                // Logica Swipe Destra (Back)
+                // Deve essere:
+                // 1. Verso destra (diffX > 0)
+                // 2. Più orizzontale che verticale (abs(X) > abs(Y))
+                // 3. Abbastanza lungo (> 70px) per non essere un tap accidentale
+                if (diffX > 70 && Math.abs(diffX) > Math.abs(diffY)) {
+                    this.goHome();
+                }
             },
 
             loadData() {
