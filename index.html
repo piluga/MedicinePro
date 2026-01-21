@@ -90,6 +90,13 @@
             border-color: #2563eb;
         }
         
+        /* Stili specifici per le categorie temporali */
+        .med-card-mattina { background-color: #fff7ed; border-color: #ffedd5; }
+        .med-card-pomeriggio { background-color: #fefce8; border-color: #fef9c3; }
+        .med-card-sera { background-color: #f5f3ff; border-color: #ede9fe; }
+        
+        .med-card-taken { background-color: #f0fdf4 !important; border-color: #dcfce7 !important; }
+
         .xs\:inline { display: none; }
         @media (min-width: 400px) { .xs\:inline { display: inline; } }
     </style>
@@ -234,7 +241,6 @@
             data: { lastOpened: null, profiles: [] },
             currentProfileId: null,
             selectedTimes: [],
-            // Variabili per gestire lo swipe
             touchStartX: 0,
             touchStartY: 0,
 
@@ -246,10 +252,8 @@
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                 document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
                 
-                // Event Listeners
                 document.getElementById('btn-back').addEventListener('click', () => this.goHome());
 
-                // Gestione Swipe (Touch)
                 document.addEventListener('touchstart', e => {
                     this.touchStartX = e.changedTouches[0].screenX;
                     this.touchStartY = e.changedTouches[0].screenY;
@@ -262,21 +266,26 @@
                 }, {passive: true});
             },
 
-            // Funzione per gestire la logica dello swipe
             handleSwipe(endX, endY) {
-                // Se non siamo in un profilo o c'è una modale aperta, non fare nulla
                 if (!this.currentProfileId || document.querySelector('.modal-overlay:not(.hidden)')) return;
 
                 const diffX = endX - this.touchStartX;
                 const diffY = endY - this.touchStartY;
 
-                // Logica Swipe Destra (Back)
-                // Deve essere:
-                // 1. Verso destra (diffX > 0)
-                // 2. Più orizzontale che verticale (abs(X) > abs(Y))
-                // 3. Abbastanza lungo (> 70px) per non essere un tap accidentale
-                if (diffX > 70 && Math.abs(diffX) > Math.abs(diffY)) {
-                    this.goHome();
+                if (Math.abs(diffX) < 70 || Math.abs(diffX) < Math.abs(diffY)) return;
+
+                const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
+                
+                if (diffX > 0) {
+                    if (currentIndex > 0) {
+                        this.openProfile(this.data.profiles[currentIndex - 1].id);
+                    } else {
+                        this.goHome();
+                    }
+                } else {
+                    if (currentIndex < this.data.profiles.length - 1) {
+                        this.openProfile(this.data.profiles[currentIndex + 1].id);
+                    }
                 }
             },
 
@@ -337,13 +346,19 @@
 
             openProfile(id) {
                 this.currentProfileId = id;
-                document.getElementById('view-profiles').classList.add('hidden');
-                document.getElementById('view-medications').classList.remove('hidden');
+                const view = document.getElementById('view-medications');
+                const list = document.getElementById('view-profiles');
+                
+                view.classList.remove('fade-in');
+                void view.offsetWidth; 
+                view.classList.add('fade-in');
+
+                list.classList.add('hidden');
+                view.classList.remove('hidden');
                 document.getElementById('btn-back').classList.remove('hidden');
                 this.renderMedications();
             },
 
-            // PROFILI
             createProfile() {
                 const name = document.getElementById('input-profile-name').value.trim();
                 if (!name) return;
@@ -404,7 +419,6 @@
                 });
             },
 
-            // FARMACI
             showModal(id) {
                 if (id === 'modal-med') { 
                     const editId = document.getElementById('input-med-edit-id').value;
@@ -512,7 +526,11 @@
                         meds.forEach(med => {
                             if (med.taken) anyTaken = true;
                             const card = document.createElement('div');
-                            card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${med.taken ? 'bg-green-50 border-green-200' : 'bg-white border-transparent'}`;
+                            // Applica classi di colore basate sul tempo e sullo stato
+                            const categoryClass = `med-card-${time.toLowerCase()}`;
+                            const takenClass = med.taken ? 'med-card-taken' : '';
+                            
+                            card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass}`;
                             card.innerHTML = `
                                 <div class="flex items-center gap-4 flex-1 overflow-hidden">
                                     <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
@@ -522,10 +540,10 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1">
-                                    <button onclick="app.openEditMedModal('${med.id}')" class="w-8 h-8 text-slate-300 hover:text-blue-500 transition-colors">
+                                    <button onclick="app.openEditMedModal('${med.id}')" class="w-8 h-8 text-slate-400 hover:text-blue-500 transition-colors">
                                         <i class="fa-solid fa-pencil text-sm"></i>
                                     </button>
-                                    <button onclick="app.deleteMedication('${med.id}')" class="w-8 h-8 text-slate-300 hover:text-red-500 transition-colors">
+                                    <button onclick="app.deleteMedication('${med.id}')" class="w-8 h-8 text-slate-400 hover:text-red-500 transition-colors">
                                         <i class="fa-solid fa-trash-can text-sm"></i>
                                     </button>
                                 </div>`;
@@ -534,12 +552,10 @@
                     }
                 });
                 
-                // Mostra/Nascondi pulsante deseleziona tutto
                 document.getElementById('btn-uncheck-all').classList.toggle('hidden', !anyTaken);
                 document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
             },
 
-            // UI
             closeModal(id) { 
                 document.getElementById(id).classList.add('hidden');
                 if (id === 'modal-med') this.resetMedModal();
