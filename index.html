@@ -471,7 +471,7 @@
                         const header = document.createElement('div');
                         header.className = "text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 pl-1 flex items-center gap-2";
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
-                        header.innerHTML = `<i class="fa-solid ${icon}"></i> ${time}`;
+                        header.innerHTML = `<i class="fa-solid ${icon}"></i> ${time} <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-[9px]">${meds.length}</span>`;
                         container.appendChild(header);
 
                         meds.forEach(med => {
@@ -552,4 +552,3 @@
     </script>
 </body>
 </html>
-
