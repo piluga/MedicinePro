@@ -159,6 +159,9 @@
                     </div>
                 </div>
                 <div class="flex flex-col gap-2 items-end">
+                    <button onclick="app.exportProfileTxt()" class="text-blue-600 text-xs px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 flex items-center gap-1 transition-all">
+                        <i class="fa-solid fa-file-lines"></i> <span class="xs:inline">Esporta TXT</span>
+                    </button>
                     <button onclick="app.deleteCurrentProfile()" class="text-red-500 text-xs px-3 py-1.5 border border-red-200 rounded-lg hover:bg-red-50 flex items-center gap-1 transition-all">
                         <i class="fa-solid fa-trash"></i> <span class="xs:inline">Elimina Profilo</span>
                     </button>
@@ -305,6 +308,45 @@
                 a.href = url;
                 a.download = `MedicinePro_Backup_${new Date().toISOString().slice(0,10)}.json`;
                 a.click();
+            },
+
+            exportProfileTxt() {
+                const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
+                if (!profile) return;
+
+                let content = `TERAPIA FARMACOLOGICA: ${profile.name.toUpperCase()}\n`;
+                content += `Esportata il: ${new Date().toLocaleDateString('it-IT')}\n`;
+                content += `--------------------------------------------------\n\n`;
+
+                const times = ['Mattina', 'Pomeriggio', 'Sera'];
+                let hasMeds = false;
+
+                times.forEach(time => {
+                    const meds = profile.meds.filter(m => m.time === time);
+                    if (meds.length > 0) {
+                        hasMeds = true;
+                        content += `[${time.toUpperCase()}]\n`;
+                        meds.forEach(m => {
+                            content += `- ${m.name}: ${m.dose}\n`;
+                        });
+                        content += `\n`;
+                    }
+                });
+
+                if (!hasMeds) {
+                    content += `Nessun farmaco inserito in questo profilo.\n`;
+                }
+
+                content += `--------------------------------------------------\n`;
+                content += `Generato con MedicinePro.`;
+
+                const blob = new Blob([content], { type: "text/plain" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Terapia_${profile.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
             },
 
             triggerImport() { document.getElementById('import-file').click(); },
