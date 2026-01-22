@@ -307,16 +307,22 @@
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nome</label>
-                    <input type="text" id="input-med-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Paracetamolo">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nome Farmaco e Concentrazione</label>
+                    <input type="text" id="input-med-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Pantoprazolo Teva 40mg">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Dose</label>
-                    <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1 compressa">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Categoria (Forma farmaceutica)</label>
+                    <input type="text" id="input-med-category" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Compresse gastroresistenti">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">A cosa serve</label>
-                    <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Febbre e dolore">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Dose Assunzione</label>
+                        <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1 comp.">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">A cosa serve</label>
+                        <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Ulcera">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Orari Assunzione</label>
@@ -439,7 +445,12 @@
 
                 this.toggleLoading(true, "Analisi farmaco...");
                 
-                const prompt = "Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con tre chiavi: 'name' (il nome del farmaco), 'dose' (la concentrazione o il formato, es. 500mg, 1 compressa) e 'usage' (a cosa serve il farmaco in poche parole, es. Febbre e dolore). Se non riesci a identificare nulla, restituisci stringhe vuote. Rispondi solo con il JSON.";
+                const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi: 
+                - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
+                - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
+                - 'dose': lascia questo campo vuoto (stringa vuota "").
+                - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
+                Rispondi solo con il JSON.`;
                 
                 const payload = {
                     contents: [{
@@ -455,6 +466,7 @@
                             type: "OBJECT",
                             properties: {
                                 name: { type: "STRING" },
+                                category: { type: "STRING" },
                                 dose: { type: "STRING" },
                                 usage: { type: "STRING" }
                             }
@@ -468,13 +480,14 @@
                     
                     if (parsedData.name) {
                         document.getElementById('input-med-name').value = parsedData.name;
+                        document.getElementById('input-med-category').value = parsedData.category || "";
                         document.getElementById('input-med-dose').value = parsedData.dose || "";
                         document.getElementById('input-med-usage').value = parsedData.usage || "";
                     } else {
-                        alert("Non ho riconosciuto il farmaco. Prova a inserirlo manualmente o scatta una foto più chiara.");
+                        alert("Non ho riconosciuto il farmaco. Prova a inserirlo manualmente.");
                     }
                 } catch (err) {
-                    alert("Errore durante l'analisi dell'immagine. Verifica la tua API Key.");
+                    alert("Errore durante l'analisi. Verifica la tua API Key.");
                 } finally {
                     this.toggleLoading(false);
                 }
@@ -532,7 +545,7 @@
             },
 
             resetAllData() {
-                if (confirm("Attenzione: questa operazione cancellerà tutti i profili e i farmaci. Sei sicuro?")) {
+                if (confirm("Sei sicuro di voler resettare tutto?")) {
                     this.resetData();
                     this.goHome();
                 }
@@ -570,33 +583,30 @@
             exportProfileTxt() {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (!profile) return;
-                let content = `TERAPIA FARMACOLOGICA: ${profile.name.toUpperCase()}\n`;
+                let content = `TERAPIA: ${profile.name.toUpperCase()}\n`;
                 content += `Esportata il: ${new Date().toLocaleDateString('it-IT')}\n`;
                 content += `--------------------------------------------------\n\n`;
                 const times = ['Mattina', 'Pomeriggio', 'Sera'];
-                let hasMeds = false;
                 times.forEach(time => {
                     const meds = profile.meds.filter(m => m.time === time);
                     if (meds.length > 0) {
-                        hasMeds = true;
                         content += `[${time.toUpperCase()}]\n`;
                         meds.forEach(m => { 
-                            content += `- ${m.name}: ${m.dose}`;
-                            if (m.usage) content += ` (${m.usage})`;
+                            content += `- ${m.name}`;
+                            if (m.category) content += ` (${m.category})`;
+                            if (m.dose) content += ` | Dose: ${m.dose}`;
+                            if (m.usage) content += ` | Uso: ${m.usage}`;
                             content += `\n`;
                         });
                         content += `\n`;
                     }
                 });
-                if (!hasMeds) content += `Nessun farmaco inserito in questo profilo.\n`;
-                content += `--------------------------------------------------\nGenerato con MedicinePro.`;
                 const blob = new Blob([content], { type: "text/plain" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Terapia_${profile.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.txt`;
+                a.download = `Terapia_${profile.name.replace(/\s+/g, '_')}.txt`;
                 a.click();
-                URL.revokeObjectURL(url);
             },
 
             triggerImport() { document.getElementById('import-file').click(); },
@@ -608,12 +618,9 @@
                     try {
                         const json = JSON.parse(e.target.result);
                         if (json && Array.isArray(json.profiles)) {
-                            if(confirm("Caricare questo backup? I dati attuali saranno sovrascritti.")) {
-                                this.data = json; this.saveData(); this.goHome();
-                            }
+                            this.data = json; this.saveData(); this.goHome();
                         }
                     } catch(err) { alert("File non valido."); }
-                    input.value = '';
                 };
                 reader.readAsText(file);
             },
@@ -630,13 +637,8 @@
 
             openProfile(id) {
                 this.currentProfileId = id;
-                const view = document.getElementById('view-medications');
-                const list = document.getElementById('view-profiles');
-                view.classList.remove('fade-in');
-                void view.offsetWidth; 
-                view.classList.add('fade-in');
-                list.classList.add('hidden');
-                view.classList.remove('hidden');
+                document.getElementById('view-profiles').classList.add('hidden');
+                document.getElementById('view-medications').classList.remove('hidden');
                 document.getElementById('btn-back').classList.remove('hidden');
                 this.renderMedications();
             },
@@ -676,7 +678,7 @@
                 const container = document.getElementById('profiles-list');
                 container.innerHTML = '';
                 if (this.data.profiles.length === 0) {
-                    container.innerHTML = `<p class="text-center text-slate-400 py-10 text-sm italic">Nessun profilo presente.</p>`;
+                    container.innerHTML = `<p class="text-center text-slate-400 py-10">Nessun profilo presente.</p>`;
                     return;
                 }
                 this.data.profiles.forEach(p => {
@@ -694,9 +696,7 @@
                                 <p class="text-xs text-slate-500">${total} farmaci</p>
                             </div>
                         </div>
-                        <div class="text-right">
-                             <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>
-                        </div>`;
+                        <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>`;
                     container.appendChild(div);
                 });
             },
@@ -712,6 +712,7 @@
             resetMedModal() {
                 document.getElementById('med-modal-title').textContent = "Nuovo Farmaco";
                 document.getElementById('input-med-name').value = '';
+                document.getElementById('input-med-category').value = '';
                 document.getElementById('input-med-dose').value = '';
                 document.getElementById('input-med-usage').value = '';
                 document.getElementById('input-med-edit-id').value = '';
@@ -726,7 +727,8 @@
                 if (med) {
                     document.getElementById('input-med-edit-id').value = med.id;
                     document.getElementById('input-med-name').value = med.name;
-                    document.getElementById('input-med-dose').value = med.dose;
+                    document.getElementById('input-med-category').value = med.category || "";
+                    document.getElementById('input-med-dose').value = med.dose || "";
                     document.getElementById('input-med-usage').value = med.usage || "";
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
                     document.getElementById('btn-scan').classList.add('hidden');
@@ -738,16 +740,18 @@
 
             handleMedicationSubmit() {
                 const name = document.getElementById('input-med-name').value.trim();
+                const category = document.getElementById('input-med-category').value.trim();
                 const dose = document.getElementById('input-med-dose').value.trim();
                 const usage = document.getElementById('input-med-usage').value.trim();
                 const editId = document.getElementById('input-med-edit-id').value;
-                if (!name || !dose || this.selectedTimes.length === 0) return alert("Compila i campi obbligatori (Nome, Dose e Orario).");
+                if (!name || this.selectedTimes.length === 0) return alert("Inserisci almeno il Nome e l'Orario.");
                 
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (editId) {
                     const med = profile.meds.find(m => m.id === editId);
                     if (med) { 
                         med.name = name; 
+                        med.category = category;
                         med.dose = dose; 
                         med.usage = usage;
                         med.time = this.selectedTimes[0]; 
@@ -756,15 +760,12 @@
                     this.selectedTimes.forEach(t => {
                         profile.meds.push({ 
                             id: this.generateId(), 
-                            name, 
-                            dose, 
-                            usage,
-                            time: t, 
-                            taken: false 
+                            name, category, dose, usage,
+                            time: t, taken: false 
                         });
                     });
                 }
-                this.saveData(); this.closeModal('modal-med'); this.resetMedModal(); this.renderMedications();
+                this.saveData(); this.closeModal('modal-med'); this.renderMedications();
             },
 
             toggleMedication(id) {
@@ -775,7 +776,7 @@
 
             uncheckAllMeds() {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
-                if (profile && confirm("Vuoi deselezionare tutti i farmaci presi oggi?")) {
+                if (profile && confirm("Deselezionare tutto?")) {
                     profile.meds.forEach(m => m.taken = false);
                     this.saveData(); this.renderMedications();
                 }
@@ -803,9 +804,9 @@
                     if (meds.length > 0) {
                         hasMeds = true;
                         const header = document.createElement('div');
-                        header.className = "text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 pl-1 flex items-center gap-2";
+                        header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center gap-2";
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
-                        header.innerHTML = `<i class="fa-solid ${icon}"></i> ${time} <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-[9px]">${meds.length}</span>`;
+                        header.innerHTML = `<i class="fa-solid ${icon}"></i> ${time}`;
                         container.appendChild(header);
                         meds.forEach(med => {
                             if (med.taken) anyTaken = true;
@@ -819,18 +820,16 @@
                                     <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}" onclick="app.openEditMedModal('${med.id}')">
                                         <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
                                         <div class="flex flex-col">
-                                            <p class="text-xs text-slate-500 truncate">${med.dose}</p>
-                                            ${med.usage ? `<p class="text-[10px] text-blue-600 font-medium italic truncate mt-0.5"><i class="fa-solid fa-circle-info mr-1"></i>${med.usage}</p>` : ''}
+                                            ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                            <div class="flex items-center gap-2 mt-0.5">
+                                                ${med.dose ? `<p class="text-xs text-blue-700 bg-blue-50 px-1.5 rounded">${med.dose}</p>` : ''}
+                                                ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-1">
-                                    <button onclick="app.openEditMedModal('${med.id}')" class="w-8 h-8 text-slate-400 hover:text-blue-500 transition-colors">
-                                        <i class="fa-solid fa-pencil text-sm"></i>
-                                    </button>
-                                    <button onclick="app.deleteMedication('${med.id}')" class="w-8 h-8 text-slate-400 hover:text-red-500 transition-colors">
-                                        <i class="fa-solid fa-trash-can text-sm"></i>
-                                    </button>
+                                <div class="flex items-center">
+                                    <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"><i class="fa-solid fa-trash-can"></i></button>
                                 </div>`;
                             container.appendChild(card);
                         });
@@ -840,10 +839,7 @@
                 document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
             },
 
-            closeModal(id) { 
-                document.getElementById(id).classList.add('hidden');
-                if (id === 'modal-med') this.resetMedModal();
-            },
+            closeModal(id) { document.getElementById(id).classList.add('hidden'); },
             toggleTimeSelection(time, btn) {
                 const editId = document.getElementById('input-med-edit-id').value;
                 if (editId) this.selectedTimes = [time]; 
@@ -856,23 +852,20 @@
             updateTimeUI() {
                 document.querySelectorAll('.time-btn').forEach(b => {
                     const val = b.dataset.val;
-                    if (this.selectedTimes.includes(val)) b.classList.add('selected'); 
-                    else b.classList.remove('selected'); 
+                    this.selectedTimes.includes(val) ? b.classList.add('selected') : b.classList.remove('selected'); 
                 });
             },
 
             handleSwipe(endX, endY) {
                 if (!this.currentProfileId || document.querySelector('.modal-overlay:not(.hidden)')) return;
-                if (!document.getElementById('view-settings').classList.contains('hidden')) return;
                 const diffX = endX - this.touchStartX;
-                const diffY = endY - this.touchStartY;
-                if (Math.abs(diffX) < 70 || Math.abs(diffX) < Math.abs(diffY)) return;
+                if (Math.abs(diffX) < 70) return;
                 const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
                 if (diffX > 0) {
                     if (currentIndex > 0) this.openProfile(this.data.profiles[currentIndex - 1].id);
                     else this.goHome();
-                } else {
-                    if (currentIndex < this.data.profiles.length - 1) this.openProfile(this.data.profiles[currentIndex + 1].id);
+                } else if (currentIndex < this.data.profiles.length - 1) {
+                    this.openProfile(this.data.profiles[currentIndex + 1].id);
                 }
             },
 
@@ -884,10 +877,7 @@
                     "display": "standalone",
                     "background_color": "#f3f4f6",
                     "theme_color": "#2563eb",
-                    "icons": [
-                        { "src": "https://img.icons8.com/color/192/pills-bottle.png", "sizes": "192x192", "type": "image/png" },
-                        { "src": "https://img.icons8.com/color/512/pills-bottle.png", "sizes": "512x512", "type": "image/png" }
-                    ]
+                    "icons": [{ "src": "https://img.icons8.com/color/192/pills-bottle.png", "sizes": "192x192", "type": "image/png" }]
                 };
                 const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
                 document.getElementById('my-manifest').setAttribute('href', URL.createObjectURL(blob));
