@@ -10,10 +10,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="MedicinePro">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/N6db36Sf/medicine.png">
-
-    <!-- Manifest Base64 -->
-    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJpdCIsCiAgIm5hbWUiOiAiR2VzdGlvbmUgU3Blc2UgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJTcGVzZVBybyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmliYi5jby9ONmRiMzZTZi9tZWRpY2luZS5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmM2Y0ZjYiLAogICJ0aGVtZV9jb2xvciI6ICIjMjU2M2YxIgp9">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -99,6 +95,63 @@
 
         .xs\:inline { display: none; }
         @media (min-width: 400px) { .xs\:inline { display: inline; } }
+
+        /* Camera Scanner UI */
+        #camera-container {
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+        }
+        #camera-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .scanner-overlay {
+            position: absolute;
+            inset: 0;
+            border: 2px solid rgba(255,255,255,0.3);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .scanner-frame {
+            width: 80%;
+            height: 40%;
+            border: 2px solid #3b82f6;
+            border-radius: 1rem;
+            box-shadow: 0 0 0 4000px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #3b82f6;
+            top: 0;
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan {
+            from { top: 0%; }
+            to { top: 100%; }
+        }
+        
+        /* Loading overlay */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -212,7 +265,12 @@
     <!-- MODALE FARMACO (Aggiunta/Modifica) -->
     <div id="modal-med" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 id="med-modal-title" class="text-xl font-bold mb-4 text-slate-800">Farmaco</h3>
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="med-modal-title" class="text-xl font-bold text-slate-800">Farmaco</h3>
+                <button onclick="app.startScanner()" id="btn-scan" class="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2 text-xs font-bold">
+                    <i class="fa-solid fa-camera"></i> SCANNER
+                </button>
+            </div>
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nome</label>
@@ -239,13 +297,42 @@
         </div>
     </div>
 
+    <!-- UI SCANNER -->
+    <div id="camera-container">
+        <video id="camera-feed" autoplay playsinline></video>
+        <canvas id="camera-canvas" class="hidden"></canvas>
+        <div class="scanner-overlay">
+            <div class="scanner-frame">
+                <div class="scanner-line"></div>
+            </div>
+        </div>
+        <div class="absolute bottom-10 left-0 right-0 flex justify-center items-center gap-10">
+            <button onclick="app.stopScanner()" class="w-12 h-12 rounded-full bg-white/20 text-white text-xl flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <button onclick="app.captureImage()" class="w-20 h-20 rounded-full border-4 border-white bg-blue-600 flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                <i class="fa-solid fa-camera text-3xl text-white"></i>
+            </button>
+            <div class="w-12"></div> <!-- Spacer -->
+        </div>
+    </div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-overlay">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+        <p id="loading-text" class="font-bold">Analisi in corso...</p>
+    </div>
+
     <script>
+        const apiKey = ""; // Gestito dall'ambiente
+
         const app = {
             data: { lastOpened: null, profiles: [] },
             currentProfileId: null,
             selectedTimes: [],
             touchStartX: 0,
             touchStartY: 0,
+            stream: null,
 
             init() {
                 this.loadData();
@@ -269,26 +356,121 @@
                 }, {passive: true});
             },
 
+            // --- CAMERA SCANNER LOGIC ---
+
+            async startScanner() {
+                const container = document.getElementById('camera-container');
+                const video = document.getElementById('camera-feed');
+                
+                try {
+                    this.stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' } 
+                    });
+                    video.srcObject = this.stream;
+                    container.style.display = 'flex';
+                } catch (err) {
+                    alert("Impossibile accedere alla fotocamera. Verifica i permessi.");
+                }
+            },
+
+            stopScanner() {
+                const container = document.getElementById('camera-container');
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => track.stop());
+                }
+                container.style.display = 'none';
+            },
+
+            async captureImage() {
+                const video = document.getElementById('camera-feed');
+                const canvas = document.getElementById('camera-canvas');
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+
+                const base64Data = canvas.toDataURL('image/png').split(',')[1];
+                this.stopScanner();
+                await this.analyzeImage(base64Data);
+            },
+
+            async analyzeImage(base64Image) {
+                this.toggleLoading(true, "Analisi farmaco...");
+                
+                const prompt = "Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con due chiavi: 'name' (il nome del farmaco) e 'dose' (la concentrazione o il formato, es. 500mg, 1 compressa). Se non riesci a identificare nulla, restituisci stringhe vuote. Rispondi solo con il JSON.";
+                
+                const payload = {
+                    contents: [{
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            { inlineData: { mimeType: "image/png", data: base64Image } }
+                        ]
+                    }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                name: { type: "STRING" },
+                                dose: { type: "STRING" }
+                            }
+                        }
+                    }
+                };
+
+                try {
+                    const result = await this.fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, payload);
+                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    
+                    if (data.name) {
+                        document.getElementById('input-med-name').value = data.name;
+                        document.getElementById('input-med-dose').value = data.dose || "";
+                    } else {
+                        alert("Non ho riconosciuto il farmaco. Prova a inserirlo manualmente o scatta una foto più chiara.");
+                    }
+                } catch (err) {
+                    alert("Errore durante l'analisi dell'immagine. Riprova.");
+                } finally {
+                    this.toggleLoading(false);
+                }
+            },
+
+            async fetchWithRetry(url, payload, retries = 5) {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            body: JSON.stringify(payload)
+                        });
+                        if (response.ok) return await response.json();
+                    } catch (e) {}
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+                throw new Error("API fallita dopo diversi tentativi");
+            },
+
+            toggleLoading(show, text = "") {
+                const overlay = document.getElementById('loading-overlay');
+                const loadingText = document.getElementById('loading-text');
+                loadingText.textContent = text;
+                overlay.style.display = show ? 'flex' : 'none';
+            },
+
+            // --- EXISTING APP LOGIC ---
+
             handleSwipe(endX, endY) {
                 if (!this.currentProfileId || document.querySelector('.modal-overlay:not(.hidden)')) return;
-
                 const diffX = endX - this.touchStartX;
                 const diffY = endY - this.touchStartY;
-
                 if (Math.abs(diffX) < 70 || Math.abs(diffX) < Math.abs(diffY)) return;
-
                 const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
-                
                 if (diffX > 0) {
-                    if (currentIndex > 0) {
-                        this.openProfile(this.data.profiles[currentIndex - 1].id);
-                    } else {
-                        this.goHome();
-                    }
+                    if (currentIndex > 0) this.openProfile(this.data.profiles[currentIndex - 1].id);
+                    else this.goHome();
                 } else {
-                    if (currentIndex < this.data.profiles.length - 1) {
-                        this.openProfile(this.data.profiles[currentIndex + 1].id);
-                    }
+                    if (currentIndex < this.data.profiles.length - 1) this.openProfile(this.data.profiles[currentIndex + 1].id);
                 }
             },
 
@@ -313,33 +495,22 @@
             exportProfileTxt() {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (!profile) return;
-
                 let content = `TERAPIA FARMACOLOGICA: ${profile.name.toUpperCase()}\n`;
                 content += `Esportata il: ${new Date().toLocaleDateString('it-IT')}\n`;
                 content += `--------------------------------------------------\n\n`;
-
                 const times = ['Mattina', 'Pomeriggio', 'Sera'];
                 let hasMeds = false;
-
                 times.forEach(time => {
                     const meds = profile.meds.filter(m => m.time === time);
                     if (meds.length > 0) {
                         hasMeds = true;
                         content += `[${time.toUpperCase()}]\n`;
-                        meds.forEach(m => {
-                            content += `- ${m.name}: ${m.dose}\n`;
-                        });
+                        meds.forEach(m => { content += `- ${m.name}: ${m.dose}\n`; });
                         content += `\n`;
                     }
                 });
-
-                if (!hasMeds) {
-                    content += `Nessun farmaco inserito in questo profilo.\n`;
-                }
-
-                content += `--------------------------------------------------\n`;
-                content += `Generato con MedicinePro.`;
-
+                if (!hasMeds) content += `Nessun farmaco inserito in questo profilo.\n`;
+                content += `--------------------------------------------------\nGenerato con MedicinePro.`;
                 const blob = new Blob([content], { type: "text/plain" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -390,11 +561,9 @@
                 this.currentProfileId = id;
                 const view = document.getElementById('view-medications');
                 const list = document.getElementById('view-profiles');
-                
                 view.classList.remove('fade-in');
                 void view.offsetWidth; 
                 view.classList.add('fade-in');
-
                 list.classList.add('hidden');
                 view.classList.remove('hidden');
                 document.getElementById('btn-back').classList.remove('hidden');
@@ -474,6 +643,7 @@
                 document.getElementById('input-med-name').value = '';
                 document.getElementById('input-med-dose').value = '';
                 document.getElementById('input-med-edit-id').value = '';
+                document.getElementById('btn-scan').classList.remove('hidden');
                 this.selectedTimes = [];
                 this.updateTimeUI();
             },
@@ -486,6 +656,7 @@
                     document.getElementById('input-med-name').value = med.name;
                     document.getElementById('input-med-dose').value = med.dose;
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
+                    document.getElementById('btn-scan').classList.add('hidden'); // Nascondi scanner in modifica
                     this.selectedTimes = [med.time];
                     this.updateTimeUI();
                     this.showModal('modal-med');
@@ -496,28 +667,17 @@
                 const name = document.getElementById('input-med-name').value.trim();
                 const dose = document.getElementById('input-med-dose').value.trim();
                 const editId = document.getElementById('input-med-edit-id').value;
-
                 if (!name || !dose || this.selectedTimes.length === 0) return alert("Compila tutti i campi.");
-
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
-                
                 if (editId) {
                     const med = profile.meds.find(m => m.id === editId);
-                    if (med) {
-                        med.name = name;
-                        med.dose = dose;
-                        med.time = this.selectedTimes[0];
-                    }
+                    if (med) { med.name = name; med.dose = dose; med.time = this.selectedTimes[0]; }
                 } else {
                     this.selectedTimes.forEach(t => {
                         profile.meds.push({ id: this.generateId(), name, dose, time: t, taken: false });
                     });
                 }
-                
-                this.saveData(); 
-                this.closeModal('modal-med'); 
-                this.resetMedModal();
-                this.renderMedications();
+                this.saveData(); this.closeModal('modal-med'); this.resetMedModal(); this.renderMedications();
             },
 
             toggleMedication(id) {
@@ -530,8 +690,7 @@
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (profile && confirm("Vuoi deselezionare tutti i farmaci presi oggi?")) {
                     profile.meds.forEach(m => m.taken = false);
-                    this.saveData();
-                    this.renderMedications();
+                    this.saveData(); this.renderMedications();
                 }
             },
 
@@ -547,16 +706,13 @@
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (!profile) return;
                 document.getElementById('current-profile-name').textContent = profile.name;
-
                 const times = ['Mattina', 'Pomeriggio', 'Sera'];
                 let hasMeds = false;
                 let anyTaken = false;
-
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
                     const meds = profile.meds.filter(m => m.time === time);
-                    
                     if (meds.length > 0) {
                         hasMeds = true;
                         const header = document.createElement('div');
@@ -564,14 +720,11 @@
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
                         header.innerHTML = `<i class="fa-solid ${icon}"></i> ${time} <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-[9px]">${meds.length}</span>`;
                         container.appendChild(header);
-
                         meds.forEach(med => {
                             if (med.taken) anyTaken = true;
                             const card = document.createElement('div');
-                            // Applica classi di colore basate sul tempo e sullo stato
                             const categoryClass = `med-card-${time.toLowerCase()}`;
                             const takenClass = med.taken ? 'med-card-taken' : '';
-                            
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass}`;
                             card.innerHTML = `
                                 <div class="flex items-center gap-4 flex-1 overflow-hidden">
@@ -593,7 +746,6 @@
                         });
                     }
                 });
-                
                 document.getElementById('btn-uncheck-all').classList.toggle('hidden', !anyTaken);
                 document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
             },
@@ -604,9 +756,8 @@
             },
             toggleTimeSelection(time, btn) {
                 const editId = document.getElementById('input-med-edit-id').value;
-                if (editId) { 
-                    this.selectedTimes = [time]; 
-                } else {
+                if (editId) this.selectedTimes = [time]; 
+                else {
                     const idx = this.selectedTimes.indexOf(time);
                     idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
                 }
@@ -615,11 +766,8 @@
             updateTimeUI() {
                 document.querySelectorAll('.time-btn').forEach(b => {
                     const val = b.dataset.val;
-                    if (this.selectedTimes.includes(val)) { 
-                        b.classList.add('selected'); 
-                    } else { 
-                        b.classList.remove('selected'); 
-                    }
+                    if (this.selectedTimes.includes(val)) b.classList.add('selected'); 
+                    else b.classList.remove('selected'); 
                 });
             },
 
