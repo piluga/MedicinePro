@@ -227,7 +227,7 @@
                 <p>Nessun farmaco aggiunto.</p>
             </div>
 
-            <button onclick="app.showModal('modal-med')" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl active:scale-90 transition-transform z-30">
+            <button onclick="app.prepareNewMed()" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl active:scale-90 transition-transform z-30">
                 <i class="fa-solid fa-plus"></i>
             </button>
         </section>
@@ -616,11 +616,18 @@
                     try {
                         const json = JSON.parse(e.target.result);
                         if (json && Array.isArray(json.profiles)) {
-                            this.data = json; this.saveData(); this.goHome();
+                            // Pulizia stato prima di importare
+                            this.currentProfileId = null;
+                            document.getElementById('input-med-edit-id').value = '';
+                            
+                            this.data = json; 
+                            this.saveData(); 
+                            this.goHome();
                         }
                     } catch(err) { alert("File non valido."); }
                 };
                 reader.readAsText(file);
+                input.value = ''; // Reset input per permettere re-import dello stesso file
             },
 
             checkDailyReset() {
@@ -699,10 +706,19 @@
                 });
             },
 
+            prepareNewMed() {
+                document.getElementById('input-med-edit-id').value = ''; // Importante: pulisce ID modifica
+                this.resetMedModal();
+                this.showModal('modal-med');
+            },
+
             showModal(id) {
-                if (id === 'modal-med') { 
+                // Se stiamo aprendo il modale farmaco, verifichiamo se è una modifica o un'aggiunta
+                if (id === 'modal-med') {
                     const editId = document.getElementById('input-med-edit-id').value;
-                    if (!editId) this.resetMedModal(); 
+                    if (!editId) {
+                        this.resetMedModal();
+                    }
                 }
                 document.getElementById(id).classList.remove('hidden');
             },
@@ -713,7 +729,6 @@
                 document.getElementById('input-med-category').value = '';
                 document.getElementById('input-med-dose').value = '';
                 document.getElementById('input-med-usage').value = '';
-                document.getElementById('input-med-edit-id').value = '';
                 document.getElementById('btn-scan').classList.remove('hidden');
                 this.selectedTimes = [];
                 this.updateTimeUI();
@@ -732,7 +747,7 @@
                     document.getElementById('btn-scan').classList.add('hidden');
                     this.selectedTimes = [med.time];
                     this.updateTimeUI();
-                    this.showModal('modal-med');
+                    document.getElementById('modal-med').classList.remove('hidden');
                 }
             },
 
@@ -742,6 +757,7 @@
                 const dose = document.getElementById('input-med-dose').value.trim();
                 const usage = document.getElementById('input-med-usage').value.trim();
                 const editId = document.getElementById('input-med-edit-id').value;
+                
                 if (!name || this.selectedTimes.length === 0) return alert("Inserisci almeno il Nome e l'Orario.");
                 
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
@@ -763,7 +779,9 @@
                         });
                     });
                 }
-                this.saveData(); this.closeModal('modal-med'); this.renderMedications();
+                this.saveData(); 
+                this.closeModal('modal-med'); 
+                this.renderMedications();
             },
 
             toggleMedication(id) {
@@ -837,7 +855,13 @@
                 document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
             },
 
-            closeModal(id) { document.getElementById(id).classList.add('hidden'); },
+            closeModal(id) { 
+                document.getElementById(id).classList.add('hidden');
+                if (id === 'modal-med') {
+                    document.getElementById('input-med-edit-id').value = '';
+                }
+            },
+
             toggleTimeSelection(time, btn) {
                 const editId = document.getElementById('input-med-edit-id').value;
                 if (editId) this.selectedTimes = [time]; 
