@@ -819,10 +819,18 @@
                     const meds = profile.meds.filter(m => m.time === time);
                     if (meds.length > 0) {
                         hasMeds = true;
+                        const totalCount = meds.length;
+                        const takenCount = meds.filter(m => m.taken).length;
+                        
                         const header = document.createElement('div');
-                        header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center gap-2";
+                        header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center justify-between gap-2";
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
-                        header.innerHTML = `<i class="fa-solid ${icon}"></i> ${time}`;
+                        header.innerHTML = `
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid ${icon}"></i> ${time}
+                            </div>
+                            <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
+                        `;
                         container.appendChild(header);
                         meds.forEach(med => {
                             if (med.taken) anyTaken = true;
