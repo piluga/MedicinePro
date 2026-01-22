@@ -298,7 +298,7 @@
 
     <!-- MODALE FARMACO (Aggiunta/Modifica) -->
     <div id="modal-med" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-4">
                 <h3 id="med-modal-title" class="text-xl font-bold text-slate-800">Farmaco</h3>
                 <button onclick="app.startScanner()" id="btn-scan" class="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2 text-xs font-bold">
@@ -313,6 +313,10 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Dose</label>
                     <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1 compressa">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">A cosa serve</label>
+                    <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Febbre e dolore">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Orari Assunzione</label>
@@ -435,7 +439,7 @@
 
                 this.toggleLoading(true, "Analisi farmaco...");
                 
-                const prompt = "Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con due chiavi: 'name' (il nome del farmaco) e 'dose' (la concentrazione o il formato, es. 500mg, 1 compressa). Se non riesci a identificare nulla, restituisci stringhe vuote. Rispondi solo con il JSON.";
+                const prompt = "Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con tre chiavi: 'name' (il nome del farmaco), 'dose' (la concentrazione o il formato, es. 500mg, 1 compressa) e 'usage' (a cosa serve il farmaco in poche parole, es. Febbre e dolore). Se non riesci a identificare nulla, restituisci stringhe vuote. Rispondi solo con il JSON.";
                 
                 const payload = {
                     contents: [{
@@ -451,7 +455,8 @@
                             type: "OBJECT",
                             properties: {
                                 name: { type: "STRING" },
-                                dose: { type: "STRING" }
+                                dose: { type: "STRING" },
+                                usage: { type: "STRING" }
                             }
                         }
                     }
@@ -464,6 +469,7 @@
                     if (parsedData.name) {
                         document.getElementById('input-med-name').value = parsedData.name;
                         document.getElementById('input-med-dose').value = parsedData.dose || "";
+                        document.getElementById('input-med-usage').value = parsedData.usage || "";
                     } else {
                         alert("Non ho riconosciuto il farmaco. Prova a inserirlo manualmente o scatta una foto più chiara.");
                     }
@@ -498,11 +504,7 @@
             // --- NAVIGATION ---
 
             goBack() {
-                if (!document.getElementById('view-settings').classList.contains('hidden')) {
-                    this.goHome();
-                } else {
-                    this.goHome();
-                }
+                this.goHome();
             },
 
             goHome() {
@@ -578,7 +580,11 @@
                     if (meds.length > 0) {
                         hasMeds = true;
                         content += `[${time.toUpperCase()}]\n`;
-                        meds.forEach(m => { content += `- ${m.name}: ${m.dose}\n`; });
+                        meds.forEach(m => { 
+                            content += `- ${m.name}: ${m.dose}`;
+                            if (m.usage) content += ` (${m.usage})`;
+                            content += `\n`;
+                        });
                         content += `\n`;
                     }
                 });
@@ -707,6 +713,7 @@
                 document.getElementById('med-modal-title').textContent = "Nuovo Farmaco";
                 document.getElementById('input-med-name').value = '';
                 document.getElementById('input-med-dose').value = '';
+                document.getElementById('input-med-usage').value = '';
                 document.getElementById('input-med-edit-id').value = '';
                 document.getElementById('btn-scan').classList.remove('hidden');
                 this.selectedTimes = [];
@@ -720,6 +727,7 @@
                     document.getElementById('input-med-edit-id').value = med.id;
                     document.getElementById('input-med-name').value = med.name;
                     document.getElementById('input-med-dose').value = med.dose;
+                    document.getElementById('input-med-usage').value = med.usage || "";
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
                     document.getElementById('btn-scan').classList.add('hidden');
                     this.selectedTimes = [med.time];
@@ -731,15 +739,29 @@
             handleMedicationSubmit() {
                 const name = document.getElementById('input-med-name').value.trim();
                 const dose = document.getElementById('input-med-dose').value.trim();
+                const usage = document.getElementById('input-med-usage').value.trim();
                 const editId = document.getElementById('input-med-edit-id').value;
-                if (!name || !dose || this.selectedTimes.length === 0) return alert("Compila tutti i campi.");
+                if (!name || !dose || this.selectedTimes.length === 0) return alert("Compila i campi obbligatori (Nome, Dose e Orario).");
+                
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (editId) {
                     const med = profile.meds.find(m => m.id === editId);
-                    if (med) { med.name = name; med.dose = dose; med.time = this.selectedTimes[0]; }
+                    if (med) { 
+                        med.name = name; 
+                        med.dose = dose; 
+                        med.usage = usage;
+                        med.time = this.selectedTimes[0]; 
+                    }
                 } else {
                     this.selectedTimes.forEach(t => {
-                        profile.meds.push({ id: this.generateId(), name, dose, time: t, taken: false });
+                        profile.meds.push({ 
+                            id: this.generateId(), 
+                            name, 
+                            dose, 
+                            usage,
+                            time: t, 
+                            taken: false 
+                        });
                     });
                 }
                 this.saveData(); this.closeModal('modal-med'); this.resetMedModal(); this.renderMedications();
@@ -796,7 +818,10 @@
                                     <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
                                     <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}" onclick="app.openEditMedModal('${med.id}')">
                                         <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                        <p class="text-xs text-slate-500 truncate">${med.dose}</p>
+                                        <div class="flex flex-col">
+                                            <p class="text-xs text-slate-500 truncate">${med.dose}</p>
+                                            ${med.usage ? `<p class="text-[10px] text-blue-600 font-medium italic truncate mt-0.5"><i class="fa-solid fa-circle-info mr-1"></i>${med.usage}</p>` : ''}
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-1">
