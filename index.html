@@ -314,15 +314,13 @@
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Categoria (Forma farmaceutica)</label>
                     <input type="text" id="input-med-category" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Compresse gastroresistenti">
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Dose Assunzione</label>
-                        <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1 comp.">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">A cosa serve</label>
-                        <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Ulcera">
-                    </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Dose Assunzione</label>
+                    <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1 comp.">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">A cosa serve</label>
+                    <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Ulcera">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Orari Assunzione</label>
@@ -821,8 +819,8 @@
                                         <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
                                         <div class="flex flex-col">
                                             ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                            <div class="flex items-center gap-2 mt-0.5">
-                                                ${med.dose ? `<p class="text-xs text-blue-700 bg-blue-50 px-1.5 rounded">${med.dose}</p>` : ''}
+                                            <div class="flex flex-col mt-0.5">
+                                                ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
                                                 ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
                                             </div>
                                         </div>
