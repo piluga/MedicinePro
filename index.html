@@ -168,11 +168,8 @@
         </div>
         
         <div class="flex gap-2">
-            <button onclick="app.triggerImport()" class="text-sm bg-blue-500 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors border border-blue-400 shadow-sm">
-                <i class="fa-solid fa-file-import"></i> <span class="hidden sm:inline ml-1">Carica</span>
-            </button>
-            <button onclick="app.exportData()" class="text-sm bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded-lg transition-colors border border-blue-500 shadow-sm">
-                <i class="fa-solid fa-download"></i> <span class="hidden sm:inline ml-1">Salva</span>
+            <button onclick="app.showSettings()" class="text-xl p-2 hover:bg-blue-700 rounded-full transition-colors" title="Impostazioni">
+                <i class="fa-solid fa-cog"></i>
             </button>
         </div>
     </header>
@@ -233,6 +230,43 @@
             <button onclick="app.showModal('modal-med')" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl active:scale-90 transition-transform z-30">
                 <i class="fa-solid fa-plus"></i>
             </button>
+        </section>
+
+        <!-- VISTA IMPOSTAZIONI -->
+        <section id="view-settings" class="hidden fade-in space-y-6">
+            <div class="flex items-center gap-4 mb-2">
+                <h2 class="text-2xl font-bold text-slate-800">Impostazioni</h2>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl card-shadow space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-600 mb-2">Google Gemini API Key</label>
+                    <input type="password" id="input-settings-apikey" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Inserisci la tua API Key">
+                    <p class="text-[11px] text-slate-400 mt-2 italic">La chiave serve per abilitare il riconoscimento dei farmaci tramite fotocamera.</p>
+                </div>
+                <button onclick="app.saveSettings()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-all">
+                    Salva Impostazioni
+                </button>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl card-shadow">
+                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-database text-blue-500"></i> Gestione Dati
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="app.triggerImport()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                        <i class="fa-solid fa-file-import text-blue-600 mb-2"></i>
+                        <span class="text-xs font-bold">Importa JSON</span>
+                    </button>
+                    <button onclick="app.exportData()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                        <i class="fa-solid fa-download text-green-600 mb-2"></i>
+                        <span class="text-xs font-bold">Esporta Backup</span>
+                    </button>
+                </div>
+                <button onclick="app.resetAllData()" class="w-full mt-4 bg-red-50 text-red-600 py-3 rounded-xl font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Resetta tutti i dati
+                </button>
+            </div>
         </section>
     </main>
 
@@ -324,10 +358,8 @@
     </div>
 
     <script>
-        const apiKey = ""; // Gestito dall'ambiente
-
         const app = {
-            data: { lastOpened: null, profiles: [] },
+            data: { lastOpened: null, profiles: [], apiKey: "" },
             currentProfileId: null,
             selectedTimes: [],
             touchStartX: 0,
@@ -342,7 +374,7 @@
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                 document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
                 
-                document.getElementById('btn-back').addEventListener('click', () => this.goHome());
+                document.getElementById('btn-back').addEventListener('click', () => this.goBack());
 
                 document.addEventListener('touchstart', e => {
                     this.touchStartX = e.changedTouches[0].screenX;
@@ -396,6 +428,11 @@
             },
 
             async analyzeImage(base64Image) {
+                if (!this.data.apiKey) {
+                    alert("Attenzione: Vai nelle Impostazioni e inserisci la tua API Key per attivare il riconoscimento.");
+                    return;
+                }
+
                 this.toggleLoading(true, "Analisi farmaco...");
                 
                 const prompt = "Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con due chiavi: 'name' (il nome del farmaco) e 'dose' (la concentrazione o il formato, es. 500mg, 1 compressa). Se non riesci a identificare nulla, restituisci stringhe vuote. Rispondi solo con il JSON.";
@@ -421,17 +458,17 @@
                 };
 
                 try {
-                    const result = await this.fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, payload);
-                    const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                    const result = await this.fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`, payload);
+                    const parsedData = JSON.parse(result.candidates[0].content.parts[0].text);
                     
-                    if (data.name) {
-                        document.getElementById('input-med-name').value = data.name;
-                        document.getElementById('input-med-dose').value = data.dose || "";
+                    if (parsedData.name) {
+                        document.getElementById('input-med-name').value = parsedData.name;
+                        document.getElementById('input-med-dose').value = parsedData.dose || "";
                     } else {
                         alert("Non ho riconosciuto il farmaco. Prova a inserirlo manualmente o scatta una foto più chiara.");
                     }
                 } catch (err) {
-                    alert("Errore durante l'analisi dell'immagine. Riprova.");
+                    alert("Errore durante l'analisi dell'immagine. Verifica la tua API Key.");
                 } finally {
                     this.toggleLoading(false);
                 }
@@ -448,7 +485,7 @@
                     } catch (e) {}
                     await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
                 }
-                throw new Error("API fallita dopo diversi tentativi");
+                throw new Error("API fallita");
             },
 
             toggleLoading(show, text = "") {
@@ -458,29 +495,65 @@
                 overlay.style.display = show ? 'flex' : 'none';
             },
 
-            // --- EXISTING APP LOGIC ---
+            // --- NAVIGATION ---
 
-            handleSwipe(endX, endY) {
-                if (!this.currentProfileId || document.querySelector('.modal-overlay:not(.hidden)')) return;
-                const diffX = endX - this.touchStartX;
-                const diffY = endY - this.touchStartY;
-                if (Math.abs(diffX) < 70 || Math.abs(diffX) < Math.abs(diffY)) return;
-                const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
-                if (diffX > 0) {
-                    if (currentIndex > 0) this.openProfile(this.data.profiles[currentIndex - 1].id);
-                    else this.goHome();
+            goBack() {
+                if (!document.getElementById('view-settings').classList.contains('hidden')) {
+                    this.goHome();
                 } else {
-                    if (currentIndex < this.data.profiles.length - 1) this.openProfile(this.data.profiles[currentIndex + 1].id);
+                    this.goHome();
                 }
             },
 
+            goHome() {
+                this.currentProfileId = null;
+                document.getElementById('view-profiles').classList.remove('hidden');
+                document.getElementById('view-medications').classList.add('hidden');
+                document.getElementById('view-settings').classList.add('hidden');
+                document.getElementById('btn-back').classList.add('hidden');
+                this.renderProfiles();
+            },
+
+            showSettings() {
+                this.currentProfileId = null;
+                document.getElementById('view-profiles').classList.add('hidden');
+                document.getElementById('view-medications').classList.add('hidden');
+                document.getElementById('view-settings').classList.remove('hidden');
+                document.getElementById('btn-back').classList.remove('hidden');
+                document.getElementById('input-settings-apikey').value = this.data.apiKey || "";
+            },
+
+            saveSettings() {
+                this.data.apiKey = document.getElementById('input-settings-apikey').value.trim();
+                this.saveData();
+                alert("Impostazioni salvate!");
+            },
+
+            resetAllData() {
+                if (confirm("Attenzione: questa operazione cancellerà tutti i profili e i farmaci. Sei sicuro?")) {
+                    this.resetData();
+                    this.goHome();
+                }
+            },
+
+            // --- DATA LOGIC ---
+
             loadData() {
                 const stored = localStorage.getItem('MedicineProData');
-                if (stored) { try { this.data = JSON.parse(stored); } catch(e) { this.resetData(); } }
+                if (stored) { 
+                    try { 
+                        this.data = JSON.parse(stored); 
+                        if (!this.data.apiKey) this.data.apiKey = "";
+                    } catch(e) { this.resetData(); } 
+                }
                 else { this.resetData(); }
             },
 
-            resetData() { this.data = { lastOpened: new Date().toDateString(), profiles: [] }; this.saveData(); },
+            resetData() { 
+                this.data = { lastOpened: new Date().toDateString(), profiles: [], apiKey: "" }; 
+                this.saveData(); 
+            },
+            
             saveData() { localStorage.setItem('MedicineProData', JSON.stringify(this.data)); },
 
             exportData() {
@@ -549,14 +622,6 @@
 
             generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); },
 
-            goHome() {
-                this.currentProfileId = null;
-                document.getElementById('view-profiles').classList.remove('hidden');
-                document.getElementById('view-medications').classList.add('hidden');
-                document.getElementById('btn-back').classList.add('hidden');
-                this.renderProfiles();
-            },
-
             openProfile(id) {
                 this.currentProfileId = id;
                 const view = document.getElementById('view-medications');
@@ -605,7 +670,7 @@
                 const container = document.getElementById('profiles-list');
                 container.innerHTML = '';
                 if (this.data.profiles.length === 0) {
-                    container.innerHTML = `<p class="text-center text-slate-400 py-6 text-sm italic">Nessun profilo presente.</p>`;
+                    container.innerHTML = `<p class="text-center text-slate-400 py-10 text-sm italic">Nessun profilo presente.</p>`;
                     return;
                 }
                 this.data.profiles.forEach(p => {
@@ -656,7 +721,7 @@
                     document.getElementById('input-med-name').value = med.name;
                     document.getElementById('input-med-dose').value = med.dose;
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
-                    document.getElementById('btn-scan').classList.add('hidden'); // Nascondi scanner in modifica
+                    document.getElementById('btn-scan').classList.add('hidden');
                     this.selectedTimes = [med.time];
                     this.updateTimeUI();
                     this.showModal('modal-med');
@@ -769,6 +834,21 @@
                     if (this.selectedTimes.includes(val)) b.classList.add('selected'); 
                     else b.classList.remove('selected'); 
                 });
+            },
+
+            handleSwipe(endX, endY) {
+                if (!this.currentProfileId || document.querySelector('.modal-overlay:not(.hidden)')) return;
+                if (!document.getElementById('view-settings').classList.contains('hidden')) return;
+                const diffX = endX - this.touchStartX;
+                const diffY = endY - this.touchStartY;
+                if (Math.abs(diffX) < 70 || Math.abs(diffX) < Math.abs(diffY)) return;
+                const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
+                if (diffX > 0) {
+                    if (currentIndex > 0) this.openProfile(this.data.profiles[currentIndex - 1].id);
+                    else this.goHome();
+                } else {
+                    if (currentIndex < this.data.profiles.length - 1) this.openProfile(this.data.profiles[currentIndex + 1].id);
+                }
             },
 
             setupManifest() {
