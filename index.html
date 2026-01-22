@@ -333,7 +333,7 @@
             </div>
             <input type="hidden" id="input-med-edit-id">
             <div class="flex justify-end gap-3 mt-8">
-                <button onclick="app.closeModal('modal-med')" class="px-4 py-2 text-slate-500">Chiudi</button>
+                <button onclick="app.undoEdit()" class="px-4 py-2 text-slate-500">Annulla</button>
                 <button onclick="app.handleMedicationSubmit()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium">Salva</button>
             </div>
         </div>
@@ -370,6 +370,7 @@
             data: { lastOpened: null, profiles: [], apiKey: "" },
             currentProfileId: null,
             selectedTimes: [],
+            editSnapshot: null,
             touchStartX: 0,
             touchStartY: 0,
             stream: null,
@@ -381,19 +382,19 @@
                 this.setupManifest();
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                 document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
-                
+
                 document.getElementById('btn-back').addEventListener('click', () => this.goBack());
 
                 document.addEventListener('touchstart', e => {
                     this.touchStartX = e.changedTouches[0].screenX;
                     this.touchStartY = e.changedTouches[0].screenY;
-                }, {passive: true});
+                }, { passive: true });
 
                 document.addEventListener('touchend', e => {
                     const touchEndX = e.changedTouches[0].screenX;
                     const touchEndY = e.changedTouches[0].screenY;
                     this.handleSwipe(touchEndX, touchEndY);
-                }, {passive: true});
+                }, { passive: true });
             },
 
             // --- CAMERA SCANNER LOGIC ---
@@ -401,10 +402,10 @@
             async startScanner() {
                 const container = document.getElementById('camera-container');
                 const video = document.getElementById('camera-feed');
-                
+
                 try {
-                    this.stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: 'environment' } 
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' }
                     });
                     video.srcObject = this.stream;
                     container.style.display = 'flex';
@@ -442,14 +443,14 @@
                 }
 
                 this.toggleLoading(true, "Analisi farmaco...");
-                
-                const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi: 
-                - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
-                - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
-                - 'dose': lascia questo campo vuoto (stringa vuota "").
-                - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
-                Rispondi solo con il JSON.`;
-                
+
+                const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi:
+                    - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
+                    - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
+                    - 'dose': lascia questo campo vuoto (stringa vuota "").
+                    - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
+                    Rispondi solo con il JSON.`;
+
                 const payload = {
                     contents: [{
                         role: "user",
@@ -475,7 +476,7 @@
                 try {
                     const result = await this.fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`, payload);
                     const parsedData = JSON.parse(result.candidates[0].content.parts[0].text);
-                    
+
                     if (parsedData.name) {
                         document.getElementById('input-med-name').value = parsedData.name;
                         document.getElementById('input-med-category').value = parsedData.category || "";
@@ -499,7 +500,7 @@
                             body: JSON.stringify(payload)
                         });
                         if (response.ok) return await response.json();
-                    } catch (e) {}
+                    } catch (e) { }
                     await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
                 }
                 throw new Error("API fallita");
@@ -553,20 +554,20 @@
 
             loadData() {
                 const stored = localStorage.getItem('MedicineProData');
-                if (stored) { 
-                    try { 
-                        this.data = JSON.parse(stored); 
+                if (stored) {
+                    try {
+                        this.data = JSON.parse(stored);
                         if (!this.data.apiKey) this.data.apiKey = "";
-                    } catch(e) { this.resetData(); } 
+                    } catch (e) { this.resetData(); }
                 }
                 else { this.resetData(); }
             },
 
-            resetData() { 
-                this.data = { lastOpened: new Date().toDateString(), profiles: [], apiKey: "" }; 
-                this.saveData(); 
+            resetData() {
+                this.data = { lastOpened: new Date().toDateString(), profiles: [], apiKey: "" };
+                this.saveData();
             },
-            
+
             saveData() { localStorage.setItem('MedicineProData', JSON.stringify(this.data)); },
 
             exportData() {
@@ -574,7 +575,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `MedicinePro_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.download = `MedicinePro_Backup_${new Date().toISOString().slice(0, 10)}.json`;
                 a.click();
             },
 
@@ -589,7 +590,7 @@
                     const meds = profile.meds.filter(m => m.time === time);
                     if (meds.length > 0) {
                         content += `[${time.toUpperCase()}]\n`;
-                        meds.forEach(m => { 
+                        meds.forEach(m => {
                             content += `- ${m.name}`;
                             if (m.category) content += ` (${m.category})`;
                             if (m.dose) content += ` | Dose: ${m.dose}`;
@@ -619,12 +620,12 @@
                             // Pulizia stato prima di importare
                             this.currentProfileId = null;
                             document.getElementById('input-med-edit-id').value = '';
-                            
-                            this.data = json; 
-                            this.saveData(); 
+
+                            this.data = json;
+                            this.saveData();
                             this.goHome();
                         }
-                    } catch(err) { alert("File non valido."); }
+                    } catch (err) { alert("File non valido."); }
                 };
                 reader.readAsText(file);
                 input.value = ''; // Reset input per permettere re-import dello stesso file
@@ -639,6 +640,8 @@
             },
 
             generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); },
+
+            generateGroupId() { return 'grp_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5); },
 
             openProfile(id) {
                 this.currentProfileId = id;
@@ -673,7 +676,7 @@
             },
 
             deleteCurrentProfile() {
-                if(confirm("Eliminare definitivamente questo profilo?")) {
+                if (confirm("Eliminare definitivamente questo profilo?")) {
                     this.data.profiles = this.data.profiles.filter(x => x.id !== this.currentProfileId);
                     this.saveData(); this.goHome();
                 }
@@ -689,19 +692,19 @@
                 this.data.profiles.forEach(p => {
                     const total = p.meds.length;
                     const taken = p.meds.filter(m => m.taken).length;
-                    const perc = total === 0 ? 0 : Math.round((taken/total)*100);
+                    const perc = total === 0 ? 0 : Math.round((taken / total) * 100);
                     const div = document.createElement('div');
                     div.className = "bg-white p-4 rounded-xl card-shadow flex justify-between items-center cursor-pointer border border-transparent hover:border-blue-200 transition-all";
                     div.onclick = () => this.openProfile(p.id);
                     div.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">${p.name.charAt(0).toUpperCase()}</div>
-                            <div>
-                                <h3 class="font-bold text-slate-800">${p.name}</h3>
-                                <p class="text-xs text-slate-500">${total} farmaci</p>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">${p.name.charAt(0).toUpperCase()}</div>
+                                <div>
+                                    <h3 class="font-bold text-slate-800">${p.name}</h3>
+                                    <p class="text-xs text-slate-500">${total} farmaci</p>
+                                </div>
                             </div>
-                        </div>
-                        <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>`;
+                            <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>`;
                     container.appendChild(div);
                 });
             },
@@ -735,20 +738,27 @@
             },
 
             openEditMedModal(medId) {
-                const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
                 const med = profile.meds.find(m => m.id === medId);
-                if (med) {
-                    document.getElementById('input-med-edit-id').value = med.id;
-                    document.getElementById('input-med-name').value = med.name;
-                    document.getElementById('input-med-category').value = med.category || "";
-                    document.getElementById('input-med-dose').value = med.dose || "";
-                    document.getElementById('input-med-usage').value = med.usage || "";
-                    document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
-                    document.getElementById('btn-scan').classList.add('hidden');
-                    this.selectedTimes = [med.time];
-                    this.updateTimeUI();
-                    document.getElementById('modal-med').classList.remove('hidden');
-                }
+                if (!med) return;
+
+                // 🔙 snapshot per UNDO
+                this.editSnapshot = JSON.parse(JSON.stringify(profile.meds));
+
+                document.getElementById('input-med-edit-id').value = med.groupId;
+                document.getElementById('input-med-name').value = med.name;
+                document.getElementById('input-med-category').value = med.category || "";
+                document.getElementById('input-med-dose').value = med.dose || "";
+                document.getElementById('input-med-usage').value = med.usage || "";
+                document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
+                document.getElementById('btn-scan').classList.add('hidden');
+
+                this.selectedTimes = profile.meds
+                    .filter(m => m.groupId === med.groupId)
+                    .map(m => m.time);
+
+                this.updateTimeUI();
+                this.showModal('modal-med');
             },
 
             handleMedicationSubmit() {
@@ -757,32 +767,53 @@
                 const dose = document.getElementById('input-med-dose').value.trim();
                 const usage = document.getElementById('input-med-usage').value.trim();
                 const editId = document.getElementById('input-med-edit-id').value;
-                
+
                 if (!name || this.selectedTimes.length === 0) return alert("Inserisci almeno il Nome e l'Orario.");
-                
+
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (editId) {
-                    const med = profile.meds.find(m => m.id === editId);
-                    if (med) { 
-                        med.name = name; 
-                        med.category = category;
-                        med.dose = dose; 
-                        med.usage = usage;
-                        med.time = this.selectedTimes[0]; 
-                    }
-                } else {
-                    this.selectedTimes.forEach(t => {
-                        profile.meds.push({ 
-                            id: this.generateId(), 
-                            name, category, dose, usage,
-                            time: t, taken: false 
+                    const groupId = editId;
+
+                    const takenMap = {};
+                    profile.meds
+                        .filter(m => m.groupId === groupId)
+                        .forEach(m => takenMap[m.time] = m.taken);
+
+                    profile.meds = profile.meds.filter(m => m.groupId !== groupId);
+
+                    this.selectedTimes.forEach(time => {
+                        profile.meds.push({
+                            id: this.generateId(),
+                            groupId,
+                            name,
+                            category,
+                            dose,
+                            usage,
+                            time,
+                            taken: takenMap[time] || false
                         });
                     });
                 }
-                this.saveData(); 
-                this.closeModal('modal-med'); 
-                this.renderMedications();
-            },
+            } else {
+                const groupId = this.generateGroupId();
+
+                this.selectedTimes.forEach(time => {
+                    profile.meds.push({
+                        id: this.generateId(),
+                        groupId,
+                        name,
+                        category,
+                        dose,
+                        usage,
+                        time,
+                        taken: false
+                    });
+                });
+            }
+                    this.saveData();
+            this.closeModal('modal-med');
+            this.renderMedications();
+        },
 
             toggleMedication(id) {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
@@ -790,129 +821,137 @@
                 if (med) { med.taken = !med.taken; this.saveData(); this.renderMedications(); }
             },
 
-            uncheckAllMeds() {
-                const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
-                if (profile && confirm("Deselezionare tutto?")) {
-                    profile.meds.forEach(m => m.taken = false);
-                    this.saveData(); this.renderMedications();
-                }
-            },
+                uncheckAllMeds() {
+            const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
+            if (profile && confirm("Deselezionare tutto?")) {
+                profile.meds.forEach(m => m.taken = false);
+                this.saveData(); this.renderMedications();
+            }
+        },
 
-            deleteMedication(id) {
-                if(confirm("Eliminare questa assunzione?")) {
-                    const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
-                    profile.meds = profile.meds.filter(m => m.id !== id);
-                    this.saveData(); this.renderMedications();
-                }
-            },
-
-            renderMedications() {
+        deleteMedication(id) {
+            if (confirm("Eliminare questa assunzione?")) {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
-                if (!profile) return;
-                document.getElementById('current-profile-name').textContent = profile.name;
-                const times = ['Mattina', 'Pomeriggio', 'Sera'];
-                let hasMeds = false;
-                let anyTaken = false;
-                times.forEach(time => {
-                    const container = document.getElementById(`med-list-${time.toLowerCase()}`);
-                    container.innerHTML = '';
-                    const meds = profile.meds.filter(m => m.time === time);
-                    if (meds.length > 0) {
-                        hasMeds = true;
-                        const totalCount = meds.length;
-                        const takenCount = meds.filter(m => m.taken).length;
-                        
-                        const header = document.createElement('div');
-                        header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center justify-between gap-2";
-                        let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
-                        header.innerHTML = `
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid ${icon}"></i> ${time}
-                            </div>
-                            <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
-                        `;
-                        container.appendChild(header);
-                        meds.forEach(med => {
-                            if (med.taken) anyTaken = true;
-                            const card = document.createElement('div');
-                            const categoryClass = `med-card-${time.toLowerCase()}`;
-                            const takenClass = med.taken ? 'med-card-taken' : '';
-                            card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass}`;
-                            card.innerHTML = `
-                                <div class="flex items-center gap-4 flex-1 overflow-hidden">
-                                    <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
-                                    <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}" onclick="app.openEditMedModal('${med.id}')">
-                                        <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                        <div class="flex flex-col">
-                                            ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                            <div class="flex flex-col mt-0.5">
-                                                ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                                ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                profile.meds = profile.meds.filter(m => m.id !== id);
+                this.saveData(); this.renderMedications();
+            }
+        },
+
+        renderMedications() {
+            const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
+            if (!profile) return;
+            document.getElementById('current-profile-name').textContent = profile.name;
+            const times = ['Mattina', 'Pomeriggio', 'Sera'];
+            let hasMeds = false;
+            let anyTaken = false;
+            times.forEach(time => {
+                const container = document.getElementById(`med-list-${time.toLowerCase()}`);
+                container.innerHTML = '';
+                const meds = profile.meds.filter(m => m.time === time);
+                if (meds.length > 0) {
+                    hasMeds = true;
+                    const totalCount = meds.length;
+                    const takenCount = meds.filter(m => m.taken).length;
+
+                    const header = document.createElement('div');
+                    header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center justify-between gap-2";
+                    let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
+                    header.innerHTML = `
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid ${icon}"></i> ${time}
+                                </div>
+                                <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
+                            `;
+                    container.appendChild(header);
+                    meds.forEach(med => {
+                        if (med.taken) anyTaken = true;
+                        const card = document.createElement('div');
+                        const categoryClass = `med-card-${time.toLowerCase()}`;
+                        const takenClass = med.taken ? 'med-card-taken' : '';
+                        card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass}`;
+                        card.innerHTML = `
+                                    <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                                        <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
+                                        <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}" onclick="app.openEditMedModal('${med.id}')">
+                                            <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                            <div class="flex flex-col">
+                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                <div class="flex flex-col mt-0.5">
+                                                    ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                                    ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="flex items-center">
-                                    <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"><i class="fa-solid fa-trash-can"></i></button>
-                                </div>`;
-                            container.appendChild(card);
-                        });
-                    }
-                });
-                document.getElementById('btn-uncheck-all').classList.toggle('hidden', !anyTaken);
-                document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
-            },
-
-            closeModal(id) { 
-                document.getElementById(id).classList.add('hidden');
-                if (id === 'modal-med') {
-                    document.getElementById('input-med-edit-id').value = '';
+                                    <div class="flex items-center">
+                                        <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"><i class="fa-solid fa-trash-can"></i></button>
+                                    </div>`;
+                        container.appendChild(card);
+                    });
                 }
-            },
+            });
+            document.getElementById('btn-uncheck-all').classList.toggle('hidden', !anyTaken);
+            document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
+        },
 
-            toggleTimeSelection(time, btn) {
-                const editId = document.getElementById('input-med-edit-id').value;
-                if (editId) this.selectedTimes = [time]; 
-                else {
-                    const idx = this.selectedTimes.indexOf(time);
-                    idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
-                }
-                this.updateTimeUI();
-            },
-            updateTimeUI() {
-                document.querySelectorAll('.time-btn').forEach(b => {
-                    const val = b.dataset.val;
-                    this.selectedTimes.includes(val) ? b.classList.add('selected') : b.classList.remove('selected'); 
-                });
-            },
-
-            handleSwipe(endX, endY) {
-                if (!this.currentProfileId || document.querySelector('.modal-overlay:not(.hidden)')) return;
-                const diffX = endX - this.touchStartX;
-                if (Math.abs(diffX) < 70) return;
-                const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
-                if (diffX > 0) {
-                    if (currentIndex > 0) this.openProfile(this.data.profiles[currentIndex - 1].id);
-                    else this.goHome();
-                } else if (currentIndex < this.data.profiles.length - 1) {
-                    this.openProfile(this.data.profiles[currentIndex + 1].id);
-                }
-            },
-
-            setupManifest() {
-                const manifest = {
-                    "name": "MedicinePro",
-                    "short_name": "MedPro",
-                    "start_url": ".",
-                    "display": "standalone",
-                    "background_color": "#f3f4f6",
-                    "theme_color": "#2563eb",
-                    "icons": [{ "src": "https://img.icons8.com/color/192/pills-bottle.png", "sizes": "192x192", "type": "image/png" }]
-                };
-                const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-                document.getElementById('my-manifest').setAttribute('href', URL.createObjectURL(blob));
+        undoEdit() {
+            if (this.editSnapshot) {
+                const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
+                profile.meds = this.editSnapshot;
+                this.saveData();
+                this.renderMedications();
+                this.editSnapshot = null;
             }
-        };
+            this.closeModal('modal-med');
+        },
+
+        closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            if (id === 'modal-med') {
+                document.getElementById('input-med-edit-id').value = '';
+            }
+        },
+
+        toggleTimeSelection(time) {
+            const idx = this.selectedTimes.indexOf(time);
+            idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
+            this.updateTimeUI();
+        },
+
+        updateTimeUI() {
+            document.querySelectorAll('.time-btn').forEach(b => {
+                const val = b.dataset.val;
+                this.selectedTimes.includes(val) ? b.classList.add('selected') : b.classList.remove('selected');
+            });
+        },
+
+        handleSwipe(endX, endY) {
+            if (!this.currentProfileId || document.querySelector('.modal-overlay:not(.hidden)')) return;
+            const diffX = endX - this.touchStartX;
+            if (Math.abs(diffX) < 70) return;
+            const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
+            if (diffX > 0) {
+                if (currentIndex > 0) this.openProfile(this.data.profiles[currentIndex - 1].id);
+                else this.goHome();
+            } else if (currentIndex < this.data.profiles.length - 1) {
+                this.openProfile(this.data.profiles[currentIndex + 1].id);
+            }
+        },
+
+        setupManifest() {
+            const manifest = {
+                "name": "MedicinePro",
+                "short_name": "MedPro",
+                "start_url": ".",
+                "display": "standalone",
+                "background_color": "#f3f4f6",
+                "theme_color": "#2563eb",
+                "icons": [{ "src": "https://img.icons8.com/color/192/pills-bottle.png", "sizes": "192x192", "type": "image/png" }]
+            };
+            const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            document.getElementById('my-manifest').setAttribute('href', URL.createObjectURL(blob));
+        }
+            };
 
         window.onload = () => app.init();
     </script>
