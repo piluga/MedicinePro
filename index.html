@@ -398,6 +398,17 @@
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Dose Assunzione</label>
                     <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. 1 comp.">
                 </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Pillole nella scatola</label>
+                    <input id="med-box-qty" type="number" min="0" step="0.1" class="w-full border rounded-lg p-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Quantità minima</label>
+                    <input id="med-min-qty" type="number" min="0" step="0.1" class="w-full border rounded-lg p-2 text-sm">
+                </div>
+                </div>    
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-1">A cosa serve</label>
                     <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Ulcera">
@@ -492,6 +503,15 @@
                     const touchEndY = e.changedTouches[0].screenY;
                     this.handleSwipe(touchEndX, touchEndY);
                 }, { passive: true });
+            },
+
+            showLowStockAlert(med) {
+                alert(
+                    `⚠️ Scorte in esaurimento\n\n` +
+                    `Farmaco: ${med.name}\n` +
+                    `Pillole rimaste: ${med.boxQty}\n\n` +
+                    `È consigliato ordinare il farmaco.`
+                );
             },
 
             toggleDaySelection(day, btn) {
@@ -670,21 +690,36 @@
             },
 
             // --- DATA LOGIC ---
-
             loadData() {
-                this.data.profiles.forEach(p =>
-                    p.meds.forEach(m => {
-                        if (!Array.isArray(m.days)) m.days = [];
-                    })
-                );
                 const stored = localStorage.getItem('MedicineProData');
-                if (stored) { 
-                    try { 
-                        this.data = JSON.parse(stored); 
-                        if (!this.data.apiKey) this.data.apiKey = "";
-                    } catch(e) { this.resetData(); } 
+
+                if (!stored) {
+                    this.resetData();
+                    return;
                 }
-                else { this.resetData(); }
+
+                try {
+                    this.data = JSON.parse(stored);
+
+                    if (!this.data.apiKey) this.data.apiKey = "";
+
+                    // 🔹 RETROCOMPATIBILITÀ FARMACI
+                    this.data.profiles.forEach(profile => {
+                        profile.meds.forEach(med => {
+
+                            if (!Array.isArray(med.days)) med.days = [];
+                            if (typeof med.boxQty !== "number") med.boxQty = 0;
+                            if (typeof med.minQty !== "number") med.minQty = 0;
+                            if (typeof med.alertShown !== "boolean") med.alertShown = false;
+                            if (typeof med.taken !== "boolean") med.taken = false;
+
+                        });
+                    });
+
+                } catch (e) {
+                    console.error("Errore caricamento dati", e);
+                    this.resetData();
+                }
             },
 
             resetData() { 
@@ -756,11 +791,49 @@
             },
 
             checkDailyReset() {
-                const today = new Date().toDateString();
-                if (this.data.lastOpened !== today) {
-                    this.data.profiles.forEach(p => p.meds.forEach(m => m.taken = false));
-                    this.data.lastOpened = today; this.saveData();
-                }
+                const today = new Date().toISOString().split('T')[0];
+
+                if (this.data.lastOpened === today) return;
+
+                this.data.profiles.forEach(profile => {
+                    profile.meds.forEach(med => {
+
+                        // =========================
+                        // 📉 SCALATURA SE PRESA
+                        // =========================
+                        if (med.taken) {
+
+                            let doseQty = 1;
+
+                            if (typeof med.dose === "string") {
+                                const frac = med.dose.match(/(\d+)\s*\/\s*(\d+)/);
+                                if (frac) {
+                                    doseQty = parseInt(frac[1]) / parseInt(frac[2]);
+                                } else {
+                                    const num = parseFloat(med.dose.replace(",", "."));
+                                    if (!isNaN(num)) doseQty = num;
+                                }
+                            }
+
+                            med.boxQty = Math.max(0, med.boxQty - doseQty);
+
+                            if (
+                                med.minQty > 0 &&
+                                med.boxQty <= med.minQty &&
+                                med.alertShown === false
+                            ) {
+                                this.showLowStockAlert(med);
+                                med.alertShown = true;
+                            }
+                        }
+
+                        // 🔁 RESET PER NUOVO GIORNO
+                        med.taken = false;
+                    });
+                });
+
+                this.data.lastOpened = today;
+                this.saveData();
             },
 
             generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); },
@@ -886,20 +959,39 @@
                 const dose = document.getElementById('input-med-dose').value.trim();
                 const usage = document.getElementById('input-med-usage').value.trim();
                 const editId = document.getElementById('input-med-edit-id').value;
-                
-                if (!name || this.selectedTimes.length === 0) return alert("Inserisci almeno il Nome e l'Orario.");
-                
+
+                // 🔹 NUOVI CAMPI
+                const boxQty = parseFloat(document.getElementById('med-box-qty').value) || 0;
+                const minQty = parseFloat(document.getElementById('med-min-qty').value) || 0;
+
+                if (!name || this.selectedTimes.length === 0) {
+                    return alert("Inserisci almeno il Nome e l'Orario.");
+                }
+
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
+
+                // =========================
+                // ✏️ MODIFICA FARMACO
+                // =========================
                 if (editId) {
                     const med = profile.meds.find(m => m.id === editId);
-                    if (med) { 
-                        med.name = name; 
+                    if (med) {
+                        med.name = name;
                         med.category = category;
-                        med.dose = dose; 
+                        med.dose = dose;
                         med.usage = usage;
                         med.time = this.selectedTimes[0];
                         med.days = Array.isArray(this.selectedDays) ? [...this.selectedDays] : [];
+
+                        // 🔹 SALVATAGGIO NUOVI CAMPI
+                        med.boxQty = boxQty;
+                        med.minQty = minQty;
+                        med.alertShown = med.alertShown ?? false; // NON resettare
                     }
+
+                    // =========================
+                    // ➕ NUOVO FARMACO
+                    // =========================
                 } else {
                     this.selectedTimes.forEach(t => {
                         profile.meds.push({
@@ -909,13 +1001,19 @@
                             dose,
                             usage,
                             time: t,
-                            days: Array.isArray(this.selectedDays) ? [...this.selectedDays] : [], // ⬅️ NUOVO
-                            taken: false
+                            days: Array.isArray(this.selectedDays) ? [...this.selectedDays] : [],
+                            taken: false,
+
+                            // 🔹 STEP 1 — MODELLO DATI ESTESO
+                            boxQty: boxQty,
+                            minQty: minQty,
+                            alertShown: false
                         });
                     });
                 }
-                this.saveData(); 
-                this.closeModal('modal-med'); 
+
+                this.saveData();
+                this.closeModal('modal-med');
                 this.renderMedications();
             },
 
@@ -988,7 +1086,7 @@
                             card.innerHTML = `
                                 <div class="flex items-center gap-4 flex-1 overflow-hidden">
                                     <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
-                                    <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}" onclick="app.openEditMedModal('${med.id}')">
+                                    <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
                                         <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
                                         <div class="flex flex-col">
                                             ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
@@ -1000,8 +1098,9 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center">
-                                    <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"><i class="fa-solid fa-trash-can"></i></button>
-                                </div>`;
+                                    <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
+                                    <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button
+                                    </div>`;
                             container.appendChild(card);
                         });
                     }
