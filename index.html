@@ -31,6 +31,12 @@
             overscroll-behavior-y: none;
         }
 
+        .day-btn.selected {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
         .fade-in {
             animation: fadeIn 0.3s ease-in-out;
         }
@@ -152,72 +158,6 @@
             justify-content: center;
             color: white;
         }
-
-        /* Swipe animations */
-        .swipe-out-left {
-            animation: swipeOutLeft 0.25s ease forwards;
-        }
-
-        .swipe-out-right {
-            animation: swipeOutRight 0.25s ease forwards;
-        }
-
-        .swipe-in-left {
-            animation: swipeInLeft 0.25s ease forwards;
-        }
-
-        .swipe-in-right {
-            animation: swipeInRight 0.25s ease forwards;
-        }
-
-        @keyframes swipeOutLeft {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-
-            to {
-                transform: translateX(-40%);
-                opacity: 0;
-            }
-        }
-
-        @keyframes swipeOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-
-            to {
-                transform: translateX(40%);
-                opacity: 0;
-            }
-        }
-
-        @keyframes swipeInLeft {
-            from {
-                transform: translateX(40%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes swipeInRight {
-            from {
-                transform: translateX(-40%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -395,6 +335,23 @@
                         <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Pomeriggio">Pom.</button>
                         <button onclick="app.toggleTimeSelection('Sera', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Sera">Sera</button>
                     </div>
+                    <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">
+                        Giorni di Somministrazione
+                    </label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Lun" onclick="app.toggleDaySelection('Lun', this)">Lun</button>
+                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Mar" onclick="app.toggleDaySelection('Mar', this)">Mar</button>
+                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Mer" onclick="app.toggleDaySelection('Mer', this)">Mer</button>
+                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Gio" onclick="app.toggleDaySelection('Gio', this)">Gio</button>
+                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Ven" onclick="app.toggleDaySelection('Ven', this)">Ven</button>
+                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Sab" onclick="app.toggleDaySelection('Sab', this)">Sab</button>
+                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Dom" onclick="app.toggleDaySelection('Dom', this)">Dom</button>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1 italic">
+                        Se non selezioni nulla, il farmaco verrà considerato giornaliero
+                    </p>
+                </div>
                 </div>
             </div>
             <input type="hidden" id="input-med-edit-id">
@@ -436,6 +393,7 @@
             data: { lastOpened: null, profiles: [], apiKey: "" },
             currentProfileId: null,
             selectedTimes: [],
+            selectedDays: [],
             touchStartX: 0,
             touchStartY: 0,
             isSwiping: false,
@@ -462,6 +420,21 @@
                     const touchEndY = e.changedTouches[0].screenY;
                     this.handleSwipe(touchEndX, touchEndY);
                 }, { passive: true });
+            },
+
+            toggleDaySelection(day, btn) {
+                const idx = this.selectedDays.indexOf(day);
+                idx > -1 ? this.selectedDays.splice(idx, 1) : this.selectedDays.push(day);
+                this.updateDayUI();
+            },
+
+            updateDayUI() {
+                document.querySelectorAll('.day-btn').forEach(b => {
+                    const day = b.dataset.day;
+                    this.selectedDays.includes(day)
+                        ? b.classList.add('selected')
+                        : b.classList.remove('selected');
+                });
             },
 
             // --- CAMERA SCANNER LOGIC ---
@@ -800,6 +773,8 @@
                 document.getElementById('btn-scan').classList.remove('hidden');
                 this.selectedTimes = [];
                 this.updateTimeUI();
+                this.selectedDays = [];
+                this.updateDayUI();
             },
 
             openEditMedModal(medId) {
@@ -814,6 +789,7 @@
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
                     document.getElementById('btn-scan').classList.add('hidden');
                     this.selectedTimes = [med.time];
+                    this.selectedDays = med.days ? [...med.days] : [];
                     this.updateTimeUI();
                     document.getElementById('modal-med').classList.remove('hidden');
                 }
@@ -840,10 +816,15 @@
                     }
                 } else {
                     this.selectedTimes.forEach(t => {
-                        profile.meds.push({ 
-                            id: this.generateId(), 
-                            name, category, dose, usage,
-                            time: t, taken: false 
+                        profile.meds.push({
+                            id: this.generateId(),
+                            name,
+                            category,
+                            dose,
+                            usage,
+                            time,
+                            days: [...this.selectedDays], // ⬅️ NUOVO
+                            taken: false
                         });
                     });
                 }
@@ -884,7 +865,13 @@
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
-                    const meds = profile.meds.filter(m => m.time === time);
+                    const today = new Date().toLocaleDateString('it-IT', { weekday: 'short' });
+                    const todayShort = today.charAt(0).toUpperCase() + today.slice(1, 3);
+
+                    const meds = profile.meds.filter(m =>
+                        m.time === time &&
+                        (!m.days || m.days.length === 0 || m.days.includes(todayShort))
+                    );
                     if (meds.length > 0) {
                         hasMeds = true;
                         const totalCount = meds.length;
@@ -954,25 +941,6 @@
                 });
             },
 
-            animateProfileChange(direction, callback) {
-                const view = document.getElementById('view-medications');
-
-                const outClass = direction === 'left' ? 'swipe-out-left' : 'swipe-out-right';
-                const inClass  = direction === 'left' ? 'swipe-in-right' : 'swipe-in-left';
-
-                view.classList.add(outClass);
-
-                setTimeout(() => {
-                    view.classList.remove(outClass);
-                    callback(); // cambia profilo
-                    view.classList.add(inClass);
-
-                    setTimeout(() => {
-                        view.classList.remove(inClass);
-                    }, 250);
-                }, 250);
-            },
-
             handleSwipe(endX, endY) {
                 // Swipe attivo SOLO nella vista profilo
                 if (!this.currentProfileId) return;
@@ -994,18 +962,17 @@
 
                 const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
 
-                // Swipe verso destra → profilo precedente
-                if (diffX > 0 && currentIndex > 0) {
-                    this.animateProfileChange('right', () => {
+                // Swipe verso destra
+                if (diffX > 0) {
+                    if (currentIndex > 0) {
                         this.openProfile(this.data.profiles[currentIndex - 1].id);
-                    });
+                    }
+                    // ❌ NIENTE ritorno automatico in home
                 }
 
-                // Swipe verso sinistra → profilo successivo
+                // Swipe verso sinistra
                 if (diffX < 0 && currentIndex < this.data.profiles.length - 1) {
-                    this.animateProfileChange('left', () => {
-                        this.openProfile(this.data.profiles[currentIndex + 1].id);
-                    });
+                    this.openProfile(this.data.profiles[currentIndex + 1].id);
                 }
             },
 
