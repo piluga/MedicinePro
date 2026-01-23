@@ -516,8 +516,13 @@
                 const video = document.getElementById('camera-feed');
                 
                 try {
-                    this.stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: 'environment' } 
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: { ideal: "environment" },
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 },
+                            focusMode: { ideal: "continuous" }
+                        }
                     });
                     video.srcObject = this.stream;
                     container.style.display = 'flex';
@@ -541,9 +546,11 @@
 
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0);
+                ctx.filter = "contrast(1.15) brightness(1.05) saturate(1.1)";
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                ctx.filter = "none";
 
-                const base64Data = canvas.toDataURL('image/png').split(',')[1];
+                const base64Data = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
                 this.stopScanner();
                 await this.analyzeImage(base64Data);
             },
