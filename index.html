@@ -372,6 +372,7 @@
             selectedTimes: [],
             touchStartX: 0,
             touchStartY: 0,
+            isSwiping: false,
             stream: null,
 
             init() {
@@ -387,13 +388,14 @@
                 document.addEventListener('touchstart', e => {
                     this.touchStartX = e.changedTouches[0].screenX;
                     this.touchStartY = e.changedTouches[0].screenY;
-                }, {passive: true});
+                    this.isSwiping = false;
+                }, { passive: true });
 
                 document.addEventListener('touchend', e => {
                     const touchEndX = e.changedTouches[0].screenX;
                     const touchEndY = e.changedTouches[0].screenY;
                     this.handleSwipe(touchEndX, touchEndY);
-                }, {passive: true});
+                }, { passive: true });
             },
 
             // --- CAMERA SCANNER LOGIC ---
@@ -887,14 +889,36 @@
             },
 
             handleSwipe(endX, endY) {
-                if (!this.currentProfileId || document.querySelector('.modal-overlay:not(.hidden)')) return;
+                // Swipe attivo SOLO nella vista profilo
+                if (!this.currentProfileId) return;
+
+                // Nessuno swipe se siamo nelle impostazioni
+                if (!document.getElementById('view-settings').classList.contains('hidden')) return;
+
+                // Nessuno swipe se un modale è aperto
+                if (document.querySelector('.modal-overlay:not(.hidden)')) return;
+
                 const diffX = endX - this.touchStartX;
-                if (Math.abs(diffX) < 70) return;
+                const diffY = endY - this.touchStartY;
+
+                // Se è più verticale che orizzontale → è scroll
+                if (Math.abs(diffY) > Math.abs(diffX)) return;
+
+                // Soglia minima swipe orizzontale
+                if (Math.abs(diffX) < 80) return;
+
                 const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
+
+                // Swipe verso destra
                 if (diffX > 0) {
-                    if (currentIndex > 0) this.openProfile(this.data.profiles[currentIndex - 1].id);
-                    else this.goHome();
-                } else if (currentIndex < this.data.profiles.length - 1) {
+                    if (currentIndex > 0) {
+                        this.openProfile(this.data.profiles[currentIndex - 1].id);
+                    }
+                    // ❌ NIENTE ritorno automatico in home
+                }
+
+                // Swipe verso sinistra
+                if (diffX < 0 && currentIndex < this.data.profiles.length - 1) {
                     this.openProfile(this.data.profiles[currentIndex + 1].id);
                 }
             },
