@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MedicinePro</title>
-    
+
     <!-- Meta Tags per PWA -->
     <meta name="theme-color" content="#2563eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="MedicinePro">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/N6db36Sf/medicine.png">
+
+    <!-- Manifest Base64 -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJpdCIsCiAgIm5hbWUiOiAiR2VzdGlvbmUgU3Blc2UgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJTcGVzZVBybyIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9pLmliYi5jby9ONmRiMzZTZi9tZWRpY2luZS5wbmciLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIKICAgIH0KICBdLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiNmM2Y0ZjYiLAogICJ0aGVtZV9jb2xvciI6ICIjMjU2M2YxIgp9">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,6 +28,19 @@
     <link rel="manifest" id="my-manifest">
 
     <style>
+        /* Dimensione uniforme per orari e giorni */
+        .time-btn,
+        .day-btn {
+            height: 40px;
+            min-height: 40px;
+            font-size: 11px;
+            padding: 0 10px !important;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
@@ -31,10 +48,23 @@
             overscroll-behavior-y: none;
         }
 
+        .time-btn.selected,
         .day-btn.selected {
             background-color: #2563eb;
             color: white;
             border-color: #2563eb;
+        }
+
+        .time-btn,
+        .day-btn {
+            height: 40px;
+            padding: 0 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .fade-in {
@@ -42,8 +72,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .med-checkbox {
@@ -60,27 +97,33 @@
             background-color: white;
             flex-shrink: 0;
         }
-        
-        .med-checkbox:checked {
-            background-color: #22c55e;
-            border-color: #22c55e;
-        }
 
-        .med-checkbox:checked::after {
-            content: '\f00c';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            color: white;
-            font-size: 1.2rem;
-        }
+            .med-checkbox:checked {
+                background-color: #22c55e;
+                border-color: #22c55e;
+            }
+
+                .med-checkbox:checked::after {
+                    content: '\f00c';
+                    font-family: 'Font Awesome 6 Free';
+                    font-weight: 900;
+                    color: white;
+                    font-size: 1.2rem;
+                }
 
         .card-shadow {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         .modal-overlay {
             background-color: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(2px);
@@ -91,16 +134,37 @@
             color: white;
             border-color: #2563eb;
         }
-        
-        /* Stili specifici per le categorie temporali */
-        .med-card-mattina { background-color: #fff7ed; border-color: #ffedd5; }
-        .med-card-pomeriggio { background-color: #fefce8; border-color: #fef9c3; }
-        .med-card-sera { background-color: #f5f3ff; border-color: #ede9fe; }
-        
-        .med-card-taken { background-color: #f0fdf4 !important; border-color: #dcfce7 !important; }
 
-        .xs\:inline { display: none; }
-        @media (min-width: 400px) { .xs\:inline { display: inline; } }
+        /* Stili specifici per le categorie temporali */
+        .med-card-mattina {
+            background-color: #fff7ed;
+            border-color: #ffedd5;
+        }
+
+        .med-card-pomeriggio {
+            background-color: #fefce8;
+            border-color: #fef9c3;
+        }
+
+        .med-card-sera {
+            background-color: #f5f3ff;
+            border-color: #ede9fe;
+        }
+
+        .med-card-taken {
+            background-color: #f0fdf4 !important;
+            border-color: #dcfce7 !important;
+        }
+
+        .xs\:inline {
+            display: none;
+        }
+
+        @media (min-width: 400px) {
+            .xs\:inline {
+                display: inline;
+            }
+        }
 
         /* Camera Scanner UI */
         #camera-container {
@@ -111,11 +175,13 @@
             display: none;
             flex-direction: column;
         }
+
         #camera-feed {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
         .scanner-overlay {
             position: absolute;
             inset: 0;
@@ -125,6 +191,7 @@
             align-items: center;
             justify-content: center;
         }
+
         .scanner-frame {
             width: 80%;
             height: 40%;
@@ -133,6 +200,7 @@
             box-shadow: 0 0 0 4000px rgba(0,0,0,0.5);
             position: relative;
         }
+
         .scanner-line {
             position: absolute;
             width: 100%;
@@ -141,11 +209,17 @@
             top: 0;
             animation: scan 2s linear infinite;
         }
+
         @keyframes scan {
-            from { top: 0%; }
-            to { top: 100%; }
+            from {
+                top: 0%;
+            }
+
+            to {
+                top: 100%;
+            }
         }
-        
+
         /* Loading overlay */
         #loading-overlay {
             position: fixed;
@@ -329,17 +403,15 @@
                     <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Ulcera">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Orari Assunzione</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Orari Assunzione</label>
                     <div class="grid grid-cols-3 gap-2">
                         <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Mattina">Mattina</button>
                         <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Pomeriggio">Pom.</button>
                         <button onclick="app.toggleTimeSelection('Sera', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Sera">Sera</button>
                     </div>
                     <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">
-                        Giorni di Somministrazione
-                    </label>
-                    <div class="grid grid-cols-4 gap-2">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mt-2">Giorni di Somministrazione</label>
+                    <div class="grid grid-cols-4 gap-2 mt-2">
                         <button class="day-btn p-2 border rounded-lg text-xs" data-day="Lun" onclick="app.toggleDaySelection('Lun', this)">Lun</button>
                         <button class="day-btn p-2 border rounded-lg text-xs" data-day="Mar" onclick="app.toggleDaySelection('Mar', this)">Mar</button>
                         <button class="day-btn p-2 border rounded-lg text-xs" data-day="Mer" onclick="app.toggleDaySelection('Mer', this)">Mer</button>
@@ -348,7 +420,7 @@
                         <button class="day-btn p-2 border rounded-lg text-xs" data-day="Sab" onclick="app.toggleDaySelection('Sab', this)">Sab</button>
                         <button class="day-btn p-2 border rounded-lg text-xs" data-day="Dom" onclick="app.toggleDaySelection('Dom', this)">Dom</button>
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-1 italic">
+                    <p class="text-[10px] text-slate-400 mt-2 italic leading-relaxed">
                         Se non selezioni nulla, il farmaco verrà considerato giornaliero
                     </p>
                 </div>
@@ -593,6 +665,11 @@
             // --- DATA LOGIC ---
 
             loadData() {
+                this.data.profiles.forEach(p =>
+                    p.meds.forEach(m => {
+                        if (!Array.isArray(m.days)) m.days = [];
+                    })
+                );
                 const stored = localStorage.getItem('MedicineProData');
                 if (stored) { 
                     try { 
@@ -789,7 +866,8 @@
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
                     document.getElementById('btn-scan').classList.add('hidden');
                     this.selectedTimes = [med.time];
-                    this.selectedDays = med.days ? [...med.days] : [];
+                    this.selectedDays = Array.isArray(med.days) ? [...med.days] : [];
+                    this.updateDayUI();
                     this.updateTimeUI();
                     document.getElementById('modal-med').classList.remove('hidden');
                 }
@@ -812,7 +890,8 @@
                         med.category = category;
                         med.dose = dose; 
                         med.usage = usage;
-                        med.time = this.selectedTimes[0]; 
+                        med.time = this.selectedTimes[0];
+                        med.days = Array.isArray(this.selectedDays) ? [...this.selectedDays] : [];
                     }
                 } else {
                     this.selectedTimes.forEach(t => {
@@ -822,8 +901,8 @@
                             category,
                             dose,
                             usage,
-                            time,
-                            days: [...this.selectedDays], // ⬅️ NUOVO
+                            time: t,
+                            days: Array.isArray(this.selectedDays) ? [...this.selectedDays] : [], // ⬅️ NUOVO
                             taken: false
                         });
                     });
@@ -862,6 +941,8 @@
                 const times = ['Mattina', 'Pomeriggio', 'Sera'];
                 let hasMeds = false;
                 let anyTaken = false;
+                const dayMap = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+                const todayShort = dayMap[new Date().getDay()];
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
@@ -870,7 +951,11 @@
 
                     const meds = profile.meds.filter(m =>
                         m.time === time &&
-                        (!m.days || m.days.length === 0 || m.days.includes(todayShort))
+                        (
+                            !Array.isArray(m.days) ||
+                            m.days.length === 0 ||
+                            m.days.includes(todayShort)
+                        )
                     );
                     if (meds.length > 0) {
                         hasMeds = true;
