@@ -943,6 +943,8 @@
                     document.getElementById('input-med-category').value = med.category || "";
                     document.getElementById('input-med-dose').value = med.dose || "";
                     document.getElementById('input-med-usage').value = med.usage || "";
+                    document.getElementById('med-box-qty').value = med.boxQty ?? 0;
+                    document.getElementById('med-min-qty').value = med.minQty ?? 0;
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
                     document.getElementById('btn-scan').classList.add('hidden');
                     this.selectedTimes = [med.time];
