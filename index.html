@@ -243,7 +243,7 @@
                 <i class="fa-solid fa-pills"></i> MedicinePro
             </h1>
         </div>
-        
+
         <div class="flex gap-2">
             <button onclick="app.showSettings()" class="text-xl p-2 hover:bg-blue-700 rounded-full transition-colors" title="Impostazioni">
                 <i class="fa-solid fa-cog"></i>
@@ -255,7 +255,7 @@
 
     <!-- MAIN -->
     <main id="app-container" class="flex-1 overflow-y-auto no-scrollbar relative p-4 max-w-lg mx-auto w-full">
-        
+
         <!-- VISTA LISTA PROFILI -->
         <section id="view-profiles" class="fade-in space-y-4">
             <div class="bg-white p-6 rounded-2xl card-shadow text-center mb-6">
@@ -348,7 +348,6 @@
     </main>
 
     <!-- MODALI -->
-    
     <!-- MODALE AGGIUNGI PROFILO -->
     <div id="modal-add-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -374,70 +373,93 @@
     </div>
 
     <!-- MODALE FARMACO (Aggiunta/Modifica) -->
-    <div id="modal-med" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 overflow-y-auto max-h-[90vh]">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="med-modal-title" class="text-xl font-bold text-slate-800">Farmaco</h3>
-                <button onclick="app.startScanner()" id="btn-scan" class="bg-blue-50 text-blue-600 p-2 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2 text-xs font-bold">
-                    <i class="fa-solid fa-camera"></i> SCANNER
+    <div id="modal-med" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-0 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 id="med-modal-title" class="text-lg font-bold text-slate-800">Farmaco</h3>
+                <button onclick="app.startScanner()" id="btn-scan" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2 text-xs font-bold shadow-sm">
+                    <i class="fa-solid fa-camera"></i> SCANNER AI
                 </button>
             </div>
-            <div class="space-y-4">
+
+            <div class="p-5 overflow-y-auto custom-scrollbar space-y-5">
+                <!-- Nome -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Nome Farmaco e Concentrazione</label>
-                    <input type="text" id="input-med-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Pantoprazolo Teva 40mg">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Categoria (Forma farmaceutica)</label>
-                    <input type="text" id="input-med-category" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Compresse gastroresistenti">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Dose Assunzione</label>
-                    <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Esempio: 1/4, 1/2, 1, 0.25">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Nome Farmaco</label>
+                    <input type="text" id="input-med-name" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" placeholder="Es. Pantoprazolo 20mg">
                 </div>
 
-            <div class="grid grid-cols-2 gap-3 mt-3">
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Pillole nella scatola</label>
-                    <input id="med-box-qty" type="number" min="0" step="0.1" class="w-full border rounded-lg p-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Quantità minima</label>
-                    <input id="med-min-qty" type="number" min="0" step="0.1" class="w-full border rounded-lg p-2 text-sm">
-                </div>
-                </div>    
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">A cosa serve</label>
-                    <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Ulcera">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Orari Assunzione</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Mattina">Mattina</button>
-                        <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Pomeriggio">Pom.</button>
-                        <button onclick="app.toggleTimeSelection('Sera', this)" class="time-btn p-2 border rounded-lg text-sm transition-all" data-val="Sera">Sera</button>
+                <!-- Dettagli -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Forma</label>
+                        <input type="text" id="input-med-category" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. Pillole">
                     </div>
                     <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase mt-2">Giorni di Somministrazione</label>
-                    <div class="grid grid-cols-4 gap-2 mt-2">
-                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Lun" onclick="app.toggleDaySelection('Lun', this)">Lun</button>
-                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Mar" onclick="app.toggleDaySelection('Mar', this)">Mar</button>
-                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Mer" onclick="app.toggleDaySelection('Mer', this)">Mer</button>
-                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Gio" onclick="app.toggleDaySelection('Gio', this)">Gio</button>
-                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Ven" onclick="app.toggleDaySelection('Ven', this)">Ven</button>
-                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Sab" onclick="app.toggleDaySelection('Sab', this)">Sab</button>
-                        <button class="day-btn p-2 border rounded-lg text-xs" data-day="Dom" onclick="app.toggleDaySelection('Dom', this)">Dom</button>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Dose</label>
+                        <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. 1 o 1/2">
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-2 italic leading-relaxed">
-                        Se non selezioni nulla, il farmaco verrà considerato giornaliero
-                    </p>
                 </div>
+
+                <!-- Scorte -->
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-stacked"></i> Gestione Scorte
+                    </p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">In Scatola</label>
+                            <input id="med-box-qty" type="number" min="0" step="0.5" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Soglia Avviso</label>
+                            <input id="med-min-qty" type="number" min="0" step="1" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Uso -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Note / A cosa serve</label>
+                    <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. Per il bruciore">
+                </div>
+
+                <!-- Orari -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Momento della giornata</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn" data-val="Mattina">
+                            <i class="fa-solid fa-sun mr-2 text-orange-500"></i> Mattina
+                        </button>
+                        <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn" data-val="Pomeriggio">
+                            <i class="fa-solid fa-cloud-sun mr-2 text-yellow-500"></i> Pom.
+                        </button>
+                        <button onclick="app.toggleTimeSelection('Sera', this)" class="time-btn" data-val="Sera">
+                            <i class="fa-solid fa-moon mr-2 text-indigo-500"></i> Sera
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Giorni -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Giorni</label>
+                    <div class="grid grid-cols-7 gap-1">
+                        <button class="day-btn" data-day="Lun" onclick="app.toggleDaySelection('Lun', this)">L</button>
+                        <button class="day-btn" data-day="Mar" onclick="app.toggleDaySelection('Mar', this)">M</button>
+                        <button class="day-btn" data-day="Mer" onclick="app.toggleDaySelection('Mer', this)">M</button>
+                        <button class="day-btn" data-day="Gio" onclick="app.toggleDaySelection('Gio', this)">G</button>
+                        <button class="day-btn" data-day="Ven" onclick="app.toggleDaySelection('Ven', this)">V</button>
+                        <button class="day-btn" data-day="Sab" onclick="app.toggleDaySelection('Sab', this)">S</button>
+                        <button class="day-btn" data-day="Dom" onclick="app.toggleDaySelection('Dom', this)">D</button>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2 text-center">Nessun giorno selezionato = Tutti i giorni</p>
                 </div>
             </div>
+
             <input type="hidden" id="input-med-edit-id">
-            <div class="flex justify-end gap-3 mt-8">
-                <button onclick="app.closeModal('modal-med')" class="px-4 py-2 text-slate-500">Chiudi</button>
-                <button onclick="app.handleMedicationSubmit()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium">Salva</button>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                <button onclick="app.closeModal('modal-med')" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition-colors">Chiudi</button>
+                <button onclick="app.handleMedicationSubmit()" class="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">Salva</button>
             </div>
         </div>
     </div>
@@ -486,7 +508,7 @@
                 this.setupManifest();
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                 document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
-                
+
                 document.getElementById('btn-back').addEventListener('click', () => this.goBack());
 
                 document.addEventListener('touchstart', e => {
@@ -531,7 +553,7 @@
             async startScanner() {
                 const container = document.getElementById('camera-container');
                 const video = document.getElementById('camera-feed');
-                
+
                 try {
                     this.stream = await navigator.mediaDevices.getUserMedia({
                         video: {
@@ -579,14 +601,14 @@
                 }
 
                 this.toggleLoading(true, "Analisi farmaco...");
-                
-                const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi: 
-                - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
-                - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
-                - 'dose': lascia questo campo vuoto (stringa vuota "").
-                - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
-                Rispondi solo con il JSON.`;
-                
+
+                const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi:
+                    - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
+                    - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
+                    - 'dose': lascia questo campo vuoto (stringa vuota "").
+                    - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
+                    Rispondi solo con il JSON.`;
+
                 const payload = {
                     contents: [{
                         role: "user",
@@ -612,7 +634,7 @@
                 try {
                     const result = await this.fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`, payload);
                     const parsedData = JSON.parse(result.candidates[0].content.parts[0].text);
-                    
+
                     if (parsedData.name) {
                         document.getElementById('input-med-name').value = parsedData.name;
                         document.getElementById('input-med-category').value = parsedData.category || "";
@@ -636,7 +658,7 @@
                             body: JSON.stringify(payload)
                         });
                         if (response.ok) return await response.json();
-                    } catch (e) {}
+                    } catch (e) { }
                     await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
                 }
                 throw new Error("API fallita");
@@ -719,11 +741,11 @@
                 }
             },
 
-            resetData() { 
-                this.data = { lastOpened: new Date().toDateString(), profiles: [], apiKey: "" }; 
-                this.saveData(); 
+            resetData() {
+                this.data = { lastOpened: new Date().toDateString(), profiles: [], apiKey: "" };
+                this.saveData();
             },
-            
+
             saveData() { localStorage.setItem('MedicineProData', JSON.stringify(this.data)); },
 
             exportData() {
@@ -731,7 +753,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `MedicinePro_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                a.download = `MedicinePro_Backup_${new Date().toISOString().slice(0, 10)}.json`;
                 a.click();
             },
 
@@ -746,7 +768,7 @@
                     const meds = profile.meds.filter(m => m.time === time);
                     if (meds.length > 0) {
                         content += `[${time.toUpperCase()}]\n`;
-                        meds.forEach(m => { 
+                        meds.forEach(m => {
                             content += `- ${m.name}`;
                             if (m.category) content += ` (${m.category})`;
                             if (m.dose) content += ` | Dose: ${m.dose}`;
@@ -776,12 +798,12 @@
                             // Pulizia stato prima di importare
                             this.currentProfileId = null;
                             document.getElementById('input-med-edit-id').value = '';
-                            
-                            this.data = json; 
-                            this.saveData(); 
+
+                            this.data = json;
+                            this.saveData();
                             this.goHome();
                         }
-                    } catch(err) { alert("File non valido."); }
+                    } catch (err) { alert("File non valido."); }
                 };
                 reader.readAsText(file);
                 input.value = ''; // Reset input per permettere re-import dello stesso file
@@ -868,7 +890,7 @@
             },
 
             deleteCurrentProfile() {
-                if(confirm("Eliminare definitivamente questo profilo?")) {
+                if (confirm("Eliminare definitivamente questo profilo?")) {
                     this.data.profiles = this.data.profiles.filter(x => x.id !== this.currentProfileId);
                     this.saveData(); this.goHome();
                 }
@@ -884,19 +906,19 @@
                 this.data.profiles.forEach(p => {
                     const total = p.meds.length;
                     const taken = p.meds.filter(m => m.taken).length;
-                    const perc = total === 0 ? 0 : Math.round((taken/total)*100);
+                    const perc = total === 0 ? 0 : Math.round((taken / total) * 100);
                     const div = document.createElement('div');
                     div.className = "bg-white p-4 rounded-xl card-shadow flex justify-between items-center cursor-pointer border border-transparent hover:border-blue-200 transition-all";
                     div.onclick = () => this.openProfile(p.id);
                     div.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">${p.name.charAt(0).toUpperCase()}</div>
-                            <div>
-                                <h3 class="font-bold text-slate-800">${p.name}</h3>
-                                <p class="text-xs text-slate-500">${total} farmaci</p>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">${p.name.charAt(0).toUpperCase()}</div>
+                                <div>
+                                    <h3 class="font-bold text-slate-800">${p.name}</h3>
+                                    <p class="text-xs text-slate-500">${total} farmaci</p>
+                                </div>
                             </div>
-                        </div>
-                        <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>`;
+                            <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>`;
                     container.appendChild(div);
                 });
             },
@@ -1031,7 +1053,7 @@
             },
 
             deleteMedication(id) {
-                if(confirm("Eliminare questa assunzione?")) {
+                if (confirm("Eliminare questa assunzione?")) {
                     const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                     profile.meds = profile.meds.filter(m => m.id !== id);
                     this.saveData(); this.renderMedications();
@@ -1065,16 +1087,16 @@
                         hasMeds = true;
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
-                        
+
                         const header = document.createElement('div');
                         header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center justify-between gap-2";
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
                         header.innerHTML = `
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid ${icon}"></i> ${time}
-                            </div>
-                            <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
-                        `;
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid ${icon}"></i> ${time}
+                                </div>
+                                <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
+                            `;
                         container.appendChild(header);
                         meds.forEach(med => {
                             if (med.taken) anyTaken = true;
@@ -1083,23 +1105,23 @@
                             const takenClass = med.taken ? 'med-card-taken' : '';
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass}`;
                             card.innerHTML = `
-                                <div class="flex items-center gap-4 flex-1 overflow-hidden">
-                                    <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
-                                    <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
-                                        <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                        <div class="flex flex-col">
-                                            ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                            <div class="flex flex-col mt-0.5">
-                                                ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                                ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                    <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                                        <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
+                                        <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
+                                            <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                            <div class="flex flex-col">
+                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                <div class="flex flex-col mt-0.5">
+                                                    ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                                    ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="flex items-center">
-                                    <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
-                                    <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button
-                                    </div>`;
+                                    <div class="flex items-center">
+                                        <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button
+                                        </div>`;
                             container.appendChild(card);
                         });
                     }
@@ -1108,7 +1130,7 @@
                 document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
             },
 
-            closeModal(id) { 
+            closeModal(id) {
                 document.getElementById(id).classList.add('hidden');
                 if (id === 'modal-med') {
                     document.getElementById('input-med-edit-id').value = '';
@@ -1117,7 +1139,7 @@
 
             toggleTimeSelection(time, btn) {
                 const editId = document.getElementById('input-med-edit-id').value;
-                if (editId) this.selectedTimes = [time]; 
+                if (editId) this.selectedTimes = [time];
                 else {
                     const idx = this.selectedTimes.indexOf(time);
                     idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
@@ -1127,7 +1149,7 @@
             updateTimeUI() {
                 document.querySelectorAll('.time-btn').forEach(b => {
                     const val = b.dataset.val;
-                    this.selectedTimes.includes(val) ? b.classList.add('selected') : b.classList.remove('selected'); 
+                    this.selectedTimes.includes(val) ? b.classList.add('selected') : b.classList.remove('selected');
                 });
             },
 
@@ -1176,7 +1198,7 @@
                     "theme_color": "#2563eb",
                     "icons": [{ "src": "https://img.icons8.com/color/192/pills-bottle.png", "sizes": "192x192", "type": "image/png" }]
                 };
-                const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+                const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
                 document.getElementById('my-manifest').setAttribute('href', URL.createObjectURL(blob));
             }
         };
@@ -1185,5 +1207,3 @@
     </script>
 </body>
 </html>
-
-
