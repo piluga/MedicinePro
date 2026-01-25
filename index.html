@@ -392,28 +392,29 @@
                 <!-- Dettagli -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Forma</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Forma</label>
                         <input type="text" id="input-med-category" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. Pillole">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Dose</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Dose</label>
                         <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. 1, 1/2, 1/4, 0,25 ...">
                     </div>
                 </div>
 
-                <!-- Scorte -->
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p class="text-xs font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
-                        <i class="fa-solid fa-boxes-stacked"></i> Gestione Scorte
-                    </p>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">In Scatola</label>
-                            <input id="med-box-qty" type="number" min="0" step="0.5" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none">
+                <!-- Gestione Scorte Colorata -->
+                <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-boxes-stacked text-emerald-600"></i>
+                        <span class="text-sm font-bold text-emerald-900">Gestione Scorte</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1">
+                            <p class="text-[10px] text-emerald-700 font-bold uppercase mb-1">Quantità Attuale</p>
+                            <input type="number" id="input-med-stock" class="w-full p-2 border border-emerald-200 rounded-lg outline-none bg-white" placeholder="0">
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Soglia Avviso</label>
-                            <input id="med-min-qty" type="number" min="0" step="1" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none">
+                        <div class="flex-1">
+                            <p class="text-[10px] text-emerald-700 font-bold uppercase mb-1">Avvisami a</p>
+                            <input type="number" id="input-med-min-stock" class="w-full p-2 border border-emerald-200 rounded-lg outline-none bg-white" placeholder="0">
                         </div>
                     </div>
                 </div>
