@@ -397,7 +397,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Dose</label>
-                        <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. 1 o 1/2">
+                        <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. 1, 1/2, 1/4, 0,25 ...">
                     </div>
                 </div>
 
@@ -428,15 +428,9 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Momento della giornata</label>
                     <div class="grid grid-cols-3 gap-2">
-                        <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn" data-val="Mattina">
-                            <i class="fa-solid fa-sun mr-2 text-orange-500"></i> Mattina
-                        </button>
-                        <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn" data-val="Pomeriggio">
-                            <i class="fa-solid fa-cloud-sun mr-2 text-yellow-500"></i> Pom.
-                        </button>
-                        <button onclick="app.toggleTimeSelection('Sera', this)" class="time-btn" data-val="Sera">
-                            <i class="fa-solid fa-moon mr-2 text-indigo-500"></i> Sera
-                        </button>
+                        <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-val="Mattina"><i class="fa-solid fa-sun mr-2 text-orange-500"></i> Mattina</button>
+                        <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-val="Pomeriggio"><i class="fa-solid fa-cloud-sun mr-2 text-yellow-500"></i> Pom.</button>
+                        <button onclick="app.toggleTimeSelection('Sera', this)" class="time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-val="Sera"><i class="fa-solid fa-moon mr-2 text-indigo-500"></i> Sera</button>
                     </div>
                 </div>
 
@@ -444,13 +438,13 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Giorni</label>
                     <div class="grid grid-cols-7 gap-1">
-                        <button class="day-btn" data-day="Lun" onclick="app.toggleDaySelection('Lun', this)">L</button>
-                        <button class="day-btn" data-day="Mar" onclick="app.toggleDaySelection('Mar', this)">M</button>
-                        <button class="day-btn" data-day="Mer" onclick="app.toggleDaySelection('Mer', this)">M</button>
-                        <button class="day-btn" data-day="Gio" onclick="app.toggleDaySelection('Gio', this)">G</button>
-                        <button class="day-btn" data-day="Ven" onclick="app.toggleDaySelection('Ven', this)">V</button>
-                        <button class="day-btn" data-day="Sab" onclick="app.toggleDaySelection('Sab', this)">S</button>
-                        <button class="day-btn" data-day="Dom" onclick="app.toggleDaySelection('Dom', this)">D</button>
+                        <button class="day-btn time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-day="Lun" onclick="app.toggleDaySelection('Lun', this)">L</button>
+                        <button class="day-btn time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-day="Mar" onclick="app.toggleDaySelection('Mar', this)">M</button>
+                        <button class="day-btn time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-day="Mer" onclick="app.toggleDaySelection('Mer', this)">M</button>
+                        <button class="day-btn time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-day="Gio" onclick="app.toggleDaySelection('Gio', this)">G</button>
+                        <button class="day-btn time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-day="Ven" onclick="app.toggleDaySelection('Ven', this)">V</button>
+                        <button class="day-btn time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-day="Sab" onclick="app.toggleDaySelection('Sab', this)">S</button>
+                        <button class="day-btn time-btn w-full p-3 border border-slate-300 rounded-xl outline-none text-sm" data-day="Dom" onclick="app.toggleDaySelection('Dom', this)">D</button>
                     </div>
                     <p class="text-[10px] text-slate-400 mt-2 text-center">Nessun giorno selezionato = Tutti i giorni</p>
                 </div>
