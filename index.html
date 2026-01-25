@@ -516,6 +516,27 @@
                     const touchEndY = e.changedTouches[0].screenY;
                     this.handleSwipe(touchEndX, touchEndY);
                 }, { passive: true });
+
+                // ⏱️ Controllo automatico cambio giorno
+                setInterval(() => {
+                    this.checkDailyReset();
+                }, 60000);
+            },
+
+            parseDose(dose) {
+                if (!dose) return 1;
+
+                if (typeof dose === "string") {
+                    const frac = dose.match(/(\d+)\s*\/\s*(\d+)/);
+                    if (frac) {
+                        return parseInt(frac[1]) / parseInt(frac[2]);
+                    }
+
+                    const num = parseFloat(dose.replace(",", "."));
+                    if (!isNaN(num)) return num;
+                }
+
+                return 1;
             },
 
             showLowStockAlert(med) {
@@ -736,14 +757,25 @@
             },
 
             resetData() {
-                this.data = { lastOpened: new Date().toDateString(), profiles: [], apiKey: "" };
+                this.data = {
+                    lastOpened: new Date().toISOString().slice(0, 10),
+                    profiles: [],
+                    apiKey: ""
+                };
                 this.saveData();
             },
 
             saveData() { localStorage.setItem('MedicineProData', JSON.stringify(this.data)); },
 
             exportData() {
-                const blob = new Blob([JSON.stringify(this.data, null, 2)], { type: "application/json" });
+                const safeData = JSON.parse(JSON.stringify(this.data));
+                safeData.apiKey = "";
+
+                const blob = new Blob(
+                    [JSON.stringify(safeData, null, 2)],
+                    { type: "application/json" }
+                );
+
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -804,43 +836,35 @@
             },
 
             checkDailyReset() {
-                const today = new Date().toISOString().split('T')[0];
+                const today = new Date().toISOString().slice(0, 10);
 
                 if (this.data.lastOpened === today) return;
 
                 this.data.profiles.forEach(profile => {
                     profile.meds.forEach(med => {
 
-                        // =========================
-                        // 📉 SCALATURA SE PRESA
-                        // =========================
+                        // 📉 Scalatura dose
                         if (med.taken) {
-
-                            let doseQty = 1;
-
-                            if (typeof med.dose === "string") {
-                                const frac = med.dose.match(/(\d+)\s*\/\s*(\d+)/);
-                                if (frac) {
-                                    doseQty = parseInt(frac[1]) / parseInt(frac[2]);
-                                } else {
-                                    const num = parseFloat(med.dose.replace(",", "."));
-                                    if (!isNaN(num)) doseQty = num;
-                                }
-                            }
-
+                            const doseQty = this.parseDose(med.dose);
                             med.boxQty = Math.max(0, med.boxQty - doseQty);
-
-                            if (
-                                med.minQty > 0 &&
-                                med.boxQty <= med.minQty &&
-                                med.alertShown === false
-                            ) {
-                                this.showLowStockAlert(med);
-                                med.alertShown = true;
-                            }
                         }
 
-                        // 🔁 RESET PER NUOVO GIORNO
+                        // 🔁 Reset alert se ricaricato
+                        if (med.boxQty > med.minQty) {
+                            med.alertShown = false;
+                        }
+
+                        // ⚠️ Avviso scorte
+                        if (
+                            med.minQty > 0 &&
+                            med.boxQty <= med.minQty &&
+                            med.alertShown === false
+                        ) {
+                            this.showLowStockAlert(med);
+                            med.alertShown = true;
+                        }
+
+                        // 🔄 Reset giornaliero
                         med.taken = false;
                     });
                 });
@@ -999,9 +1023,15 @@
                         med.days = Array.isArray(this.selectedDays) ? [...this.selectedDays] : [];
 
                         // 🔹 SALVATAGGIO NUOVI CAMPI
+                        const oldQty = med.boxQty;
+
                         med.boxQty = boxQty;
                         med.minQty = minQty;
-                        med.alertShown = med.alertShown ?? false; // NON resettare
+
+                        // 🔁 Reset alert se ricarico
+                        if (boxQty > minQty && boxQty > oldQty) {
+                            med.alertShown = false;
+                        }
                     }
 
                     // =========================
