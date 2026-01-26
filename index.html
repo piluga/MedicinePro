@@ -559,6 +559,34 @@
                 );
             },
 
+            checkTherapyEnd(profile) {
+                const today = new Date().toISOString().slice(0, 10);
+                const alertedSharedIds = new Set();
+
+                profile.meds.forEach(med => {
+
+                    if (!med.endDate) return;
+                    if (med.therapyEndedAlertShown) return;
+                    if (alertedSharedIds.has(med.sharedId)) return;
+                    if (typeof med.therapyEndedAlertShown !== "boolean") {med.therapyEndedAlertShown = false;}
+
+                    if (today >= med.endDate) {
+                        alert(`⚠️ Terapia terminata per il farmaco:\n${med.name}`);
+
+                        alertedSharedIds.add(med.sharedId);
+
+                        // segna TUTTE le istanze come alert mostrate
+                        profile.meds.forEach(m => {
+                            if (m.sharedId === med.sharedId) {
+                                m.therapyEndedAlertShown = true;
+                            }
+                        });
+                    }
+                });
+
+                this.saveData();
+            },
+
             toggleDaySelection(day, btn) {
                 const idx = this.selectedDays.indexOf(day);
                 idx > -1 ? this.selectedDays.splice(idx, 1) : this.selectedDays.push(day);
@@ -629,11 +657,11 @@
                 this.toggleLoading(true, "Analisi farmaco...");
 
                 const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi:
-                    - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
-                    - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
-                    - 'dose': lascia questo campo vuoto (stringa vuota "").
-                    - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
-                    Rispondi solo con il JSON.`;
+                            - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
+                            - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
+                            - 'dose': lascia questo campo vuoto (stringa vuota "").
+                            - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
+                            Rispondi solo con il JSON.`;
 
                 const payload = {
                     contents: [{
@@ -764,7 +792,7 @@
                             if (!med.startDate) med.startDate = null;
                             if (typeof med.durationDays !== "number") med.durationDays = null;
                             if (!med.endDate) med.endDate = null;
-
+                            if (typeof med.therapyEndedAlertShown !== "boolean") { med.therapyEndedAlertShown = false; }
                         });
                     });
 
@@ -895,6 +923,7 @@
 
             openProfile(id) {
                 this.currentProfileId = id;
+                this.checkTherapyEnd(profile);
                 document.getElementById('view-profiles').classList.add('hidden');
                 document.getElementById('view-medications').classList.remove('hidden');
                 document.getElementById('btn-back').classList.remove('hidden');
@@ -947,14 +976,14 @@
                     div.className = "bg-white p-4 rounded-xl card-shadow flex justify-between items-center cursor-pointer border border-transparent hover:border-blue-200 transition-all";
                     div.onclick = () => this.openProfile(p.id);
                     div.innerHTML = `
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">${p.name.charAt(0).toUpperCase()}</div>
-                                <div>
-                                    <h3 class="font-bold text-slate-800">${p.name}</h3>
-                                    <p class="text-xs text-slate-500">${total} farmaci</p>
-                                </div>
-                            </div>
-                            <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>`;
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">${p.name.charAt(0).toUpperCase()}</div>
+                                        <div>
+                                            <h3 class="font-bold text-slate-800">${p.name}</h3>
+                                            <p class="text-xs text-slate-500">${total} farmaci</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>`;
                     container.appendChild(div);
                 });
             },
@@ -1081,6 +1110,7 @@
                             taken: false,
                             boxQty,
                             minQty,
+                            therapyEndedAlertShown: false,
                             alertShown: false
                         });
                     });
@@ -1153,11 +1183,11 @@
                         header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center justify-between gap-2";
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
                         header.innerHTML = `
-                                <div class="flex items-center gap-2">
-                                    <i class="fa-solid ${icon}"></i> ${time}
-                                </div>
-                                <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
-                            `;
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid ${icon}"></i> ${time}
+                                        </div>
+                                        <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
+                                    `;
                         container.appendChild(header);
                         meds.forEach(med => {
                             if (med.taken) anyTaken = true;
@@ -1166,23 +1196,23 @@
                             const takenClass = med.taken ? 'med-card-taken' : '';
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass}`;
                             card.innerHTML = `
-                                    <div class="flex items-center gap-4 flex-1 overflow-hidden">
-                                        <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
-                                        <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
-                                            <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                            <div class="flex flex-col">
-                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                                <div class="flex flex-col mt-0.5">
-                                                    ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                                    ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                            <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                                                <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
+                                                <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
+                                                    <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                                    <div class="flex flex-col">
+                                                        ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                        <div class="flex flex-col mt-0.5">
+                                                            ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                                            ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
-                                        </div>`;
+                                            <div class="flex items-center">
+                                                <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
+                                                </div>`;
                             container.appendChild(card);
                         });
                     }
