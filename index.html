@@ -739,6 +739,10 @@
 
                     // 🔹 RETROCOMPATIBILITÀ FARMACI
                     this.data.profiles.forEach(profile => {
+
+                        // 🔑 NORMALIZZA sharedId (LIVELLO 1)
+                        this.normalizeMedications(profile);
+
                         profile.meds.forEach(med => {
 
                             if (!Array.isArray(med.days)) med.days = [];
@@ -1015,32 +1019,36 @@
                 if (editId) {
                     const med = profile.meds.find(m => m.id === editId);
                     if (med) {
-                        med.name = name;
-                        med.category = category;
-                        med.dose = dose;
-                        med.usage = usage;
-                        med.time = this.selectedTimes[0];
-                        med.days = Array.isArray(this.selectedDays) ? [...this.selectedDays] : [];
+                        profile.meds.forEach(m => {
+                            if (m.sharedId === med.sharedId) {
 
-                        // 🔹 SALVATAGGIO NUOVI CAMPI
-                        const oldQty = med.boxQty;
+                                m.name = name;
+                                m.category = category;
+                                m.dose = dose;
+                                m.usage = usage;
+                                m.days = Array.isArray(this.selectedDays) ? [...this.selectedDays] : [];
 
-                        med.boxQty = boxQty;
-                        med.minQty = minQty;
+                                const oldQty = m.boxQty;
+                                m.boxQty = boxQty;
+                                m.minQty = minQty;
 
-                        // 🔁 Reset alert se ricarico
-                        if (boxQty > minQty && boxQty > oldQty) {
-                            med.alertShown = false;
-                        }
+                                if (boxQty > minQty && boxQty > oldQty) {
+                                    m.alertShown = false;
+                                }
+                            }
+                        });
                     }
 
                     // =========================
                     // ➕ NUOVO FARMACO
                     // =========================
                 } else {
+                    const sharedId = this.generateId(); // 🔑 ID condiviso
+
                     this.selectedTimes.forEach(t => {
                         profile.meds.push({
                             id: this.generateId(),
+                            sharedId: sharedId, // 🔗 collega mattina/pomeriggio/sera
                             name,
                             category,
                             dose,
@@ -1048,10 +1056,8 @@
                             time: t,
                             days: Array.isArray(this.selectedDays) ? [...this.selectedDays] : [],
                             taken: false,
-
-                            // 🔹 STEP 1 — MODELLO DATI ESTESO
-                            boxQty: boxQty,
-                            minQty: minQty,
+                            boxQty,
+                            minQty,
                             alertShown: false
                         });
                     });
@@ -1060,6 +1066,14 @@
                 this.saveData();
                 this.closeModal('modal-med');
                 this.renderMedications();
+            },
+
+            normalizeMedications(profile) {
+                profile.meds.forEach(m => {
+                    if (!m.sharedId) {
+                        m.sharedId = m.id;
+                    }
+                });
             },
 
             toggleMedication(id) {
@@ -1144,7 +1158,7 @@
                                     </div>
                                     <div class="flex items-center">
                                         <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button
+                                        <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
                                         </div>`;
                             container.appendChild(card);
                         });
