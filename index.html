@@ -506,6 +506,15 @@
             isSwiping: false,
             stream: null,
 
+            calculateEndDate(startDate, durationDays) {
+                if (!startDate || !durationDays) return null;
+
+                const d = new Date(startDate);
+                d.setDate(d.getDate() + Number(durationDays) - 1);
+
+                return d.toISOString().slice(0, 10);
+            },
+
             init() {
                 this.loadData();
                 this.checkDailyReset();
