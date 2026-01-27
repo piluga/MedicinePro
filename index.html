@@ -232,13 +232,18 @@
 
         .therapy-badge {
             display: inline-flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 6px;
             padding: 4px 10px;
-            border-radius: 12px;
+            border-radius: 999px;
             font-size: 11px;
-            line-height: 1.1;
-            margin-top: 4px;
-            width: fit-content;
+            font-weight: 600;
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+
+            .therapy-badge {
+                margin-left: -6px;
         }
 
             .therapy-badge .label {
@@ -246,8 +251,12 @@
             }
 
             .therapy-badge .sub {
-                font-size: 10px;
+                font-size: 11px;
                 opacity: 0.9;
+            }
+
+            .therapy-badge .dot {
+                opacity: 0.5;
             }
 
             /* COLORI BADGE */
@@ -264,6 +273,10 @@
             .therapy-badge.red {
                 background: #fef2f2;
                 color: #b91c1c;
+            }
+
+            .therapy-badge {
+                box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
             }
 
         /* COLORE CARD */
@@ -1349,6 +1362,7 @@
                                 therapyBadge = `
                                     <div class="therapy-badge ${therapy.cls}">
                                         <span class="label">${therapy.label}</span>
+                                        <span class="dot">•</span>
                                         <span class="sub">${therapy.sub}</span>
                                     </div>
                                 `;
