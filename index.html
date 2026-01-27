@@ -229,6 +229,56 @@
             justify-content: center;
             color: white;
         }
+
+        .therapy-badge {
+            display: inline-flex;
+            flex-direction: column;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            line-height: 1.1;
+            margin-top: 4px;
+            width: fit-content;
+        }
+
+            .therapy-badge .label {
+                font-weight: 700;
+            }
+
+            .therapy-badge .sub {
+                font-size: 10px;
+                opacity: 0.9;
+            }
+
+            /* COLORI BADGE */
+            .therapy-badge.green {
+                background: #ecfdf5;
+                color: #047857;
+            }
+
+            .therapy-badge.orange {
+                background: #fff7ed;
+                color: #c2410c;
+            }
+
+            .therapy-badge.red {
+                background: #fef2f2;
+                color: #b91c1c;
+            }
+
+        /* COLORE CARD */
+        .med-card.therapy-green {
+            border-left: 4px solid #10b981;
+        }
+
+        .med-card.therapy-orange {
+            border-left: 4px solid #f97316;
+        }
+
+        .med-card.therapy-red {
+            border-left: 4px solid #dc2626;
+        }
+
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -441,6 +491,12 @@
                     </div>
                 </div>
 
+                <!-- Stato Terapia -->
+                <div id="therapy-status-box" class="hidden p-3 rounded-xl border mt-3 text-sm flex items-center gap-3">
+                    <span id="therapy-badge" class="px-3 py-1 rounded-full text-xs font-bold"></span>
+                    <span id="therapy-countdown" class="text-slate-700"></span>
+                </div>
+    
                 <!-- Orari -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Momento della giornata</label>
@@ -540,6 +596,46 @@
                 }, 60000);
             },
 
+            updateTherapyStatusUI(med) {
+                const box = document.getElementById('therapy-status-box');
+                const badge = document.getElementById('therapy-badge');
+                const countdown = document.getElementById('therapy-countdown');
+
+                if (!med || !med.endDate) {
+                    box.classList.add('hidden');
+                    return;
+                }
+
+                const today = new Date().toISOString().slice(0, 10);
+                const diff = Math.ceil(
+                    (new Date(med.endDate) - new Date(today)) / (1000 * 60 * 60 * 24)
+                );
+
+                box.classList.remove('hidden');
+
+                // reset classi
+                box.className = "p-3 rounded-xl border mt-3 text-sm flex items-center gap-3";
+
+                if (diff < 0) {
+                    badge.textContent = "Terapia terminata";
+                    badge.className = "bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold";
+                    countdown.textContent = `Terminata ${Math.abs(diff)} giorni fa`;
+                    box.classList.add("bg-red-50", "border-red-200");
+                }
+                else if (diff <= 3) {
+                    badge.textContent = "In scadenza";
+                    badge.className = "bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold";
+                    countdown.textContent = `Scade tra ${diff} giorni`;
+                    box.classList.add("bg-orange-50", "border-orange-200");
+                }
+                else {
+                    badge.textContent = "In corso";
+                    badge.className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold";
+                    countdown.textContent = `Restano ${diff} giorni`;
+                    box.classList.add("bg-emerald-50", "border-emerald-200");
+                }
+            },
+
             calculateEndDate(startDate, durationDays) {
                 if (!startDate || !durationDays) return null;
 
@@ -547,6 +643,37 @@
                 d.setDate(d.getDate() + Number(durationDays) - 1);
 
                 return d.toISOString().slice(0, 10);
+            },
+
+            getTherapyStatus(med) {
+                if (!med.endDate) return null;
+
+                const today = new Date().toISOString().slice(0, 10);
+                const diff = Math.ceil(
+                    (new Date(med.endDate) - new Date(today)) / (1000 * 60 * 60 * 24)
+                );
+
+                if (diff < 0) {
+                    return {
+                        label: "Terminata",
+                        sub: `Terminata ${Math.abs(diff)}g fa`,
+                        cls: "red"
+                    };
+                }
+
+                if (diff <= 3) {
+                    return {
+                        label: "In scadenza",
+                        sub: `Scade tra ${diff}g`,
+                        cls: "orange"
+                    };
+                }
+
+                return {
+                    label: "In corso",
+                    sub: `Restano ${diff}g`,
+                    cls: "green"
+                };
             },
 
             checkTherapyEnd(profile) {
@@ -1026,6 +1153,7 @@
                 document.getElementById('input-med-dose').value = '';
                 document.getElementById('input-med-usage').value = '';
                 document.getElementById('btn-scan').classList.remove('hidden');
+                document.getElementById('therapy-status-box').classList.add('hidden');
                 this.selectedTimes = [];
                 this.updateTimeUI();
                 this.selectedDays = [];
@@ -1052,6 +1180,7 @@
                     this.selectedDays = Array.isArray(med.days) ? [...med.days] : [];
                     this.updateDayUI();
                     this.updateTimeUI();
+                    this.updateTherapyStatusUI(med);
                     document.getElementById('modal-med').classList.remove('hidden');
                 }
             },
@@ -1185,9 +1314,9 @@
                     container.innerHTML = '';
                     const today = new Date().toLocaleDateString('it-IT', { weekday: 'short' });
                     const todayShort = today.charAt(0).toUpperCase() + today.slice(1, 3);
-
                     const meds = profile.meds.filter(m =>
                         m.time === time &&
+
                         (
                             !Array.isArray(m.days) ||
                             m.days.length === 0 ||
@@ -1214,6 +1343,17 @@
                             const card = document.createElement('div');
                             const categoryClass = `med-card-${time.toLowerCase()}`;
                             const takenClass = med.taken ? 'med-card-taken' : '';
+                            const therapy = this.getTherapyStatus(med);
+                            let therapyBadge = '';
+                            if (therapy) {
+                                therapyBadge = `
+                                    <div class="therapy-badge ${therapy.cls}">
+                                        <span class="label">${therapy.label}</span>
+                                        <span class="sub">${therapy.sub}</span>
+                                    </div>
+                                `;
+                            }
+
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass}`;
                             card.innerHTML = `
                                     <div class="flex items-center gap-4 flex-1 overflow-hidden">
@@ -1225,6 +1365,7 @@
                                                 <div class="flex flex-col mt-0.5">
                                                     ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
                                                     ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                                    ${therapyBadge}
                                                 </div>
                                             </div>
                                         </div>
