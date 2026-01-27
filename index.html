@@ -512,15 +512,6 @@
             isSwiping: false,
             stream: null,
 
-            calculateEndDate(startDate, durationDays) {
-                if (!startDate || !durationDays) return null;
-
-                const d = new Date(startDate);
-                d.setDate(d.getDate() + Number(durationDays) - 1);
-
-                return d.toISOString().slice(0, 10);
-            },
-
             init() {
                 this.loadData();
                 this.checkDailyReset();
@@ -547,6 +538,42 @@
                 setInterval(() => {
                     this.checkDailyReset();
                 }, 60000);
+            },
+
+            calculateEndDate(startDate, durationDays) {
+                if (!startDate || !durationDays) return null;
+
+                const d = new Date(startDate);
+                d.setDate(d.getDate() + Number(durationDays) - 1);
+
+                return d.toISOString().slice(0, 10);
+            },
+
+            checkTherapyEnd(profile) {
+                const today = new Date().toISOString().slice(0, 10);
+                const alertedSharedIds = new Set();
+
+                profile.meds.forEach(med => {
+
+                    if (!med.endDate) return;
+                    if (med.therapyEndedAlertShown) return;
+                    if (alertedSharedIds.has(med.sharedId)) return;
+
+                    if (today >= med.endDate) {
+                        alert(`⚠️ Terapia terminata per il farmaco:\n${med.name}`);
+
+                        alertedSharedIds.add(med.sharedId);
+
+                        // segna TUTTE le istanze come alert mostrate
+                        profile.meds.forEach(m => {
+                            if (m.sharedId === med.sharedId) {
+                                m.therapyEndedAlertShown = true;
+                            }
+                        });
+                    }
+                });
+
+                this.saveData();
             },
 
             parseDose(dose) {
@@ -776,10 +803,10 @@
                             if (typeof med.minQty !== "number") med.minQty = 0;
                             if (typeof med.alertShown !== "boolean") med.alertShown = false;
                             if (typeof med.taken !== "boolean") med.taken = false;
-                            if (!med.startDate) med.startDate = null;
-                            if (typeof med.durationDays !== "number") med.durationDays = null;
-                            if (!med.endDate) med.endDate = null;
-
+                            if (med.startDate === undefined) med.startDate = null;
+                            if (med.durationDays === undefined) med.durationDays = null;
+                            if (med.endDate === undefined) med.endDate = null;
+                            if (typeof med.therapyEndedAlertShown !== "boolean") {med.therapyEndedAlertShown = false;}
                         });
                     });
 
@@ -914,6 +941,7 @@
                 document.getElementById('view-medications').classList.remove('hidden');
                 document.getElementById('btn-back').classList.remove('hidden');
                 this.renderMedications();
+                this.checkTherapyEnd(profile);
             },
 
             createProfile() {
@@ -1015,6 +1043,9 @@
                     document.getElementById('input-med-usage').value = med.usage || "";
                     document.getElementById('med-box-qty').value = med.boxQty ?? 0;
                     document.getElementById('med-min-qty').value = med.minQty ?? 0;
+                    // ✅ PRECOMPILA TERAPIA
+                    document.getElementById('med-start-date').value = med.startDate || "";
+                    document.getElementById('med-duration').value = med.durationDays ?? "";
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
                     document.getElementById('btn-scan').classList.add('hidden');
                     this.selectedTimes = [med.time];
@@ -1026,14 +1057,14 @@
             },
 
             handleMedicationSubmit() {
-                const startDate = document.getElementById('med-start-date')?.value || null;
-                const durationDays = parseInt(document.getElementById('med-duration')?.value) || null;
-                const endDate = this.calculateEndDate(startDate, durationDays);
                 const name = document.getElementById('input-med-name').value.trim();
                 const category = document.getElementById('input-med-category').value.trim();
                 const dose = document.getElementById('input-med-dose').value.trim();
                 const usage = document.getElementById('input-med-usage').value.trim();
                 const editId = document.getElementById('input-med-edit-id').value;
+                const startDate = document.getElementById('med-start-date')?.value || null;
+                const durationDays = parseInt(document.getElementById('med-duration')?.value) || null;
+                const endDate = this.calculateEndDate(startDate, durationDays);
 
                 // 🔹 NUOVI CAMPI
                 const boxQty = parseFloat(document.getElementById('med-box-qty').value) || 0;
@@ -1099,6 +1130,7 @@
                             taken: false,
                             boxQty,
                             minQty,
+                            therapyEndedAlertShown: false,
                             alertShown: false
                         });
                     });
