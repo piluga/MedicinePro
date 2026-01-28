@@ -95,18 +95,18 @@
             flex-shrink: 0;
         }
 
-            .med-checkbox:checked {
-                background-color: #22c55e;
-                border-color: #22c55e;
-            }
+        .med-checkbox:checked {
+            background-color: #22c55e;
+            border-color: #22c55e;
+        }
 
-                .med-checkbox:checked::after {
-                    content: '\f00c';
-                    font-family: 'Font Awesome 6 Free';
-                    font-weight: 900;
-                    color: white;
-                    font-size: 1.2rem;
-                }
+        .med-checkbox:checked::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: white;
+            font-size: 1.2rem;
+        }
 
         .card-shadow {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
@@ -242,42 +242,42 @@
             white-space: nowrap;
         }
 
-            .therapy-badge {
-                margin-left: -6px;
+        .therapy-badge {
+            margin-left: -6px;
         }
 
-            .therapy-badge .label {
-                font-weight: 700;
-            }
+        .therapy-badge .label {
+            font-weight: 700;
+        }
 
-            .therapy-badge .sub {
-                font-size: 11px;
-                opacity: 0.9;
-            }
+        .therapy-badge .sub {
+            font-size: 11px;
+            opacity: 0.9;
+        }
 
-            .therapy-badge .dot {
-                opacity: 0.5;
-            }
+        .therapy-badge .dot {
+            opacity: 0.5;
+        }
 
-            /* COLORI BADGE */
-            .therapy-badge.green {
-                background: #ecfdf5;
-                color: #047857;
-            }
+        /* COLORI BADGE */
+        .therapy-badge.green {
+            background: #ecfdf5;
+            color: #047857;
+        }
 
-            .therapy-badge.orange {
-                background: #fff7ed;
-                color: #c2410c;
-            }
+        .therapy-badge.orange {
+            background: #fff7ed;
+            color: #c2410c;
+        }
 
-            .therapy-badge.red {
-                background: #fef2f2;
-                color: #b91c1c;
-            }
+        .therapy-badge.red {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
 
-            .therapy-badge {
-                box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
-            }
+        .therapy-badge {
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+        }
 
         /* COLORE CARD */
         .med-card.therapy-green {
@@ -292,6 +292,20 @@
             border-left: 4px solid #dc2626;
         }
 
+        .med-card-inactive {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        .med-card-inactive button {
+            pointer-events: auto;
+            opacity: 0.7;
+        }
+
+        .therapy-badge.gray {
+            background: #f1f5f9;
+            color: #475569;
+        }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -504,6 +518,7 @@
                     </div>
                 </div>
 
+                <!-- Frequenza -->
                 <div class="mt-3">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Frequenza</label>
                     <select id="med-frequency"
@@ -511,6 +526,14 @@
                         <option value="daily">Ogni giorno</option>
                         <option value="alternate">Giorni alterni</option>
                     </select>
+                </div>
+
+                <!-- Anteprima Calendario -->
+                <div id="therapy-preview" class="mt-3 hidden">
+                    <p class="text-[10px] font-semibold text-slate-500 mb-2">
+                        Prossimi giorni
+                    </p>
+                    <div id="therapy-calendar" class="flex gap-2"></div>
                 </div>
 
                 <!-- Stato Terapia -->
@@ -545,12 +568,12 @@
                 </div>
             </div>
 
-                <input type="hidden" id="input-med-edit-id">
-                <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                    <button onclick="app.closeModal('modal-med')" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition-colors">Chiudi</button>
-                    <button onclick="app.handleMedicationSubmit()" class="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">Salva</button>
-                </div>
+            <input type="hidden" id="input-med-edit-id">
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                <button onclick="app.closeModal('modal-med')" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition-colors">Chiudi</button>
+                <button onclick="app.handleMedicationSubmit()" class="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">Salva</button>
             </div>
+        </div>
     </div>
 
     <!-- UI SCANNER -->
@@ -665,6 +688,20 @@
                 d.setDate(d.getDate() + Number(durationDays) - 1);
 
                 return d.toISOString().slice(0, 10);
+            },
+
+            isMedicationDay(med, dateISO) {
+                if (!med.startDate) return true;
+                if (med.frequency !== "alternate") return true;
+
+                const start = new Date(med.startDate);
+                const today = new Date(dateISO);
+
+                const diffDays = Math.floor(
+                    (today - start) / (1000 * 60 * 60 * 24)
+                );
+
+                return diffDays % 2 === 0;
             },
 
             getTherapyStatus(med) {
@@ -820,11 +857,11 @@
                 this.toggleLoading(true, "Analisi farmaco...");
 
                 const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi:
-                    - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
-                    - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
-                    - 'dose': lascia questo campo vuoto (stringa vuota "").
-                    - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
-                    Rispondi solo con il JSON.`;
+                        - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
+                        - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
+                        - 'dose': lascia questo campo vuoto (stringa vuota "").
+                        - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
+                        Rispondi solo con il JSON.`;
 
                 const payload = {
                     contents: [{
@@ -955,7 +992,8 @@
                             if (med.startDate === undefined) med.startDate = null;
                             if (med.durationDays === undefined) med.durationDays = null;
                             if (med.endDate === undefined) med.endDate = null;
-                            if (typeof med.therapyEndedAlertShown !== "boolean") {med.therapyEndedAlertShown = false;}
+                            if (typeof med.therapyEndedAlertShown !== "boolean") { med.therapyEndedAlertShown = false; }
+                            if (!med.frequency) med.frequency = "daily";
                         });
                     });
 
@@ -1139,14 +1177,14 @@
                     div.className = "bg-white p-4 rounded-xl card-shadow flex justify-between items-center cursor-pointer border border-transparent hover:border-blue-200 transition-all";
                     div.onclick = () => this.openProfile(p.id);
                     div.innerHTML = `
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">${p.name.charAt(0).toUpperCase()}</div>
-                                <div>
-                                    <h3 class="font-bold text-slate-800">${p.name}</h3>
-                                    <p class="text-xs text-slate-500">${total} farmaci</p>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">${p.name.charAt(0).toUpperCase()}</div>
+                                    <div>
+                                        <h3 class="font-bold text-slate-800">${p.name}</h3>
+                                        <p class="text-xs text-slate-500">${total} farmaci</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>`;
+                                <span class="text-sm font-bold ${perc === 100 ? 'text-green-500' : 'text-blue-500'}">${perc}%</span>`;
                     container.appendChild(div);
                 });
             },
@@ -1193,6 +1231,7 @@
                     document.getElementById('input-med-usage').value = med.usage || "";
                     document.getElementById('med-box-qty').value = med.boxQty ?? 0;
                     document.getElementById('med-min-qty').value = med.minQty ?? 0;
+                    document.getElementById('med-frequency').value = med.frequency || "daily";
                     // ✅ PRECOMPILA TERAPIA
                     document.getElementById('med-start-date').value = med.startDate || "";
                     document.getElementById('med-duration').value = med.durationDays ?? "";
@@ -1212,6 +1251,7 @@
                 const category = document.getElementById('input-med-category').value.trim();
                 const dose = document.getElementById('input-med-dose').value.trim();
                 const usage = document.getElementById('input-med-usage').value.trim();
+                const frequency = document.getElementById('med-frequency').value;
                 const editId = document.getElementById('input-med-edit-id').value;
                 const startDate = document.getElementById('med-start-date')?.value || null;
                 const durationDays = parseInt(document.getElementById('med-duration')?.value) || null;
@@ -1242,6 +1282,7 @@
                                 m.usage = usage;
                                 m.startDate = startDate;
                                 m.durationDays = durationDays;
+                                med.frequency = frequency;
                                 m.endDate = endDate;
                                 m.days = Array.isArray(this.selectedDays) ? [...this.selectedDays] : [];
 
@@ -1278,6 +1319,7 @@
                             endDate,
                             time: t,
                             days: Array.isArray(this.selectedDays) ? [...this.selectedDays] : [],
+                            frequency,
                             taken: false,
                             boxQty,
                             minQty,
@@ -1331,6 +1373,7 @@
                 let anyTaken = false;
                 const dayMap = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
                 const todayShort = dayMap[new Date().getDay()];
+                const todayISO = new Date().toISOString().slice(0, 10);
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
@@ -1344,59 +1387,73 @@
                             m.days.length === 0 ||
                             m.days.includes(todayShort)
                         )
+
                     );
+
                     if (meds.length > 0) {
                         hasMeds = true;
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
-
                         const header = document.createElement('div');
                         header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center justify-between gap-2";
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
                         header.innerHTML = `
-                                <div class="flex items-center gap-2">
-                                    <i class="fa-solid ${icon}"></i> ${time}
-                                </div>
-                                <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
-                            `;
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid ${icon}"></i> ${time}
+                                    </div>
+                                    <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
+                                `;
                         container.appendChild(header);
                         meds.forEach(med => {
+                            const isToday = this.isMedicationDay(med, todayISO);
                             if (med.taken) anyTaken = true;
                             const card = document.createElement('div');
                             const categoryClass = `med-card-${time.toLowerCase()}`;
+                            const inactiveClass = !isToday ? 'med-card-inactive' : '';
                             const takenClass = med.taken ? 'med-card-taken' : '';
                             const therapy = this.getTherapyStatus(med);
                             let therapyBadge = '';
                             if (therapy) {
                                 therapyBadge = `
-                                    <div class="therapy-badge ${therapy.cls}">
-                                        <span class="label">${therapy.label}</span>
-                                        <span class="dot">•</span>
-                                        <span class="sub">${therapy.sub}</span>
-                                    </div>
-                                `;
+                                        <div class="therapy-badge ${therapy.cls}">
+                                            <span class="label">${therapy.label}</span>
+                                            <span class="dot">•</span>
+                                            <span class="sub">${therapy.sub}</span>
+                                        </div>
+                                    `;
                             }
 
-                            card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass}`;
+                            if (!isToday) {
+                                therapyBadge += `
+                                        <div class="therapy-badge gray">
+                                            <span class="label">Oggi non previsto</span>
+                                        </div>
+                                    `;
+                            }
+
+                            card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${inactiveClass}`;
                             card.innerHTML = `
-                                    <div class="flex items-center gap-4 flex-1 overflow-hidden">
-                                        <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} onchange="app.toggleMedication('${med.id}')">
-                                        <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
-                                            <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                            <div class="flex flex-col">
-                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                                <div class="flex flex-col mt-0.5">
-                                                    ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                                    ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
-                                                    ${therapyBadge}
+                                        <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                                            <input type="checkbox" class="med-checkbox"
+                                            ${med.taken ? 'checked' : ''}
+                                            ${!isToday ? 'disabled' : ''}
+                                            onchange="app.toggleMedication('${med.id}')">
+                                            <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
+                                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                                <div class="flex flex-col">
+                                                    ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                    <div class="flex flex-col mt-0.5">
+                                                        ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                                        ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                                        ${therapyBadge}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
-                                        </div>`;
+                                        <div class="flex items-center">
+                                            <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
+                                            </div>`;
                             container.appendChild(card);
                         });
                     }
