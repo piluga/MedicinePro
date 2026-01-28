@@ -530,7 +530,7 @@
 
                 <!-- Anteprima Calendario -->
                 <div id="therapy-preview" class="mt-3 hidden">
-                    <p class="text-[10px] font-semibold text-slate-500 mb-2">
+                    <p class="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">
                         Prossimi giorni
                     </p>
                     <div id="therapy-calendar" class="flex gap-2"></div>
@@ -733,6 +733,29 @@
                     sub: `Restano ${diff}g`,
                     cls: "green"
                 };
+            },
+
+            renderTherapyPreview(med) {
+                const container = document.getElementById('therapy-calendar');
+                const wrapper = document.getElementById('therapy-preview');
+
+                container.innerHTML = '';
+                wrapper.classList.remove('hidden');
+
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() + i);
+                    const iso = d.toISOString().slice(0, 10);
+
+                    const active = this.isMedicationDay(med, iso);
+
+                    const el = document.createElement('div');
+                    el.className = `w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold
+            ${active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`;
+                    el.textContent = d.getDate();
+
+                    container.appendChild(el);
+                }
             },
 
             checkTherapyEnd(profile) {
@@ -1242,6 +1265,7 @@
                     this.updateDayUI();
                     this.updateTimeUI();
                     this.updateTherapyStatusUI(med);
+                    this.renderTherapyPreview(med);
                     document.getElementById('modal-med').classList.remove('hidden');
                 }
             },
@@ -1332,6 +1356,7 @@
                 this.saveData();
                 this.closeModal('modal-med');
                 this.renderMedications();
+                this.renderTherapyPreview({startDate,frequency});
             },
 
             normalizeMedications(profile) {
