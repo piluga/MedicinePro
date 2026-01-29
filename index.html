@@ -637,8 +637,8 @@
 
                 // ⏱️ Controllo automatico cambio giorno
                 setInterval(() => {
-                    this.checkDailyReset();
-                }, 60000);
+                    this.renderMedications();
+                }, 60 * 1000);
             },
 
             updateTherapyStatusUI(med) {
@@ -1368,6 +1368,8 @@
             },
 
             toggleMedication(id) {
+                const todayISO = new Date().toISOString().slice(0, 10);
+                if (!this.isMedicationDay(med, todayISO)) return;
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 const med = profile.meds.find(m => m.id === id);
                 if (med) { med.taken = !med.taken; this.saveData(); this.renderMedications(); }
@@ -1417,6 +1419,7 @@
 
                     if (meds.length > 0) {
                         hasMeds = true;
+                        const activeMeds = meds.filter(m => this.isMedicationDay(m, todayISO));
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
                         const header = document.createElement('div');
