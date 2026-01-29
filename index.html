@@ -536,10 +536,6 @@
                     <div id="therapy-calendar" class="flex gap-2"></div>
                 </div>
 
-                <p class="text-[9px] text-slate-400 mt-2">
-                    🟢 Inizio · 🟡 Giorni intermedi · 🔴 Fine · ⚪ Giorno di pausa
-                </p>
-
                 <!-- Stato Terapia -->
                 <div id="therapy-status-box" class="hidden p-3 rounded-xl border mt-3 text-sm flex items-center gap-3">
                     <span id="therapy-badge" class="px-3 py-1 rounded-full text-xs font-bold"></span>
@@ -744,49 +740,21 @@
                 const wrapper = document.getElementById('therapy-preview');
 
                 container.innerHTML = '';
-
-                if (!med.startDate || !med.durationDays) {
-                    wrapper.classList.add('hidden');
-                    return;
-                }
-
                 wrapper.classList.remove('hidden');
 
-                const start = new Date(med.startDate);
-                const totalDoses = med.durationDays;
-
-                let dosesCount = 0;
-                let dayOffset = 0;
-
-                while (dosesCount < totalDoses) {
-                    const d = new Date(start);
-                    d.setDate(start.getDate() + dayOffset);
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() + i);
                     const iso = d.toISOString().slice(0, 10);
 
-                    const isActiveDay = this.isMedicationDay(med, iso);
-
-                    // Se non è giorno di assunzione, lo mostriamo ma NON incrementiamo dose
-                    let cls = 'bg-slate-100 text-slate-400';
-
-                    if (isActiveDay) {
-                        dosesCount++;
-
-                        if (dosesCount === 1) {
-                            cls = 'bg-green-600 text-white';          // inizio terapia
-                        } else if (dosesCount === totalDoses) {
-                            cls = 'bg-red-600 text-white';            // fine terapia
-                        } else {
-                            cls = 'bg-yellow-400 text-slate-900';     // giorni intermedi
-                        }
-                    }
+                    const active = this.isMedicationDay(med, iso);
 
                     const el = document.createElement('div');
-                    el.className = `w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${cls}`;
+                    el.className = `w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold
+            ${active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`;
                     el.textContent = d.getDate();
 
                     container.appendChild(el);
-
-                    dayOffset++;
                 }
             },
 
