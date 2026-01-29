@@ -536,6 +536,11 @@
                     <div id="therapy-calendar" class="flex gap-2"></div>
                 </div>
 
+                <!-- Leggenda Semaforo -->
+                <div id="therapy-legend" class="hidden mt-2 text-[9px] text-slate-400">
+                    🟢 Prima assunzione · 🟡 Intermedia · 🔴 Ultima · ⚪ Giorno di pausa
+                </div>
+
                 <!-- Stato Terapia -->
                 <div id="therapy-status-box" class="hidden p-3 rounded-xl border mt-3 text-sm flex items-center gap-3">
                     <span id="therapy-badge" class="px-3 py-1 rounded-full text-xs font-bold"></span>
@@ -681,14 +686,75 @@
                 }
             },
 
-            calculateEndDate(startDate, durationDays) {
+            calculateEndDate(startDate, durationDays, frequency) {
                 if (!startDate || !durationDays) return null;
 
-                const d = new Date(startDate);
-                d.setDate(d.getDate() + Number(durationDays) - 1);
+                const start = new Date(startDate);
 
-                return d.toISOString().slice(0, 10);
+                // Caso giornaliero
+                if (frequency !== "alternate") {
+                    const end = new Date(start);
+                    end.setDate(start.getDate() + durationDays - 1);
+                    return end.toISOString().slice(0, 10);
+                }
+
+                // Caso giorni alterni → durata = numero di dosi
+                let doses = 0;
+                let offset = 0;
+
+                while (doses < durationDays) {
+                    const d = new Date(start);
+                    d.setDate(start.getDate() + offset);
+
+                    if (offset % 2 === 0) {
+                        doses++;
+                    }
+
+                    offset++;
+                }
+
+                const end = new Date(start);
+                end.setDate(start.getDate() + offset - 1);
+                return end.toISOString().slice(0, 10);
             },
+
+            calculateTherapyCountdown(med) {
+                if (!med.startDate || !med.endDate) return null;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const start = new Date(med.startDate);
+                start.setHours(0, 0, 0, 0);
+
+                const end = new Date(med.endDate);
+                end.setHours(0, 0, 0, 0);
+
+                // Se non è ancora iniziata
+                if (today < start) {
+                    const daysToStart = Math.ceil((start - today) / 86400000);
+                    return {
+                        phase: 'not-started',
+                        days: daysToStart
+                    };
+                }
+
+                // Se è terminata
+                if (today > end) {
+                    return {
+                        phase: 'ended',
+                        days: 0
+                    };
+                }
+
+                // In corso
+                const daysLeft = Math.ceil((end - today) / 86400000);
+                return {
+                    phase: 'active',
+                    days: daysLeft
+                };
+            },
+
 
             isMedicationDay(med, dateISO) {
                 if (!med.startDate) return true;
@@ -706,31 +772,53 @@
 
             getTherapyStatus(med) {
                 if (!med.endDate) return null;
+                const countdown = this.calculateTherapyCountdown(med);
 
-                const today = new Date().toISOString().slice(0, 10);
-                const diff = Math.ceil(
-                    (new Date(med.endDate) - new Date(today)) / (1000 * 60 * 60 * 24)
-                );
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
 
-                if (diff < 0) {
+                const end = new Date(med.endDate);
+                end.setHours(0, 0, 0, 0);
+
+                // ➕ +1 per includere il giorno finale
+                const diffDays = Math.round(
+                    (end - today) / (1000 * 60 * 60 * 24)
+                ) + 1;
+
+                if (countdown.phase === 'not-started') {
                     return {
-                        label: "Terminata",
-                        sub: `Terminata ${Math.abs(diff)}g fa`,
-                        cls: "red"
+                        cls: 'badge-upcoming',
+                        label: 'Non iniziata',
+                        sub: `Inizia tra ${countdown.days}g`
                     };
                 }
 
-                if (diff <= 3) {
+                if (countdown.phase === 'active') {
+                    if (countdown.days <= 2) {
+                        return {
+                            cls: 'badge-ending',
+                            label: 'In scadenza',
+                            sub: `Scade tra ${countdown.days}g`
+                        };
+                    }
                     return {
-                        label: "In scadenza",
-                        sub: `Scade tra ${diff}g`,
-                        cls: "orange"
+                        cls: 'badge-active',
+                        label: 'In corso',
+                        sub: `Restano ${countdown.days}g`
+                    };
+                }
+
+                if (countdown.phase === 'ended') {
+                    return {
+                        cls: 'badge-ended',
+                        label: 'Terminata',
+                        sub: 'Completata'
                     };
                 }
 
                 return {
                     label: "In corso",
-                    sub: `Restano ${diff}g`,
+                    sub: `Restano ${diffDays} giorni`,
                     cls: "green"
                 };
             },
@@ -740,21 +828,56 @@
                 const wrapper = document.getElementById('therapy-preview');
 
                 container.innerHTML = '';
+
+                if (!med.startDate || !med.durationDays) {
+                    wrapper.classList.add('hidden');
+                    return;
+                }
+
                 wrapper.classList.remove('hidden');
 
-                for (let i = 0; i < 7; i++) {
-                    const d = new Date();
-                    d.setDate(d.getDate() + i);
+                const start = new Date(med.startDate);
+                const totalDoses = med.durationDays;
+                const legend = document.getElementById('therapy-legend');
+
+                if (med.frequency === "alternate") {
+                    legend.classList.remove('hidden');
+                } else {
+                    legend.classList.add('hidden');
+                }
+
+                let dosesCount = 0;
+                let dayOffset = 0;
+
+                while (dosesCount < totalDoses) {
+                    const d = new Date(start);
+                    d.setDate(start.getDate() + dayOffset);
                     const iso = d.toISOString().slice(0, 10);
 
-                    const active = this.isMedicationDay(med, iso);
+                    const isActiveDay = this.isMedicationDay(med, iso);
+
+                    // Se non è giorno di assunzione, lo mostriamo ma NON incrementiamo dose
+                    let cls = 'bg-slate-100 text-slate-400';
+
+                    if (isActiveDay) {
+                        dosesCount++;
+
+                        if (dosesCount === 1) {
+                            cls = 'bg-green-600 text-white';          // inizio terapia
+                        } else if (dosesCount === totalDoses) {
+                            cls = 'bg-red-600 text-white';            // fine terapia
+                        } else {
+                            cls = 'bg-yellow-400 text-slate-900';     // giorni intermedi
+                        }
+                    }
 
                     const el = document.createElement('div');
-                    el.className = `w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold
-            ${active ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`;
+                    el.className = `w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${cls}`;
                     el.textContent = d.getDate();
 
                     container.appendChild(el);
+
+                    dayOffset++;
                 }
             },
 
@@ -1279,7 +1402,7 @@
                 const editId = document.getElementById('input-med-edit-id').value;
                 const startDate = document.getElementById('med-start-date')?.value || null;
                 const durationDays = parseInt(document.getElementById('med-duration')?.value) || null;
-                const endDate = this.calculateEndDate(startDate, durationDays);
+                const endDate = this.calculateEndDate(startDate, durationDays, frequency);
 
                 // 🔹 NUOVI CAMPI
                 const boxQty = parseFloat(document.getElementById('med-box-qty').value) || 0;
@@ -1368,11 +1491,16 @@
             },
 
             toggleMedication(id) {
-                const todayISO = new Date().toISOString().slice(0, 10);
-                if (!this.isMedicationDay(med, todayISO)) return;
-                const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                if (!profile) return;
+
                 const med = profile.meds.find(m => m.id === id);
-                if (med) { med.taken = !med.taken; this.saveData(); this.renderMedications(); }
+                if (!med) return;
+
+                med.taken = !med.taken;
+
+                this.saveData();        // 🔥 FONDAMENTALE
+                this.renderMedications();
             },
 
             uncheckAllMeds() {
