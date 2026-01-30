@@ -52,6 +52,20 @@
             border-color: #2563eb;
         }
 
+        .avatar-btn {
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            opacity: 0.6;
+        }
+
+        .avatar-btn.selected {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            color: #2563eb;
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
         .time-btn,
         .day-btn {
             height: 40px;
@@ -425,10 +439,28 @@
     </main>
 
     <!-- MODALI -->
-    <!-- MODALE AGGIUNGI PROFILO -->
+    <!-- MODALE AGGIUNGI PROFILO (Aggiornato con Avatar) -->
     <div id="modal-add-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h3 class="text-xl font-bold mb-4">Nuovo Profilo</h3>
+            
+            <p class="text-xs text-slate-500 font-bold uppercase mb-2">Scegli Avatar</p>
+            <div class="grid grid-cols-4 gap-3 mb-4">
+                <button onclick="app.selectAvatar('man')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="man">
+                    <i class="fa-solid fa-person"></i>
+                </button>
+                <button onclick="app.selectAvatar('woman')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="woman">
+                    <i class="fa-solid fa-person-dress"></i>
+                </button>
+                <button onclick="app.selectAvatar('dog')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="dog">
+                    <i class="fa-solid fa-dog"></i>
+                </button>
+                <button onclick="app.selectAvatar('cat')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="cat">
+                    <i class="fa-solid fa-cat"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500 font-bold uppercase mb-2">Nome</p>
             <input type="text" id="input-profile-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Mario Rossi">
             <div class="flex justify-end gap-3 mt-6">
                 <button onclick="app.closeModal('modal-add-profile')" class="px-4 py-2 text-slate-500">Annulla</button>
@@ -617,6 +649,7 @@
             touchStartY: 0,
             isSwiping: false,
             stream: null,
+            newProfileAvatar: null, // Store temp avatar selection
 
             // 🎨 TEMI DI COLORE
             profileThemes: [
@@ -1303,6 +1336,17 @@
                 if(profile) this.checkTherapyEnd(profile); // FIX: Usa la variabile profilo definita
             },
 
+            selectAvatar(type) {
+                this.newProfileAvatar = type;
+                document.querySelectorAll('.avatar-btn').forEach(btn => {
+                    if (btn.dataset.avatar === type) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                });
+            },
+
             createProfile() {
                 const name = document.getElementById('input-profile-name').value.trim();
                 if (!name) return;
@@ -1310,7 +1354,14 @@
                 // 🎨 Assegna il prossimo colore in sequenza
                 const themeIndex = this.data.profiles.length % this.profileThemes.length;
                 
-                this.data.profiles.push({ id: this.generateId(), name, meds: [], themeIndex });
+                this.data.profiles.push({ 
+                    id: this.generateId(), 
+                    name, 
+                    meds: [], 
+                    themeIndex,
+                    avatar: this.newProfileAvatar // Salva avatar
+                });
+
                 this.saveData();
                 document.getElementById('input-profile-name').value = '';
                 this.closeModal('modal-add-profile');
@@ -1345,6 +1396,14 @@
                     container.innerHTML = `<p class="text-center text-slate-400 py-10">Nessun profilo presente.</p>`;
                     return;
                 }
+                
+                const avatarIcons = {
+                    'man': 'fa-person',
+                    'woman': 'fa-person-dress',
+                    'dog': 'fa-dog',
+                    'cat': 'fa-cat'
+                };
+
                 this.data.profiles.forEach(p => {
                     // 🎨 Recupera il tema, con fallback
                     if (typeof p.themeIndex === 'undefined') {
@@ -1363,9 +1422,19 @@
                     
                     const percClass = perc === 100 ? 'text-green-600' : theme.progress;
 
+                    // Gestione Icona Avatar o Iniziale
+                    let iconContent;
+                    if (p.avatar && avatarIcons[p.avatar]) {
+                        iconContent = `<i class="fa-solid ${avatarIcons[p.avatar]} text-xl"></i>`;
+                    } else {
+                        iconContent = p.name.charAt(0).toUpperCase();
+                    }
+
                     div.innerHTML = `
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50">${p.name.charAt(0).toUpperCase()}</div>
+                                    <div class="w-10 h-10 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50">
+                                        ${iconContent}
+                                    </div>
                                     <div>
                                         <h3 class="font-bold text-slate-800">${p.name}</h3>
                                         <p class="text-xs text-slate-500">${total} farmaci</p>
@@ -1390,6 +1459,13 @@
                         this.resetMedModal();
                     }
                 }
+                
+                // Se apro modale profilo, resetto avatar
+                if (id === 'modal-add-profile') {
+                    this.selectAvatar(null); // Deseleziona tutto visivamente
+                    this.newProfileAvatar = null; // Resetta stato
+                }
+
                 document.getElementById(id).classList.remove('hidden');
             },
 
