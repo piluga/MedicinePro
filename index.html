@@ -751,16 +751,6 @@
                 }, 60 * 1000);
             },
 
-            goToPrevTherapyMonth(med) {
-                this.currentTherapyMonth.setMonth(this.currentTherapyMonth.getMonth() - 1);
-                this.renderTherapyMonth(med);
-            },
-
-            goToNextTherapyMonth(med) {
-                this.currentTherapyMonth.setMonth(this.currentTherapyMonth.getMonth() + 1);
-                this.renderTherapyMonth(med);
-            },
-
             initTherapyMonthSwipe(med) {
                 const el = document.getElementById('therapy-month');
                 if (!el) return;
@@ -1141,6 +1131,16 @@
 
                     container.appendChild(el);
                 }
+            },
+
+            goToPrevTherapyMonth(med) {
+                this.currentTherapyMonth.setMonth(this.currentTherapyMonth.getMonth() - 1);
+                this.renderTherapyMonth(med);
+            },
+
+            goToNextTherapyMonth(med) {
+                this.currentTherapyMonth.setMonth(this.currentTherapyMonth.getMonth() + 1);
+                this.renderTherapyMonth(med);
             },
 
             checkTherapyEnd(profile) {
