@@ -320,6 +320,41 @@
             background: #f1f5f9;
             color: #475569;
         }
+
+        .therapy-day {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 6px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .therapy-out {
+            background: #f1f5f9;
+            color: #94a3b8;
+        }
+
+        .therapy-mid {
+            background: #fde047;
+            color: #1e293b;
+        }
+
+        .therapy-start {
+            background: #16a34a;
+            color: white;
+        }
+
+        .therapy-end {
+            background: #dc2626;
+            color: white;
+        }
+
+        .therapy-skip {
+            background: #e5e7eb;
+            color: #9ca3af;
+        }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -560,12 +595,33 @@
                     </select>
                 </div>
 
-                <!-- Anteprima Calendario -->
+                <!-- Calendario Semplificato-->
                 <div id="therapy-preview" class="mt-3 hidden">
                     <p class="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">
                         Prossimi giorni
                     </p>
                     <div id="therapy-calendar" class="flex gap-2 overflow-x-auto pb-2"></div>
+                </div>
+
+                <!-- Calendario Mensile-->
+                <div id="therapy-month-wrapper" class="mt-4 hidden">
+                    <p class="text-xs font-bold text-slate-500 uppercase mb-2">
+                        Calendario mensile
+                    </p>
+                    <div id="therapy-month-header"
+                         class="text-center font-bold text-slate-500 uppercase mb-2">
+                    </div>
+                    <div id="therapy-month-weekdays"
+                         class="grid grid-cols-7 text-center text-[10px] font-bold text-slate-400 mb-1">
+                        <div>L</div>
+                        <div>M</div>
+                        <div>M</div>
+                        <div>G</div>
+                        <div>V</div>
+                        <div>S</div>
+                        <div>D</div>
+                    </div>
+                    <div id="therapy-month" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
                 </div>
 
                 <!-- Leggenda Semaforo -->
@@ -694,6 +750,51 @@
                 }, 60 * 1000);
             },
 
+            goToPrevTherapyMonth(med) {
+                this.currentTherapyMonth.setMonth(this.currentTherapyMonth.getMonth() - 1);
+                this.renderTherapyMonth(med);
+            },
+
+            goToNextTherapyMonth(med) {
+                this.currentTherapyMonth.setMonth(this.currentTherapyMonth.getMonth() + 1);
+                this.renderTherapyMonth(med);
+            },
+
+            initTherapyMonthSwipe(med) {
+                const el = document.getElementById('therapy-month');
+                if (!el) return;
+
+                let startX = 0;
+
+                el.addEventListener('touchstart', e => {
+                    startX = e.touches[0].clientX;
+                }, { passive: true });
+
+                el.addEventListener('touchend', e => {
+                    const endX = e.changedTouches[0].clientX;
+                    const diff = endX - startX;
+
+                    if (Math.abs(diff) < 40) return; // soglia minima
+
+                    if (diff > 0) {
+                        this.goToPrevTherapyMonth(med);
+                    } else {
+                        this.goToNextTherapyMonth(med);
+                    }
+                });
+            },
+
+            normalizeDate(date) {
+                const d = new Date(date);
+                d.setHours(0, 0, 0, 0);
+                return d;
+            },
+
+            parseLocalDate(iso) {
+                const [y, m, d] = iso.split('-').map(Number);
+                return new Date(y, m - 1, d);
+            },
+
             updateTherapyStatusUI(med) {
                 const box = document.getElementById('therapy-status-box');
                 const badge = document.getElementById('therapy-badge');
@@ -803,7 +904,6 @@
                 };
             },
 
-
             isMedicationDay(med, dateISO) {
                 if (!med.startDate) return true;
                 if (med.frequency !== "alternate") return true;
@@ -816,6 +916,46 @@
                 );
 
                 return diffDays % 2 === 0;
+            },
+
+            getTherapyDayInfo(med, dateISO) {
+                if (!med.startDate || !med.durationDays) {
+                    return { active: false };
+                }
+
+                const start = new Date(med.startDate);
+                const target = new Date(dateISO);
+
+                // se prima dell'inizio terapia → fuori
+                if (target < start) {
+                    return { active: false };
+                }
+
+                let dosesCount = 0;
+                let current = new Date(start);
+
+                while (dosesCount < med.durationDays) {
+                    const iso = current.toISOString().slice(0, 10);
+                    const isActive = this.isMedicationDay(med, iso);
+
+                    if (isActive) {
+                        dosesCount++;
+
+                        if (iso === dateISO) {
+                            return {
+                                active: true,
+                                index: dosesCount,
+                                isFirst: dosesCount === 1,
+                                isLast: dosesCount === med.durationDays
+                            };
+                        }
+                    }
+
+                    // 🔑 AVANZIAMO SEMPRE DI 1 GIORNO
+                    current.setDate(current.getDate() + 1);
+                }
+
+                return { active: false };
             },
 
             getTherapyStatus(med) {
@@ -921,6 +1061,84 @@
                     }
 
                     dayOffset++;
+                }
+                this.renderTherapyMonth(med);
+            },
+
+            renderTherapyMonth(med) {
+                const wrapper = document.getElementById('therapy-month-wrapper');
+                const container = document.getElementById('therapy-month');
+
+                if (!wrapper || !container) return;   // 🛡️ protezione
+
+                container.innerHTML = '';
+
+                if (!med.startDate || !med.endDate) {
+                    wrapper.classList.add('hidden');
+                    return;
+                }
+
+                wrapper.classList.remove('hidden');
+
+                if (!this.currentTherapyMonth) {
+                    this.currentTherapyMonth = this.parseLocalDate(med.startDate);
+                }
+
+                const start = new Date(this.currentTherapyMonth);
+
+                // 🔹 HEADER MESE (QUI è il posto giusto)
+                const header = document.getElementById('therapy-month-header');
+
+                const monthNames = [
+                    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+                ];
+
+                if (header) {
+                    header.textContent = `${monthNames[start.getMonth()]} ${start.getFullYear()}`;
+                }
+                const base = new Date(start);
+                base.setDate(1);
+
+                const month = base.getMonth();
+                const year = base.getFullYear();
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                // Spazi vuoti prima
+                for (let i = 0; i < (firstDay + 6) % 7; i++) {
+                    container.appendChild(document.createElement('div'));
+                }
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const date = new Date(year, month, d);
+
+                    const iso = [
+                        date.getFullYear(),
+                        String(date.getMonth() + 1).padStart(2, '0'),
+                        String(date.getDate()).padStart(2, '0')
+                    ].join('-');
+
+                    const info = this.getTherapyDayInfo(med, iso);
+
+                    let cls = 'bg-slate-100 text-slate-400';
+
+                    if (info.active) {
+                        if (info.isFirst) {
+                            cls = 'bg-green-600 text-white';
+                        } else if (info.isLast) {
+                            cls = 'bg-red-600 text-white';
+                        } else {
+                            cls = 'bg-yellow-400 text-slate-900';
+                        }
+                    }
+
+                    const el = document.createElement('div');
+                    el.className = cls;
+                    el.textContent = d;
+
+                    container.appendChild(el);
                 }
             },
 
@@ -1506,6 +1724,8 @@
                     this.updateTimeUI();
                     this.updateTherapyStatusUI(med);
                     this.renderTherapyPreview(med);
+                    this.initTherapyMonthSwipe(med);
+                    this.currentTherapyMonth = this.parseLocalDate(med.startDate);
                     document.getElementById('modal-med').classList.remove('hidden');
                 }
             },
