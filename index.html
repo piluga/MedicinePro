@@ -1087,7 +1087,7 @@
 
                 const start = new Date(this.currentTherapyMonth);
 
-                // 🔹 HEADER MESE (QUI è il posto giusto)
+                // 🔹 HEADER MESE
                 const header = document.getElementById('therapy-month-header');
 
                 const monthNames = [
@@ -1726,8 +1726,8 @@
                     this.updateTherapyStatusUI(med);
                     this.renderTherapyPreview(med);
                     this.initTherapyMonthSwipe(med);
-                    this.currentTherapyMonth = this.parseLocalDate(med.startDate);
                     document.getElementById('modal-med').classList.remove('hidden');
+                    this.currentTherapyMonth = this.parseLocalDate(med.startDate);
                 }
             },
 
