@@ -604,9 +604,9 @@
                 </div>
 
                 <!-- Calendario Mensile-->
-                <div id="therapy-month-wrapper" class="mt-4 hidden">
+                <div id="therapy-month-wrapper" class="mt-4 hidden select-none touch-pan-x">
                     <p class="text-xs font-bold text-slate-500 uppercase mb-2">
-                        Calendario mensile
+                        Calendario mensile <span class="text-[9px] font-normal text-slate-400 ml-1">(Scorri per cambiare mese)</span>
                     </p>
                     <div id="therapy-month-header"
                          class="text-center font-bold text-slate-500 uppercase mb-2">
@@ -753,10 +753,11 @@
                 }, 60 * 1000);
             },
 
-            initTherapyMonthSwipe(med) {
+            initTherapyMonthSwipe() {
                 if (this.therapyMonthSwipeInitialized) return;
 
-                const el = document.getElementById('therapy-month');
+                // FIX: Attacchiamo l'evento al wrapper intero per migliorare l'area di tocco
+                const el = document.getElementById('therapy-month-wrapper');
                 if (!el) return;
 
                 let startX = 0;
@@ -769,12 +770,13 @@
                     const endX = e.changedTouches[0].clientX;
                     const diff = endX - startX;
 
+                    // Soglia minima per evitare tocchi accidentali
                     if (Math.abs(diff) < 40) return;
 
                     if (diff > 0) {
-                        this.goToPrevTherapyMonth(this.currentEditingMed);
+                        this.goToPrevTherapyMonth();
                     } else {
-                        this.goToNextTherapyMonth(this.currentEditingMed);
+                        this.goToNextTherapyMonth();
                     }
                 });
 
@@ -1070,7 +1072,8 @@
 
                 container.innerHTML = '';
 
-                if (!med.startDate || !med.endDate) {
+                // FIX: Se med è nullo (es. swipe su nuovo farmaco), usciamo o gestiamo
+                if (!med || !med.startDate || !med.endDate) {
                     wrapper.classList.add('hidden');
                     return;
                 }
@@ -1139,20 +1142,24 @@
                 }
             },
 
-            goToPrevTherapyMonth(med) {
+            goToPrevTherapyMonth() {
                 this.currentTherapyMonth = new Date(
                     this.currentTherapyMonth.getFullYear(),
                     this.currentTherapyMonth.getMonth() - 1,
                     1
                 );
+                // FIX: Aggiorniamo il rendering dopo il cambio mese!
+                this.renderTherapyMonth(this.currentEditingMed);
             },
 
-            goToNextTherapyMonth(med) {
+            goToNextTherapyMonth() {
                 this.currentTherapyMonth = new Date(
                     this.currentTherapyMonth.getFullYear(),
                     this.currentTherapyMonth.getMonth() + 1,
                     1
                 );
+                // FIX: Aggiorniamo il rendering dopo il cambio mese!
+                this.renderTherapyMonth(this.currentEditingMed);
             },
 
             checkTherapyEnd(profile) {
@@ -1678,6 +1685,7 @@
 
             prepareNewMed() {
                 document.getElementById('input-med-edit-id').value = ''; // Importante: pulisce ID modifica
+                this.currentEditingMed = null; // FIX: Reset del farmaco corrente
                 this.resetMedModal();
                 this.showModal('modal-med');
             },
@@ -1708,6 +1716,10 @@
                 document.getElementById('input-med-usage').value = '';
                 document.getElementById('btn-scan').classList.remove('hidden');
                 document.getElementById('therapy-status-box').classList.add('hidden');
+                // Nascondi anche le preview del calendario quando crei nuovo
+                document.getElementById('therapy-preview').classList.add('hidden');
+                document.getElementById('therapy-month-wrapper').classList.add('hidden');
+                
                 this.selectedTimes = [];
                 this.updateTimeUI();
                 this.selectedDays = [];
@@ -1737,7 +1749,7 @@
                     this.updateTimeUI();
                     this.updateTherapyStatusUI(med);
                     this.renderTherapyPreview(med);
-                    this.initTherapyMonthSwipe(med);
+                    this.initTherapyMonthSwipe(); // FIX: Non passiamo nulla, lo gestisce internamente
                     document.getElementById('modal-med').classList.remove('hidden');
                     const start = this.parseLocalDate(med.startDate);
                     this.currentTherapyMonth = new Date(
