@@ -759,42 +759,6 @@
                 }, 60 * 1000);
             },
 
-            initTherapyMonthSwipe() {
-                if (this.therapyMonthSwipeInitialized) return;
-
-                // FIX: Attacchiamo l'evento al wrapper intero per migliorare l'area di tocco
-                const el = document.getElementById('therapy-month-wrapper');
-                if (!el) return;
-
-                let startX = 0;
-
-                el.addEventListener('touchstart', e => {
-                    startX = e.touches[0].clientX;
-                }, { passive: true });
-
-                el.addEventListener('touchend', e => {
-                    const endX = e.changedTouches[0].clientX;
-                    const diff = endX - startX;
-
-                    // Soglia minima per evitare tocchi accidentali
-                    if (Math.abs(diff) < 40) return;
-
-                    if (diff > 0) {
-                        this.goToPrevTherapyMonth();
-                    } else {
-                        this.goToNextTherapyMonth();
-                    }
-                });
-
-                this.therapyMonthSwipeInitialized = true;
-            },
-
-            normalizeDate(date) {
-                const d = new Date(date);
-                d.setHours(0, 0, 0, 0);
-                return d;
-            },
-
             parseLocalDate(iso) {
                 const [y, m, d] = iso.split('-').map(Number);
                 return new Date(y, m - 1, d);
