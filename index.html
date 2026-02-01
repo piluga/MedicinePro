@@ -445,9 +445,7 @@
                 <div>
                     <label class="block text-sm font-bold text-slate-600 mb-2">Google Gemini API Key</label>
                     <input type="password" id="input-settings-apikey" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Inserisci la tua API Key">
-                    <p class="text-[11px] text-slate-400 mt-2 italic flex items-center gap-1">
-                        <i class="fa-solid fa-shield-halved text-green-500"></i> La chiave viene salvata solo nel tuo dispositivo per abilitare il riconoscimento farmaci.
-                    </p>
+                    <p class="text-[11px] text-slate-400 mt-2 italic">La chiave serve per abilitare il riconoscimento dei farmaci tramite fotocamera.</p>
                 </div>
                 <button onclick="app.saveSettings()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-all">
                     Salva Impostazioni
@@ -704,11 +702,13 @@
             selectedTimes: [],
             selectedDays: [],
             currentTherapyMonth: null,
+            therapyMonthSwipeInitialized: false,
+            currentEditingMed: null,
             touchStartX: 0,
             touchStartY: 0,
             isSwiping: false,
             stream: null,
-            newProfileAvatar: null,
+            newProfileAvatar: null, // Store temp avatar selection
 
             // 🎨 TEMI DI COLORE
             profileThemes: [
@@ -721,13 +721,6 @@
                 { bg: 'bg-fuchsia-50', border: 'border-fuchsia-200', iconBg: 'bg-fuchsia-100', iconText: 'text-fuchsia-600', progress: 'text-fuchsia-500' },
                 { bg: 'bg-lime-50', border: 'border-lime-200', iconBg: 'bg-lime-100', iconText: 'text-lime-600', progress: 'text-lime-500' },
             ],
-
-            // 📅 FIX DATA LOCALE (Critico per reset giornaliero)
-            getTodayISO() {
-                const d = new Date();
-                const offset = d.getTimezoneOffset() * 60000;
-                return new Date(d.getTime() - offset).toISOString().slice(0, 10);
-            },
 
             init() {
                 this.loadData();
@@ -753,6 +746,7 @@
 
                 // ⏱️ Controllo automatico cambio giorno
                 setInterval(() => {
+                    // Controlla se siamo in una vista profilo prima di renderizzare
                     if(this.currentProfileId) {
                         this.renderMedications();
                     }
@@ -760,6 +754,8 @@
             },
 
             initTherapyMonthSwipe(med) {
+                if (this.therapyMonthSwipeInitialized) return;
+
                 const el = document.getElementById('therapy-month');
                 if (!el) return;
 
@@ -776,11 +772,13 @@
                     if (Math.abs(diff) < 40) return;
 
                     if (diff > 0) {
-                        this.goToPrevTherapyMonth(med);
+                        this.goToPrevTherapyMonth(this.currentEditingMed);
                     } else {
-                        this.goToNextTherapyMonth(med);
+                        this.goToNextTherapyMonth(this.currentEditingMed);
                     }
                 });
+
+                this.therapyMonthSwipeInitialized = true;
             },
 
             normalizeDate(date) {
@@ -804,13 +802,14 @@
                     return;
                 }
 
-                // FIX: Uso data locale
-                const today = this.getTodayISO();
+                const today = new Date().toISOString().slice(0, 10);
                 const diff = Math.ceil(
                     (new Date(med.endDate) - new Date(today)) / (1000 * 60 * 60 * 24)
                 );
 
                 box.classList.remove('hidden');
+
+                // reset classi
                 box.className = "p-3 rounded-xl border mt-3 text-sm flex items-center gap-3";
 
                 if (diff < 0) {
@@ -1151,10 +1150,9 @@
             },
 
             checkTherapyEnd(profile) {
-                if (!profile) return; 
+                if (!profile) return; // FIX: Sicurezza
 
-                // FIX: Uso data locale
-                const today = this.getTodayISO();
+                const today = new Date().toISOString().slice(0, 10);
                 const alertedSharedIds = new Set();
 
                 profile.meds.forEach(med => {
@@ -1246,7 +1244,6 @@
                 const container = document.getElementById('camera-container');
                 if (this.stream) {
                     this.stream.getTracks().forEach(track => track.stop());
-                    this.stream = null; // FIX: Pulizia stream
                 }
                 container.style.display = 'none';
             },
@@ -1307,25 +1304,20 @@
                 try {
                     const result = await this.fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`, payload);
                     
+                    // FIX: Pulizia risposta JSON da markdown (es. ```json ... ```)
                     let text = result.candidates[0].content.parts[0].text;
-                    
-                    // FIX: Estrazione JSON robusta via Regex
-                    const jsonMatch = text.match(/\{[\s\S]*\}/);
-                    
-                    if (jsonMatch) {
-                        const parsedData = JSON.parse(jsonMatch[0]);
-                        if (parsedData.name) {
-                            document.getElementById('input-med-name').value = parsedData.name;
-                            document.getElementById('input-med-category').value = parsedData.category || "";
-                            document.getElementById('input-med-dose').value = parsedData.dose || "";
-                            document.getElementById('input-med-usage').value = parsedData.usage || "";
-                        } else {
-                            alert("Non ho riconosciuto il farmaco. Prova a inserirlo manualmente.");
-                        }
-                    } else {
-                         throw new Error("Formato risposta non valido");
-                    }
+                    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
+                    const parsedData = JSON.parse(text);
+
+                    if (parsedData.name) {
+                        document.getElementById('input-med-name').value = parsedData.name;
+                        document.getElementById('input-med-category').value = parsedData.category || "";
+                        document.getElementById('input-med-dose').value = parsedData.dose || "";
+                        document.getElementById('input-med-usage').value = parsedData.usage || "";
+                    } else {
+                        alert("Non ho riconosciuto il farmaco. Prova a inserirlo manualmente.");
+                    }
                 } catch (err) {
                     console.error(err);
                     alert("Errore durante l'analisi. Verifica la tua API Key.");
@@ -1440,7 +1432,7 @@
 
             resetData() {
                 this.data = {
-                    lastOpened: this.getTodayISO(), // FIX: Uso data locale
+                    lastOpened: new Date().toISOString().slice(0, 10),
                     profiles: [],
                     apiKey: ""
                 };
@@ -1458,11 +1450,10 @@
                     { type: "application/json" }
                 );
 
-                // FIX: Uso data locale nel nome file
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `MedicinePro_Backup_${this.getTodayISO()}.json`;
+                a.download = `MedicinePro_Backup_${new Date().toISOString().slice(0, 10)}.json`;
                 a.click();
             },
 
@@ -1519,8 +1510,7 @@
             },
 
             checkDailyReset() {
-                // FIX: Uso data locale
-                const today = this.getTodayISO();
+                const today = new Date().toISOString().slice(0, 10);
 
                 if (this.data.lastOpened === today) return;
 
@@ -1744,6 +1734,7 @@
                     this.initTherapyMonthSwipe(med);
                     document.getElementById('modal-med').classList.remove('hidden');
                     this.currentTherapyMonth = this.parseLocalDate(med.startDate);
+                    this.currentEditingMed = med;
                 }
             },
 
@@ -1884,7 +1875,7 @@
                 // FIX: Mappatura giorni fissa per evitare problemi di localizzazione
                 const dayMap = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
                 const todayShort = dayMap[new Date().getDay()];
-                const todayISO = this.getTodayISO(); // FIX: Uso data locale
+                const todayISO = new Date().toISOString().slice(0, 10);
                 
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
@@ -2013,8 +2004,8 @@
                 // Se è più verticale che orizzontale → è scroll
                 if (Math.abs(diffY) > Math.abs(diffX)) return;
 
-                // Soglia minima swipe orizzontale aumentata per evitare errori
-                if (Math.abs(diffX) < 100) return;
+                // Soglia minima swipe orizzontale
+                if (Math.abs(diffX) < 80) return;
 
                 const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
 
@@ -2023,6 +2014,7 @@
                     if (currentIndex > 0) {
                         this.openProfile(this.data.profiles[currentIndex - 1].id);
                     }
+                    // ❌ NIENTE ritorno automatico in home
                 }
 
                 // Swipe verso sinistra
