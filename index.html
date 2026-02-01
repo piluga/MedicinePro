@@ -1139,15 +1139,17 @@
                 }
             },
 
-            goToPrevTherapyMonth(med) {
-                this.currentTherapyMonth.setMonth(this.currentTherapyMonth.getMonth() - 1);
-                this.renderTherapyMonth(med);
-            },
+            this.currentTherapyMonth = new Date(
+                this.currentTherapyMonth.getFullYear(),
+                this.currentTherapyMonth.getMonth() - 1,
+                1
+            );
 
-            goToNextTherapyMonth(med) {
-                this.currentTherapyMonth.setMonth(this.currentTherapyMonth.getMonth() + 1);
-                this.renderTherapyMonth(med);
-            },
+            this.currentTherapyMonth = new Date(
+                this.currentTherapyMonth.getFullYear(),
+                this.currentTherapyMonth.getMonth() + 1,
+                1
+            );
 
             checkTherapyEnd(profile) {
                 if (!profile) return; // FIX: Sicurezza
@@ -1733,7 +1735,12 @@
                     this.renderTherapyPreview(med);
                     this.initTherapyMonthSwipe(med);
                     document.getElementById('modal-med').classList.remove('hidden');
-                    this.currentTherapyMonth = this.parseLocalDate(med.startDate);
+                    const start = this.parseLocalDate(med.startDate);
+                    this.currentTherapyMonth = new Date(
+                        start.getFullYear(),
+                        start.getMonth(),
+                        1
+                    );
                     this.currentEditingMed = med;
                 }
             },
