@@ -1912,20 +1912,15 @@
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
                     
-                    const meds = profile.meds.filter(m =>
-                        m.time === time &&
-
-                        (
-                            !Array.isArray(m.days) ||
-                            m.days.length === 0 ||
-                            m.days.includes(todayShort)
-                        )
-
-                    );
+                    // MODIFICA: Rimosso il filtro sui giorni per mostrare tutti i farmaci
+                    const meds = profile.meds.filter(m => m.time === time);
 
                     if (meds.length > 0) {
                         hasMeds = true;
+                        
+                        // Calcola active meds solo per quelli realmente attivi oggi (per logica interna)
                         const activeMeds = meds.filter(m => this.isMedicationDay(m, todayISO));
+                        
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
                         const header = document.createElement('div');
@@ -1939,7 +1934,14 @@
                                 `;
                         container.appendChild(header);
                         meds.forEach(med => {
-                            const isToday = this.isMedicationDay(med, todayISO);
+                            // MODIFICA: Calcolo combinato per 'isToday'
+                            // 1. Controllo frequenza (es. giorni alterni, date inizio/fine)
+                            const isFreqMatch = this.isMedicationDay(med, todayISO);
+                            // 2. Controllo giorni specifici (Lun, Mar, ecc.)
+                            const isDayMatch = !Array.isArray(med.days) || med.days.length === 0 || med.days.includes(todayShort);
+                            
+                            const isToday = isFreqMatch && isDayMatch;
+
                             if (med.taken) anyTaken = true;
                             const card = document.createElement('div');
                             const categoryClass = `med-card-${time.toLowerCase()}`;
