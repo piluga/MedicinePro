@@ -1062,7 +1062,6 @@
 
                     dayOffset++;
                 }
-                this.currentTherapyMonth = null;
                 this.renderTherapyMonth(med);
             },
 
@@ -1225,6 +1224,7 @@
             },
 
             updateDayUI() {
+                if (!this.selectedDays) this.selectedDays = [];
                 document.querySelectorAll('.day-btn').forEach(b => {
                     const day = b.dataset.day;
                     this.selectedDays.includes(day)
@@ -1747,12 +1747,17 @@
                     document.getElementById('btn-scan').classList.add('hidden');
                     this.selectedTimes = [med.time];
                     this.selectedDays = Array.isArray(med.days) ? [...med.days] : [];
-                    this.updateDayUI();
-                    this.updateTimeUI();
                     this.updateTherapyStatusUI(med);
                     this.renderTherapyPreview(med);
                     this.initTherapyMonthSwipe(); // FIX: Non passiamo nulla, lo gestisce internamente
+                    
+                    // Show modal first
                     document.getElementById('modal-med').classList.remove('hidden');
+                    
+                    // Update UI after show to ensure styles apply
+                    this.updateTimeUI();
+                    this.updateDayUI();
+
                     const start = this.parseLocalDate(med.startDate);
                     this.currentTherapyMonth = new Date(
                         start.getFullYear(),
