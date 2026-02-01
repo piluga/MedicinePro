@@ -58,13 +58,13 @@
             opacity: 0.6;
         }
 
-        .avatar-btn.selected {
-            border-color: #2563eb;
-            background-color: #eff6ff;
-            color: #2563eb;
-            opacity: 1;
-            transform: scale(1.05);
-        }
+            .avatar-btn.selected {
+                border-color: #2563eb;
+                background-color: #eff6ff;
+                color: #2563eb;
+                opacity: 1;
+                transform: scale(1.05);
+            }
 
         .time-btn,
         .day-btn {
@@ -109,18 +109,18 @@
             flex-shrink: 0;
         }
 
-        .med-checkbox:checked {
-            background-color: #22c55e;
-            border-color: #22c55e;
-        }
+            .med-checkbox:checked {
+                background-color: #22c55e;
+                border-color: #22c55e;
+            }
 
-        .med-checkbox:checked::after {
-            content: '\f00c';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            color: white;
-            font-size: 1.2rem;
-        }
+                .med-checkbox:checked::after {
+                    content: '\f00c';
+                    font-family: 'Font Awesome 6 Free';
+                    font-weight: 900;
+                    color: white;
+                    font-size: 1.2rem;
+                }
 
         .card-shadow {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
@@ -260,34 +260,34 @@
             margin-left: -6px;
         }
 
-        .therapy-badge .label {
-            font-weight: 700;
-        }
+            .therapy-badge .label {
+                font-weight: 700;
+            }
 
-        .therapy-badge .sub {
-            font-size: 11px;
-            opacity: 0.9;
-        }
+            .therapy-badge .sub {
+                font-size: 11px;
+                opacity: 0.9;
+            }
 
-        .therapy-badge .dot {
-            opacity: 0.5;
-        }
+            .therapy-badge .dot {
+                opacity: 0.5;
+            }
 
-        /* COLORI BADGE */
-        .therapy-badge.green {
-            background: #ecfdf5;
-            color: #047857;
-        }
+            /* COLORI BADGE */
+            .therapy-badge.green {
+                background: #ecfdf5;
+                color: #047857;
+            }
 
-        .therapy-badge.orange {
-            background: #fff7ed;
-            color: #c2410c;
-        }
+            .therapy-badge.orange {
+                background: #fff7ed;
+                color: #c2410c;
+            }
 
-        .therapy-badge.red {
-            background: #fef2f2;
-            color: #b91c1c;
-        }
+            .therapy-badge.red {
+                background: #fef2f2;
+                color: #b91c1c;
+            }
 
         .therapy-badge {
             box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
@@ -311,10 +311,10 @@
             pointer-events: none;
         }
 
-        .med-card-inactive button {
-            pointer-events: auto;
-            opacity: 0.7;
-        }
+            .med-card-inactive button {
+                pointer-events: auto;
+                opacity: 0.7;
+            }
 
         .therapy-badge.gray {
             background: #f1f5f9;
@@ -478,7 +478,7 @@
     <div id="modal-add-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h3 class="text-xl font-bold mb-4">Nuovo Profilo</h3>
-            
+
             <p class="text-xs text-slate-500 font-bold uppercase mb-2">Scegli Avatar</p>
             <div class="grid grid-cols-4 gap-3 mb-4">
                 <button onclick="app.selectAvatar('man')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="man">
@@ -748,7 +748,7 @@
                 // ⏱️ Controllo automatico cambio giorno
                 setInterval(() => {
                     // Controlla se siamo in una vista profilo prima di renderizzare
-                    if(this.currentProfileId) {
+                    if (this.currentProfileId) {
                         this.renderMedications();
                     }
                 }, 60 * 1000);
@@ -1012,24 +1012,34 @@
             renderTherapyPreview(med) {
                 const container = document.getElementById('therapy-calendar');
                 const wrapper = document.getElementById('therapy-preview');
+                const legend = document.getElementById('therapy-legend');
+                const monthWrapper = document.getElementById('therapy-month-wrapper');
 
-                container.innerHTML = '';
+                // 🔒 RESET COMPLETO
+                if (container) container.innerHTML = '';
+                if (wrapper) wrapper.classList.add('hidden');
+                if (legend) legend.classList.add('hidden');
+                if (monthWrapper) monthWrapper.classList.add('hidden');
 
-                if (!med.startDate || !med.durationDays) {
-                    wrapper.classList.add('hidden');
+                // ❌ dati incompleti → STOP TOTALE
+                if (
+                    !med ||
+                    !med.startDate ||
+                    !med.durationDays ||
+                    med.durationDays <= 0
+                ) {
+                    this.currentTherapyMonth = null;
                     return;
                 }
 
+                // ✅ dati validi → mostra preview
                 wrapper.classList.remove('hidden');
 
                 const start = new Date(med.startDate);
                 const totalDoses = med.durationDays;
-                const legend = document.getElementById('therapy-legend');
 
                 if (med.frequency === "alternate") {
                     legend.classList.remove('hidden');
-                } else {
-                    legend.classList.add('hidden');
                 }
 
                 let dosesCount = 0;
@@ -1048,24 +1058,30 @@
                         let cls = 'bg-yellow-400 text-slate-900';
 
                         if (dosesCount === 1) {
-                            cls = 'bg-green-600 text-white';          // inizio terapia
+                            cls = 'bg-green-600 text-white';
                         } else if (dosesCount === totalDoses) {
-                            cls = 'bg-red-600 text-white';            // fine terapia
+                            cls = 'bg-red-600 text-white';
                         }
 
                         const el = document.createElement('div');
                         el.className = `w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${cls}`;
                         el.textContent = d.getDate();
-
                         container.appendChild(el);
                     }
 
                     dayOffset++;
                 }
-                this.renderTherapyMonth(med);
+
+                // 🟢 calendario mensile SOLO se dati validi
+                if (med.startDate && med.durationDays && med.endDate) {
+                    this.renderTherapyMonth(med);
+                }
             },
 
             renderTherapyMonth(med) {
+                if (!med || !med.startDate || !med.endDate) {
+                    return;
+                }
                 const wrapper = document.getElementById('therapy-month-wrapper');
                 const container = document.getElementById('therapy-month');
 
@@ -1288,11 +1304,11 @@
                 this.toggleLoading(true, "Analisi farmaco...");
 
                 const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi:
-                        - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
-                        - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
-                        - 'dose': lascia questo campo vuoto (stringa vuota "").
-                        - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
-                        Rispondi solo con il JSON.`;
+                            - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
+                            - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
+                            - 'dose': lascia questo campo vuoto (stringa vuota "").
+                            - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
+                            Rispondi solo con il JSON.`;
 
                 const payload = {
                     contents: [{
@@ -1318,7 +1334,7 @@
 
                 try {
                     const result = await this.fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`, payload);
-                    
+
                     // FIX: Pulizia risposta JSON da markdown (es. ```json ... ```)
                     let text = result.candidates[0].content.parts[0].text;
                     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -1567,13 +1583,13 @@
             openProfile(id) {
                 this.currentProfileId = id;
                 const profile = this.data.profiles.find(x => x.id === id); // FIX: Recupera il profilo corretto
-                
+
                 document.getElementById('view-profiles').classList.add('hidden');
                 document.getElementById('view-medications').classList.remove('hidden');
                 document.getElementById('btn-back').classList.remove('hidden');
-                
+
                 this.renderMedications();
-                if(profile) this.checkTherapyEnd(profile); // FIX: Usa la variabile profilo definita
+                if (profile) this.checkTherapyEnd(profile); // FIX: Usa la variabile profilo definita
             },
 
             selectAvatar(type) {
@@ -1590,14 +1606,14 @@
             createProfile() {
                 const name = document.getElementById('input-profile-name').value.trim();
                 if (!name) return;
-                
+
                 // 🎨 Assegna il prossimo colore in sequenza
                 const themeIndex = this.data.profiles.length % this.profileThemes.length;
-                
-                this.data.profiles.push({ 
-                    id: this.generateId(), 
-                    name, 
-                    meds: [], 
+
+                this.data.profiles.push({
+                    id: this.generateId(),
+                    name,
+                    meds: [],
                     themeIndex,
                     avatar: this.newProfileAvatar // Salva avatar
                 });
@@ -1636,7 +1652,7 @@
                     container.innerHTML = `<p class="text-center text-slate-400 py-10">Nessun profilo presente.</p>`;
                     return;
                 }
-                
+
                 const avatarIcons = {
                     'man': 'fa-person',
                     'woman': 'fa-person-dress',
@@ -1650,16 +1666,16 @@
                         p.themeIndex = Math.floor(Math.random() * this.profileThemes.length);
                     }
                     const theme = this.profileThemes[p.themeIndex] || this.profileThemes[0];
-                    
+
                     const total = p.meds.length;
                     const taken = p.meds.filter(m => m.taken).length;
                     const perc = total === 0 ? 0 : Math.round((taken / total) * 100);
-                    
+
                     const div = document.createElement('div');
                     // 🎨 Applica le classi del tema
                     div.className = `${theme.bg} ${theme.border} p-4 rounded-xl card-shadow flex justify-between items-center cursor-pointer border hover:shadow-md transition-all`;
                     div.onclick = () => this.openProfile(p.id);
-                    
+
                     const percClass = perc === 100 ? 'text-green-600' : theme.progress;
 
                     // Gestione Icona Avatar o Iniziale
@@ -1671,16 +1687,16 @@
                     }
 
                     div.innerHTML = `
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50">
-                                        ${iconContent}
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50">
+                                            ${iconContent}
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-slate-800">${p.name}</h3>
+                                            <p class="text-xs text-slate-500">${total} farmaci</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 class="font-bold text-slate-800">${p.name}</h3>
-                                        <p class="text-xs text-slate-500">${total} farmaci</p>
-                                    </div>
-                                </div>
-                                <span class="text-sm font-bold ${percClass}">${perc}%</span>`;
+                                    <span class="text-sm font-bold ${percClass}">${perc}%</span>`;
                     container.appendChild(div);
                 });
             },
@@ -1700,7 +1716,7 @@
                         this.resetMedModal();
                     }
                 }
-                
+
                 // Se apro modale profilo, resetto avatar
                 if (id === 'modal-add-profile') {
                     this.selectAvatar(null); // Deseleziona tutto visivamente
@@ -1721,7 +1737,7 @@
                 // Nascondi anche le preview del calendario quando crei nuovo
                 document.getElementById('therapy-preview').classList.add('hidden');
                 document.getElementById('therapy-month-wrapper').classList.add('hidden');
-                
+
                 this.selectedTimes = [];
                 this.updateTimeUI();
                 this.selectedDays = [];
@@ -1750,10 +1766,10 @@
                     this.updateTherapyStatusUI(med);
                     this.renderTherapyPreview(med);
                     this.initTherapyMonthSwipe(); // FIX: Non passiamo nulla, lo gestisce internamente
-                    
+
                     // Show modal first
                     document.getElementById('modal-med').classList.remove('hidden');
-                    
+
                     // Update UI after show to ensure styles apply
                     this.updateTimeUI();
                     this.updateDayUI();
@@ -1855,7 +1871,7 @@
                 this.saveData();
                 this.closeModal('modal-med');
                 this.renderMedications();
-                this.renderTherapyPreview({startDate,frequency});
+                this.renderTherapyPreview({ startDate, frequency });
             },
 
             normalizeMedications(profile) {
@@ -1902,36 +1918,36 @@
                 const times = ['Mattina', 'Pomeriggio', 'Sera'];
                 let hasMeds = false;
                 let anyTaken = false;
-                
+
                 // FIX: Mappatura giorni fissa per evitare problemi di localizzazione
                 const dayMap = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
                 const todayShort = dayMap[new Date().getDay()];
                 const todayISO = new Date().toISOString().slice(0, 10);
-                
+
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
-                    
+
                     // MODIFICA: Rimosso il filtro sui giorni per mostrare tutti i farmaci
                     const meds = profile.meds.filter(m => m.time === time);
 
                     if (meds.length > 0) {
                         hasMeds = true;
-                        
+
                         // Calcola active meds solo per quelli realmente attivi oggi (per logica interna)
                         const activeMeds = meds.filter(m => this.isMedicationDay(m, todayISO));
-                        
+
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
                         const header = document.createElement('div');
                         header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center justify-between gap-2";
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
                         header.innerHTML = `
-                                    <div class="flex items-center gap-2">
-                                        <i class="fa-solid ${icon}"></i> ${time}
-                                    </div>
-                                    <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
-                                `;
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid ${icon}"></i> ${time}
+                                        </div>
+                                        <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
+                                    `;
                         container.appendChild(header);
                         meds.forEach(med => {
                             // MODIFICA: Calcolo combinato per 'isToday'
@@ -1939,7 +1955,7 @@
                             const isFreqMatch = this.isMedicationDay(med, todayISO);
                             // 2. Controllo giorni specifici (Lun, Mar, ecc.)
                             const isDayMatch = !Array.isArray(med.days) || med.days.length === 0 || med.days.includes(todayShort);
-                            
+
                             const isToday = isFreqMatch && isDayMatch;
 
                             if (med.taken) anyTaken = true;
@@ -1951,45 +1967,45 @@
                             let therapyBadge = '';
                             if (therapy) {
                                 therapyBadge = `
-                                        <div class="therapy-badge ${therapy.cls}">
-                                            <span class="label">${therapy.label}</span>
-                                            <span class="dot">•</span>
-                                            <span class="sub">${therapy.sub}</span>
-                                        </div>
-                                    `;
+                                            <div class="therapy-badge ${therapy.cls}">
+                                                <span class="label">${therapy.label}</span>
+                                                <span class="dot">•</span>
+                                                <span class="sub">${therapy.sub}</span>
+                                            </div>
+                                        `;
                             }
 
                             if (!isToday) {
                                 therapyBadge += `
-                                        <div class="therapy-badge gray">
-                                            <span class="label">Oggi non previsto</span>
-                                        </div>
-                                    `;
+                                            <div class="therapy-badge gray">
+                                                <span class="label">Oggi non previsto</span>
+                                            </div>
+                                        `;
                             }
 
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${inactiveClass}`;
                             card.innerHTML = `
-                                        <div class="flex items-center gap-4 flex-1 overflow-hidden">
-                                            <input type="checkbox" class="med-checkbox"
-                                            ${med.taken ? 'checked' : ''}
-                                            ${!isToday ? 'disabled' : ''}
-                                            onchange="app.toggleMedication('${med.id}')">
-                                            <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
-                                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                                <div class="flex flex-col">
-                                                    ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                                    <div class="flex flex-col mt-0.5">
-                                                        ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                                        ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
-                                                        ${therapyBadge}
+                                            <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                                                <input type="checkbox" class="med-checkbox"
+                                                ${med.taken ? 'checked' : ''}
+                                                ${!isToday ? 'disabled' : ''}
+                                                onchange="app.toggleMedication('${med.id}')">
+                                                <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
+                                                    <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                                    <div class="flex flex-col">
+                                                        ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                        <div class="flex flex-col mt-0.5">
+                                                            ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                                            ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                                            ${therapyBadge}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="flex items-center">
-                                            <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
-                                            <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
-                                            </div>`;
+                                            <div class="flex items-center">
+                                                <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
+                                                </div>`;
                             container.appendChild(card);
                         });
                     }
