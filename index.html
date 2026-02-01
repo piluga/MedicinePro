@@ -1139,17 +1139,21 @@
                 }
             },
 
-            this.currentTherapyMonth = new Date(
-                this.currentTherapyMonth.getFullYear(),
-                this.currentTherapyMonth.getMonth() - 1,
-                1
-            );
+            goToPrevTherapyMonth(med) {
+                this.currentTherapyMonth = new Date(
+                    this.currentTherapyMonth.getFullYear(),
+                    this.currentTherapyMonth.getMonth() - 1,
+                    1
+                );
+            },
 
-            this.currentTherapyMonth = new Date(
-                this.currentTherapyMonth.getFullYear(),
-                this.currentTherapyMonth.getMonth() + 1,
-                1
-            );
+            goToNextTherapyMonth(med) {
+                this.currentTherapyMonth = new Date(
+                    this.currentTherapyMonth.getFullYear(),
+                    this.currentTherapyMonth.getMonth() + 1,
+                    1
+                );
+            },
 
             checkTherapyEnd(profile) {
                 if (!profile) return; // FIX: Sicurezza
