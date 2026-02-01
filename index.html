@@ -1067,6 +1067,7 @@
 
                     dayOffset++;
                 }
+                this.currentTherapyMonth = null;
                 this.renderTherapyMonth(med);
             },
 
@@ -1800,7 +1801,6 @@
                         start.getMonth(),
                         1
                     );
-                    this.currentTherapyMonth = null;
                     this.currentEditingMed = med;
                 }
             },
