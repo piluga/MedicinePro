@@ -1761,7 +1761,12 @@
                     document.getElementById('med-duration').value = med.durationDays ?? "";
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
                     document.getElementById('btn-scan').classList.add('hidden');
-                    this.selectedTimes = [med.time];
+                    
+                    // ⚠️ MODIFICA: Ora carica tutti gli orari associati a questo farmaco (sharedId)
+                    // invece di caricare solo l'orario della singola istanza cliccata.
+                    const relatedMeds = profile.meds.filter(m => m.sharedId === med.sharedId);
+                    this.selectedTimes = relatedMeds.map(m => m.time);
+                    
                     this.selectedDays = Array.isArray(med.days) ? [...med.days] : [];
                     this.updateTherapyStatusUI(med);
                     this.renderTherapyPreview(med);
@@ -1812,19 +1817,21 @@
                 if (editId) {
                     const med = profile.meds.find(m => m.id === editId);
                     if (med) {
-                        profile.meds.forEach(m => {
-                            if (m.sharedId === med.sharedId) {
+                        const sharedId = med.sharedId;
 
+                        // 1. Aggiorna le proprietà comuni a TUTTE le istanze di questo farmaco (sharedId)
+                        profile.meds.forEach(m => {
+                            if (m.sharedId === sharedId) {
                                 m.name = name;
                                 m.category = category;
                                 m.dose = dose;
                                 m.usage = usage;
                                 m.startDate = startDate;
                                 m.durationDays = durationDays;
-                                med.frequency = frequency;
                                 m.endDate = endDate;
                                 m.days = Array.isArray(this.selectedDays) ? [...this.selectedDays] : [];
-
+                                m.frequency = frequency; // Assicurati che frequency sia aggiornata su tutti
+                                
                                 const oldQty = m.boxQty;
                                 m.boxQty = boxQty;
                                 m.minQty = minQty;
@@ -1835,8 +1842,43 @@
                             }
                         });
 
-                        // 🕒 aggiorna SOLO l'orario di questa istanza
-                        med.time = this.selectedTimes[0];
+                        // 2. Gestione degli orari (Aggiunta/Rimozione istanze)
+                        const existingInstances = profile.meds.filter(m => m.sharedId === sharedId);
+                        const existingTimes = existingInstances.map(m => m.time);
+
+                        // Orari da aggiungere (selezionati MA non presenti)
+                        const timesToAdd = this.selectedTimes.filter(t => !existingTimes.includes(t));
+                        
+                        // Orari da rimuovere (presenti MA non più selezionati)
+                        const timesToRemove = existingTimes.filter(t => !this.selectedTimes.includes(t));
+
+                        // Rimuovi istanze non più selezionate
+                        if (timesToRemove.length > 0) {
+                             profile.meds = profile.meds.filter(m => !(m.sharedId === sharedId && timesToRemove.includes(m.time)));
+                        }
+
+                        // Aggiungi nuove istanze per i nuovi orari
+                        timesToAdd.forEach(t => {
+                             profile.meds.push({
+                                id: this.generateId(),
+                                sharedId: sharedId,
+                                name,
+                                category,
+                                dose,
+                                usage,
+                                startDate,
+                                durationDays,
+                                endDate,
+                                time: t,
+                                days: Array.isArray(this.selectedDays) ? [...this.selectedDays] : [],
+                                frequency,
+                                taken: false,
+                                boxQty,
+                                minQty,
+                                therapyEndedAlertShown: false,
+                                alertShown: false
+                            });
+                        });
                     }
 
                     // =========================
@@ -2022,14 +2064,13 @@
             },
 
             toggleTimeSelection(time, btn) {
-                const editId = document.getElementById('input-med-edit-id').value;
-                if (editId) this.selectedTimes = [time];
-                else {
-                    const idx = this.selectedTimes.indexOf(time);
-                    idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
-                }
+                // ⚠️ MODIFICA: Rimossa la logica if(editId) per permettere sempre la selezione multipla
+                const idx = this.selectedTimes.indexOf(time);
+                idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
+                
                 this.updateTimeUI();
             },
+            
             updateTimeUI() {
                 document.querySelectorAll('.time-btn').forEach(b => {
                     const val = b.dataset.val;
