@@ -548,7 +548,13 @@
                 <!-- Uso -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Note / A cosa serve</label>
-                    <input type="text" id="input-med-usage" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. Per il bruciore">
+                    <textarea id="input-med-usage"
+                              rows="4"
+                              class="w-full p-2 rounded-lg border border-slate-200 text-sm resize-none
+                                    min-h-[96px] max-h-[160px] overflow-y-auto
+                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Note / A cosa serve">
+                    </textarea>
                 </div>
 
                 <!--Gestione Scorte -->
@@ -729,6 +735,11 @@
                 this.renderProfiles();
                 this.setupManifest();
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const usage = document.getElementById('input-med-usage');
+                usage.addEventListener('input', () => {
+                    usage.style.height = 'auto';
+                    usage.style.height = usage.scrollHeight + 'px';
+                });
                 document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
 
                 document.getElementById('btn-back').addEventListener('click', () => this.goBack());
