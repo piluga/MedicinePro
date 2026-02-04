@@ -829,38 +829,43 @@
                 const badge = document.getElementById('therapy-badge');
                 const countdown = document.getElementById('therapy-countdown');
 
-                if (!med || !med.endDate) {
+                if (!med || !med.endDate || !med.startDate) {
                     box.classList.add('hidden');
                     return;
                 }
 
-                const today = new Date().toISOString().slice(0, 10);
-                const diff = Math.ceil(
-                    (new Date(med.endDate) - new Date(today)) / (1000 * 60 * 60 * 24)
-                );
+                // Usa la logica centralizzata per la coerenza
+                const countdownData = this.calculateTherapyCountdown(med);
 
                 box.classList.remove('hidden');
-
-                // reset classi
                 box.className = "p-3 rounded-xl border mt-3 text-sm flex items-center gap-3";
 
-                if (diff < 0) {
-                    badge.textContent = "Terapia terminata";
-                    badge.className = "bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold";
-                    countdown.textContent = `Terminata ${Math.abs(diff)} giorni fa`;
-                    box.classList.add("bg-red-50", "border-red-200");
+                if (countdownData.phase === 'not-started') {
+                    badge.textContent = "⏳ Non iniziata";
+                    badge.className = "bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold";
+                    countdown.textContent = `Inizia tra ${countdownData.days}g`;
+                    box.classList.add("bg-blue-50", "border-blue-200");
                 }
-                else if (diff <= 3) {
-                    badge.textContent = "In scadenza";
-                    badge.className = "bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold";
-                    countdown.textContent = `Scade tra ${diff} giorni`;
-                    box.classList.add("bg-orange-50", "border-orange-200");
+                else if (countdownData.phase === 'ended') {
+                    badge.textContent = "✅ Terminata";
+                    badge.className = "bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-xs font-bold";
+                    countdown.textContent = `Terminata`;
+                    box.classList.add("bg-slate-50", "border-slate-200");
                 }
                 else {
-                    badge.textContent = "In corso";
-                    badge.className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold";
-                    countdown.textContent = `Restano ${diff} giorni`;
-                    box.classList.add("bg-emerald-50", "border-emerald-200");
+                    // Fase Attiva
+                    const diff = countdownData.days;
+                    if (diff <= 3) {
+                        badge.textContent = "▶️ In scadenza";
+                        badge.className = "bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold";
+                        countdown.textContent = `Scade tra ${diff} giorni`;
+                        box.classList.add("bg-orange-50", "border-orange-200");
+                    } else {
+                        badge.textContent = "▶️ In corso";
+                        badge.className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold";
+                        countdown.textContent = `Restano ${diff} giorni`;
+                        box.classList.add("bg-emerald-50", "border-emerald-200");
+                    }
                 }
             },
 
@@ -1002,8 +1007,8 @@
 
                 if (countdown.phase === 'not-started') {
                     return {
-                        cls: 'badge-upcoming',
-                        label: 'Non iniziata',
+                        cls: 'blue',
+                        label: '⏳ Non iniziata',
                         sub: `Inizia tra ${countdown.days}g`
                     };
                 }
@@ -1011,22 +1016,22 @@
                 if (countdown.phase === 'active') {
                     if (countdown.days <= 2) {
                         return {
-                            cls: 'badge-ending',
-                            label: 'In scadenza',
+                            cls: 'orange',
+                            label: '▶️ In scadenza',
                             sub: `Scade tra ${countdown.days}g`
                         };
                     }
                     return {
-                        cls: 'badge-active',
-                        label: 'In corso',
+                        cls: 'green',
+                        label: '▶️ In corso',
                         sub: `Restano ${countdown.days}g`
                     };
                 }
 
                 if (countdown.phase === 'ended') {
                     return {
-                        cls: 'badge-ended',
-                        label: 'Terminata',
+                        cls: 'gray',
+                        label: '✅ Terminata',
                         sub: 'Completata'
                     };
                 }
