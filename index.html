@@ -804,10 +804,12 @@
                 this.renderProfiles();
                 this.setupManifest();
                 const usage = document.getElementById('input-med-usage');
-                usage.addEventListener('input', () => {
-                    usage.style.height = 'auto';
-                    usage.style.height = usage.scrollHeight + 'px';
-                });
+                if (usage) {
+                    usage.addEventListener('input', () => {
+                        usage.style.height = 'auto';
+                        usage.style.height = usage.scrollHeight + 'px';
+                    });
+                }
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                 document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
 
@@ -1415,9 +1417,8 @@
                         
                         sortedTimes.forEach(t => {
                             const i = document.createElement('i');
-
-                            if (t === 'Mattina') i.className = 'fa-solid fa-sun text-[10px] text-orange-600';
-                            if (t === 'Pomeriggio') i.className = 'fa-solid fa-cloud-sun text-[10px] text-blue-500';
+                            if(t === 'Mattina') i.className = 'fa-solid fa-sun text-[10px] text-orange-600';
+                            if(t === 'Pomeriggio') i.className = 'fa-solid fa-cloud-sun text-[10px] text-blue-500'; 
                             if (t === 'Sera') i.className = 'fa-solid fa-moon text-[10px] text-indigo-800';
 
                             if (info.hasOverride) {
@@ -2246,6 +2247,12 @@
                 const todayShort = dayMap[new Date().getDay()];
                 const todayISO = new Date().toISOString().slice(0, 10);
 
+                // Calcolo periodo attuale
+                const hour = new Date().getHours();
+                let activeTime = 'Mattina';
+                if (hour >= 13) activeTime = 'Pomeriggio';
+                if (hour >= 19) activeTime = 'Sera';
+
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
@@ -2257,16 +2264,38 @@
 
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
+                        
+                        // Logica Accordion: Apri solo se è il periodo attivo
+                        const isOpen = (time === activeTime);
+                        const hiddenClass = isOpen ? '' : 'hidden';
+                        const rotateClass = isOpen ? 'rotate-180' : '';
+
+                        // Header Cliccabile
                         const header = document.createElement('div');
-                        header.className = "text-[10px] font-bold text-slate-400 uppercase mb-2 pl-1 flex items-center justify-between gap-2";
+                        header.className = "cursor-pointer bg-white p-3 rounded-xl card-shadow border border-slate-100 mb-2 flex items-center justify-between transition-all hover:bg-slate-50";
+                        header.onclick = () => this.toggleSection(time);
+                        
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
+                        
                         header.innerHTML = `
-                                        <div class="flex items-center gap-2">
-                                            <i class="fa-solid ${icon}"></i> ${time}
-                                        </div>
-                                        <span class="${takenCount === totalCount ? 'text-green-500' : 'text-slate-400'}">${takenCount} di ${totalCount}</span>
-                                    `;
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                                    <i class="fa-solid ${icon} text-lg"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
+                                    <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
+                                </div>
+                            </div>
+                            <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
+                        `;
                         container.appendChild(header);
+
+                        // Contenitore Lista Farmaci (Nascosto/Visibile)
+                        const listContainer = document.createElement('div');
+                        listContainer.id = `list-${time}`;
+                        listContainer.className = `space-y-3 ${hiddenClass}`;
+
                         meds.forEach(med => {
                             // 1. Controllo Override
                             let isToday = false;
@@ -2336,12 +2365,20 @@
                                                 <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
                                                 <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
                                             </div>`;
-                            container.appendChild(card);
+                            listContainer.appendChild(card);
                         });
+                        container.appendChild(listContainer);
                     }
                 });
                 document.getElementById('btn-uncheck-all').classList.toggle('hidden', !anyTaken);
                 document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
+            },
+
+            toggleSection(time) {
+                const list = document.getElementById(`list-${time}`);
+                const chevron = document.getElementById(`chevron-${time}`);
+                if (list) list.classList.toggle('hidden');
+                if (chevron) chevron.classList.toggle('rotate-180');
             },
 
             closeModal(id) {
@@ -2410,4 +2447,3 @@
     </script>
 </body>
 </html>
-
