@@ -1415,9 +1415,15 @@
                         
                         sortedTimes.forEach(t => {
                             const i = document.createElement('i');
-                            if(t === 'Mattina') i.className = 'fa-solid fa-sun text-[9px] text-orange-600';
-                            if(t === 'Pomeriggio') i.className = 'fa-solid fa-cloud-sun text-[9px] text-blue-700'; 
-                            if(t === 'Sera') i.className = 'fa-solid fa-moon text-[9px] text-indigo-800';
+
+                            if (t === 'Mattina') i.className = 'fa-solid fa-sun text-[10px] text-orange-600';
+                            if (t === 'Pomeriggio') i.className = 'fa-solid fa-cloud-sun text-[10px] text-blue-700';
+                            if (t === 'Sera') i.className = 'fa-solid fa-moon text-[10px] text-indigo-800';
+
+                            if (info.hasOverride) {
+                                i.classList.add('text-[11px]');
+                            }
+
                             iconContainer.appendChild(i);
                         });
                         el.appendChild(iconContainer);
