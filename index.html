@@ -781,6 +781,7 @@
             isSwiping: false,
             stream: null,
             newProfileAvatar: null,
+            expandedSections: [],
             
             // Variabili per il modale dettagli giorno
             editingDayDate: null, 
@@ -1417,8 +1418,8 @@
                         
                         sortedTimes.forEach(t => {
                             const i = document.createElement('i');
-                            if(t === 'Mattina') i.className = 'fa-solid fa-sun text-[10px] text-orange-600';
-                            if(t === 'Pomeriggio') i.className = 'fa-solid fa-cloud-sun text-[10px] text-blue-500'; 
+                            if (t === 'Mattina') i.className = 'fa-solid fa-sun text-[10px] text-orange-600';
+                            if (t === 'Pomeriggio') i.className = 'fa-solid fa-cloud-sun text-[10px] text-blue-500';
                             if (t === 'Sera') i.className = 'fa-solid fa-moon text-[10px] text-indigo-800';
 
                             if (info.hasOverride) {
@@ -1854,6 +1855,13 @@
                 document.getElementById('view-medications').classList.remove('hidden');
                 document.getElementById('btn-back').classList.remove('hidden');
 
+                // Initialize expanded section based on time
+                const hour = new Date().getHours();
+                let activeTime = 'Mattina';
+                if (hour >= 13) activeTime = 'Pomeriggio';
+                if (hour >= 19) activeTime = 'Sera';
+                this.expandedSections = [activeTime];
+
                 this.renderMedications();
                 if (profile) this.checkTherapyEnd(profile);
             },
@@ -2247,12 +2255,6 @@
                 const todayShort = dayMap[new Date().getDay()];
                 const todayISO = new Date().toISOString().slice(0, 10);
 
-                // Calcolo periodo attuale
-                const hour = new Date().getHours();
-                let activeTime = 'Mattina';
-                if (hour >= 13) activeTime = 'Pomeriggio';
-                if (hour >= 19) activeTime = 'Sera';
-
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
@@ -2265,8 +2267,8 @@
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
                         
-                        // Logica Accordion: Apri solo se è il periodo attivo
-                        const isOpen = (time === activeTime);
+                        // Logica Accordion: Usa lo stato persistente
+                        const isOpen = this.expandedSections.includes(time);
                         const hiddenClass = isOpen ? '' : 'hidden';
                         const rotateClass = isOpen ? 'rotate-180' : '';
 
@@ -2375,6 +2377,12 @@
             },
 
             toggleSection(time) {
+                if (this.expandedSections.includes(time)) {
+                    this.expandedSections = this.expandedSections.filter(t => t !== time);
+                } else {
+                    this.expandedSections.push(time);
+                }
+                
                 const list = document.getElementById(`list-${time}`);
                 const chevron = document.getElementById(`chevron-${time}`);
                 if (list) list.classList.toggle('hidden');
