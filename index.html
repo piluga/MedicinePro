@@ -27,7 +27,8 @@
     <style>
         /* Dimensione uniforme per orari e giorni */
         .time-btn,
-        .day-btn {
+        .day-btn,
+        .detail-time-btn {
             height: 40px;
             min-height: 40px;
             font-size: 11px;
@@ -46,7 +47,8 @@
         }
 
         .time-btn.selected,
-        .day-btn.selected {
+        .day-btn.selected,
+        .detail-time-btn.selected {
             background-color: #2563eb;
             color: white;
             border-color: #2563eb;
@@ -65,18 +67,6 @@
                 opacity: 1;
                 transform: scale(1.05);
             }
-
-        .time-btn,
-        .day-btn {
-            height: 40px;
-            padding: 0 10px;
-            font-size: 11px;
-            font-weight: 600;
-            border-radius: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
 
         .fade-in {
             animation: fadeIn 0.3s ease-in-out;
@@ -138,12 +128,6 @@
         .modal-overlay {
             background-color: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(2px);
-        }
-
-        .time-btn.selected {
-            background-color: #2563eb;
-            color: white;
-            border-color: #2563eb;
         }
 
         /* Stili specifici per le categorie temporali */
@@ -306,15 +290,22 @@
             border-left: 4px solid #dc2626;
         }
 
+        /* CARD INATTIVA: Disabilita il corpo principale MA lascia i bottoni attivi */
         .med-card-inactive {
-            opacity: 0.45;
-            pointer-events: none;
+            opacity: 0.55;
+            background-color: #f3f4f6 !important; /* Grigio chiaro per indicare disabilitato */
+            border-color: #e5e7eb !important;
         }
 
-            .med-card-inactive button {
-                pointer-events: auto;
-                opacity: 0.7;
-            }
+        .med-card-inactive .card-main-content {
+            pointer-events: none; /* Disabilita click su checkbox e testo */
+            opacity: 0.5;
+        }
+
+        .med-card-inactive .card-actions {
+            pointer-events: auto; /* Riabilita click sui bottoni azione */
+            opacity: 1;
+        }
 
         .therapy-badge.gray {
             background: #f1f5f9;
@@ -329,11 +320,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .therapy-day:active {
+            transform: scale(0.9);
         }
 
         .therapy-out {
             background: #f1f5f9;
             color: #94a3b8;
+            cursor: default;
         }
 
         .therapy-mid {
@@ -354,6 +352,10 @@
         .therapy-skip {
             background: #e5e7eb;
             color: #9ca3af;
+        }
+        
+        .clickable-day:hover {
+            filter: brightness(0.95);
         }
     </style>
 </head>
@@ -474,7 +476,7 @@
     </main>
 
     <!-- MODALI -->
-    <!-- MODALE AGGIUNGI PROFILO (Aggiornato con Avatar) -->
+    <!-- MODALE AGGIUNGI PROFILO -->
     <div id="modal-add-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h3 class="text-xl font-bold mb-4">Nuovo Profilo</h3>
@@ -529,6 +531,34 @@
             </div>
             <div class="flex justify-end mt-4">
                 <button onclick="app.closeModal('modal-show-note')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold text-sm transition-colors">Chiudi</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODALE DETTAGLIO GIORNO (Nuovo) -->
+    <!-- Z-Index aumentato a 60 per apparire sopra il modale principale -->
+    <div id="modal-day-detail" class="hidden fixed inset-0 modal-overlay z-[60] flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative">
+            <h3 class="text-xl font-bold text-slate-800 mb-1">Modifica Giorno</h3>
+            <p id="day-detail-date" class="text-sm text-slate-500 font-semibold mb-5 uppercase tracking-wide"></p>
+            
+            <p class="text-xs text-slate-400 mb-3">Seleziona quando assumere il farmaco in questa data specifica:</p>
+            
+            <div class="space-y-3 mb-6">
+                <button onclick="app.toggleDayDetailTime('Mattina')" class="detail-time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm transition-all" data-val="Mattina">
+                    <i class="fa-solid fa-sun mr-3 text-orange-500"></i> Mattina
+                </button>
+                <button onclick="app.toggleDayDetailTime('Pomeriggio')" class="detail-time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm transition-all" data-val="Pomeriggio">
+                    <i class="fa-solid fa-cloud-sun mr-3 text-yellow-500"></i> Pomeriggio
+                </button>
+                <button onclick="app.toggleDayDetailTime('Sera')" class="detail-time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm transition-all" data-val="Sera">
+                    <i class="fa-solid fa-moon mr-3 text-indigo-500"></i> Sera
+                </button>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button onclick="app.closeModal('modal-day-detail')" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors">Annulla</button>
+                <button onclick="app.saveDayDetail()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">Salva Modifiche</button>
             </div>
         </div>
     </div>
@@ -627,10 +657,10 @@
                 </div>
 
                 <!-- Calendario Mensile-->
-                <!-- MODIFICATO: touch-pan-x cambiato in touch-pan-y per permettere lo scroll verticale -->
-                <div id="therapy-month-wrapper" class="mt-4 hidden select-none touch-pan-y">
+                <!-- Aggiunto max-w e mx-auto per ridurre dimensione -->
+                <div id="therapy-month-wrapper" class="mt-4 hidden select-none touch-pan-y max-w-[85%] mx-auto">
                     <p class="text-xs font-bold text-slate-500 uppercase mb-2">
-                        Calendario mensile <span class="text-[9px] font-normal text-slate-400 ml-1">(Scorri per cambiare mese)</span>
+                        Calendario mensile <span class="text-[9px] font-normal text-slate-400 ml-1">(Tocca un giorno per modificare)</span>
                     </p>
                     <div id="therapy-month-header"
                          class="text-center font-bold text-slate-500 uppercase mb-2">
@@ -645,7 +675,8 @@
                         <div>S</div>
                         <div>D</div>
                     </div>
-                    <div id="therapy-month" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
+                    <!-- Gap ridotto e font ridotto -->
+                    <div id="therapy-month" class="grid grid-cols-7 gap-0.5 text-center text-[10px]"></div>
                 </div>
 
                 <!-- Leggenda Semaforo -->
@@ -732,7 +763,11 @@
             touchStartY: 0,
             isSwiping: false,
             stream: null,
-            newProfileAvatar: null, // Store temp avatar selection
+            newProfileAvatar: null,
+            
+            // Variabili per il modale dettagli giorno
+            editingDayDate: null, 
+            editingDayTimes: [],
 
             // 🎨 TEMI DI COLORE
             profileThemes: [
@@ -785,7 +820,6 @@
             initTherapyMonthSwipe() {
                 if (this.therapyMonthSwipeInitialized) return;
 
-                // FIX: Attacchiamo l'evento al wrapper intero per migliorare l'area di tocco
                 const el = document.getElementById('therapy-month-wrapper');
                 if (!el) return;
 
@@ -799,7 +833,6 @@
                     const endX = e.changedTouches[0].clientX;
                     const diff = endX - startX;
 
-                    // Soglia minima per evitare tocchi accidentali
                     if (Math.abs(diff) < 40) return;
 
                     if (diff > 0) {
@@ -821,6 +854,91 @@
             parseLocalDate(iso) {
                 const [y, m, d] = iso.split('-').map(Number);
                 return new Date(y, m - 1, d);
+            },
+            
+            // --- GESTIONE DETTAGLIO GIORNO (OVERRIDE) ---
+            
+            openDayDetail(dateIso) {
+                this.editingDayDate = dateIso;
+                this.editingDayTimes = []; // Reset
+
+                // 1. Cerca il farmaco attuale (o i suoi fratelli per sharedId)
+                if (!this.currentEditingMed) return;
+                
+                // Formatta data per titolo
+                const dateObj = this.parseLocalDate(dateIso);
+                const options = { weekday: 'long', day: 'numeric', month: 'long' };
+                document.getElementById('day-detail-date').textContent = dateObj.toLocaleDateString('it-IT', options);
+
+                // 2. Verifica se esiste già un override per questa data
+                const specificDays = this.currentEditingMed.specificDays || {};
+                
+                if (specificDays[dateIso]) {
+                    // Se esiste un override, usa quello
+                    this.editingDayTimes = [...specificDays[dateIso]];
+                } else {
+                    // Se non esiste, determina quali sarebbero gli orari standard attivi per oggi
+                    // Controlla la frequenza generale
+                    const isStandardActive = this.isMedicationDay(this.currentEditingMed, dateIso, true); // true = ignora override
+                    
+                    if (isStandardActive) {
+                        // Se il giorno è attivo secondo la frequenza, prendi tutti gli orari configurati per questo farmaco
+                        // Dobbiamo cercare tutti i meds con lo stesso sharedId nel profilo
+                        const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                        if (profile) {
+                            const siblings = profile.meds.filter(m => m.sharedId === this.currentEditingMed.sharedId);
+                            this.editingDayTimes = siblings.map(m => m.time);
+                        } else {
+                            // Fallback se stiamo creando un nuovo profilo e non è ancora salvato (raro qui perché il calendario appare in edit)
+                             this.editingDayTimes = [...this.selectedTimes];
+                        }
+                    } else {
+                         // Giorno normalmente inattivo -> nessun orario selezionato di default
+                        this.editingDayTimes = [];
+                    }
+                }
+                
+                this.updateDayDetailUI();
+                this.showModal('modal-day-detail');
+            },
+            
+            toggleDayDetailTime(time) {
+                const idx = this.editingDayTimes.indexOf(time);
+                if (idx > -1) {
+                    this.editingDayTimes.splice(idx, 1);
+                } else {
+                    this.editingDayTimes.push(time);
+                }
+                this.updateDayDetailUI();
+            },
+            
+            updateDayDetailUI() {
+                document.querySelectorAll('.detail-time-btn').forEach(btn => {
+                    const val = btn.dataset.val;
+                    if (this.editingDayTimes.includes(val)) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                });
+            },
+            
+            saveDayDetail() {
+                if (!this.currentEditingMed || !this.editingDayDate) return;
+                
+                // Salva temporaneamente l'override nell'oggetto corrente
+                // Nota: questo viene salvato definitivamente solo quando si clicca "Salva" nel modale farmaco principale
+                // Ma per la UI live del calendario, dobbiamo aggiornarlo subito in memoria
+                
+                if (!this.currentEditingMed.specificDays) {
+                    this.currentEditingMed.specificDays = {};
+                }
+                
+                this.currentEditingMed.specificDays[this.editingDayDate] = [...this.editingDayTimes];
+                
+                // Aggiorna il calendario mensile
+                this.renderTherapyMonth(this.currentEditingMed);
+                this.closeModal('modal-day-detail');
             },
 
             updateTherapyStatusUI(med) {
@@ -937,8 +1055,20 @@
                 };
             },
 
-            isMedicationDay(med, dateISO) {
+            isMedicationDay(med, dateISO, ignoreOverride = false) {
+                // 1. Controllo Override specifico per la data
+                if (!ignoreOverride && med.specificDays && med.specificDays[dateISO] !== undefined) {
+                    // Se esiste un override, controlla se l'orario del farmaco è incluso nell'array
+                    return med.specificDays[dateISO].includes(med.time);
+                }
+
+                // 2. Logica Standard
                 if (!med.startDate) return true;
+                
+                // Se è fuori dal range temporale standard, è falso (a meno che non ci fosse un override positivo sopra)
+                if (med.endDate && dateISO > med.endDate) return false;
+                if (dateISO < med.startDate) return false;
+
                 if (med.frequency !== "alternate") return true;
 
                 const start = new Date(med.startDate);
@@ -963,29 +1093,54 @@
                 if (target < start) {
                     return { active: false };
                 }
+                
+                // Verifica override
+                let hasOverride = false;
+                let isOverrideActive = false;
+                if (med.specificDays && med.specificDays[dateISO] !== undefined) {
+                    hasOverride = true;
+                    // Se l'array non è vuoto, consideriamo il giorno attivo visivamente nel calendario
+                    isOverrideActive = med.specificDays[dateISO].length > 0;
+                }
 
                 let dosesCount = 0;
                 let current = new Date(start);
 
+                // Per il conteggio dosi, usiamo la logica standard
+                // Ma per dire se è "active" nel calendario usiamo anche l'override
+                
                 while (dosesCount < med.durationDays) {
                     const iso = current.toISOString().slice(0, 10);
-                    const isActive = this.isMedicationDay(med, iso);
+                    // Qui usiamo true per ignorare l'override nel calcolo della sequenza teorica
+                    const isActiveStandard = this.isMedicationDay(med, iso, true);
 
-                    if (isActive) {
+                    if (isActiveStandard) {
                         dosesCount++;
 
                         if (iso === dateISO) {
                             return {
-                                active: true,
+                                active: hasOverride ? isOverrideActive : true,
                                 index: dosesCount,
                                 isFirst: dosesCount === 1,
-                                isLast: dosesCount === med.durationDays
+                                isLast: dosesCount === med.durationDays,
+                                hasOverride: hasOverride
                             };
                         }
                     }
 
-                    // 🔑 AVANZIAMO SEMPRE DI 1 GIORNO
                     current.setDate(current.getDate() + 1);
+                }
+                
+                // Se siamo qui, non è un giorno standard della terapia. 
+                // Ma potrebbe avere un override positivo (aggiunto extra)
+                if (hasOverride && isOverrideActive) {
+                     return {
+                        active: true,
+                        index: -1, // Extra
+                        isFirst: false,
+                        isLast: false,
+                        hasOverride: true
+                    };
                 }
 
                 return { active: false };
@@ -1048,13 +1203,11 @@
                 const legend = document.getElementById('therapy-legend');
                 const monthWrapper = document.getElementById('therapy-month-wrapper');
 
-                // 🔒 RESET COMPLETO
                 if (container) container.innerHTML = '';
                 if (wrapper) wrapper.classList.add('hidden');
                 if (legend) legend.classList.add('hidden');
                 if (monthWrapper) monthWrapper.classList.add('hidden');
 
-                // ❌ dati incompleti → STOP TOTALE
                 if (
                     !med ||
                     !med.startDate ||
@@ -1065,7 +1218,6 @@
                     return;
                 }
 
-                // ✅ dati validi → mostra preview
                 wrapper.classList.remove('hidden');
 
                 const start = new Date(med.startDate);
@@ -1083,7 +1235,8 @@
                     d.setDate(start.getDate() + dayOffset);
                     const iso = d.toISOString().slice(0, 10);
 
-                    const isActiveDay = this.isMedicationDay(med, iso);
+                    // Qui usiamo standard logic per la preview orizzontale
+                    const isActiveDay = this.isMedicationDay(med, iso, true);
 
                     if (isActiveDay) {
                         dosesCount++;
@@ -1105,7 +1258,6 @@
                     dayOffset++;
                 }
 
-                // 🟢 calendario mensile SOLO se dati validi
                 if (med.startDate && med.durationDays && med.endDate) {
                     this.renderTherapyMonth(med);
                 }
@@ -1118,11 +1270,10 @@
                 const wrapper = document.getElementById('therapy-month-wrapper');
                 const container = document.getElementById('therapy-month');
 
-                if (!wrapper || !container) return;   // 🛡️ protezione
+                if (!wrapper || !container) return;
 
                 container.innerHTML = '';
 
-                // FIX: Se med è nullo (es. swipe su nuovo farmaco), usciamo o gestiamo
                 if (!med || !med.startDate || !med.endDate) {
                     wrapper.classList.add('hidden');
                     return;
@@ -1136,7 +1287,6 @@
 
                 const start = new Date(this.currentTherapyMonth);
 
-                // 🔹 HEADER MESE
                 const header = document.getElementById('therapy-month-header');
 
                 const monthNames = [
@@ -1154,10 +1304,13 @@
                 const year = base.getFullYear();
 
                 const firstDay = new Date(year, month, 1).getDay();
+                // Fix per far iniziare la settimana da Lunedì (0=Lun in array visuale, ma getDay() 0=Dom)
+                const firstDayAdjusted = firstDay === 0 ? 6 : firstDay - 1;
+                
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
 
                 // Spazi vuoti prima
-                for (let i = 0; i < (firstDay + 6) % 7; i++) {
+                for (let i = 0; i < firstDayAdjusted; i++) {
                     container.appendChild(document.createElement('div'));
                 }
 
@@ -1172,21 +1325,34 @@
 
                     const info = this.getTherapyDayInfo(med, iso);
 
-                    let cls = 'bg-slate-100 text-slate-400';
+                    let cls = 'therapy-day ';
 
                     if (info.active) {
+                        cls += 'clickable-day ';
                         if (info.isFirst) {
-                            cls = 'bg-green-600 text-white';
+                            cls += 'therapy-start';
                         } else if (info.isLast) {
-                            cls = 'bg-red-600 text-white';
+                            cls += 'therapy-end';
                         } else {
-                            cls = 'bg-yellow-400 text-slate-900';
+                            cls += 'therapy-mid';
                         }
+                        
+                        // Segna visivamente se c'è un override
+                        if(info.hasOverride) {
+                           cls += ' border-2 border-blue-500';
+                        }
+                    } else {
+                        cls += 'therapy-out';
                     }
 
                     const el = document.createElement('div');
                     el.className = cls;
                     el.textContent = d;
+                    
+                    // Aggiungi click handler solo se il giorno è attivo
+                    if (info.active) {
+                        el.onclick = () => this.openDayDetail(iso);
+                    }
 
                     container.appendChild(el);
                 }
@@ -1198,7 +1364,6 @@
                     this.currentTherapyMonth.getMonth() - 1,
                     1
                 );
-                // FIX: Aggiorniamo il rendering dopo il cambio mese!
                 this.renderTherapyMonth(this.currentEditingMed);
             },
 
@@ -1208,12 +1373,11 @@
                     this.currentTherapyMonth.getMonth() + 1,
                     1
                 );
-                // FIX: Aggiorniamo il rendering dopo il cambio mese!
                 this.renderTherapyMonth(this.currentEditingMed);
             },
 
             checkTherapyEnd(profile) {
-                if (!profile) return; // FIX: Sicurezza
+                if (!profile) return;
 
                 const today = new Date().toISOString().slice(0, 10);
                 const alertedSharedIds = new Set();
@@ -1229,7 +1393,6 @@
 
                         alertedSharedIds.add(med.sharedId);
 
-                        // segna TUTTE le istanze come alert mostrate
                         profile.meds.forEach(m => {
                             if (m.sharedId === med.sharedId) {
                                 m.therapyEndedAlertShown = true;
@@ -1368,7 +1531,6 @@
                 try {
                     const result = await this.fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`, payload);
 
-                    // FIX: Pulizia risposta JSON da markdown (es. ```json ... ```)
                     let text = result.candidates[0].content.parts[0].text;
                     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
@@ -1465,12 +1627,10 @@
                     // 🔹 RETROCOMPATIBILITÀ FARMACI
                     this.data.profiles.forEach((profile, index) => {
 
-                        // 🎨 RETROCOMPATIBILITÀ TEMI: Assegna un tema se manca
                         if (typeof profile.themeIndex === 'undefined') {
                             profile.themeIndex = index % this.profileThemes.length;
                         }
 
-                        // 🔑 NORMALIZZA sharedId (LIVELLO 1)
                         this.normalizeMedications(profile);
 
                         profile.meds.forEach(med => {
@@ -1485,6 +1645,7 @@
                             if (med.endDate === undefined) med.endDate = null;
                             if (typeof med.therapyEndedAlertShown !== "boolean") { med.therapyEndedAlertShown = false; }
                             if (!med.frequency) med.frequency = "daily";
+                            if (!med.specificDays) med.specificDays = {}; // Nuovo campo per le eccezioni
                         });
                     });
 
@@ -1559,7 +1720,6 @@
                     try {
                         const json = JSON.parse(e.target.result);
                         if (json && Array.isArray(json.profiles)) {
-                            // Pulizia stato prima di importare
                             this.currentProfileId = null;
                             document.getElementById('input-med-edit-id').value = '';
 
@@ -1570,7 +1730,7 @@
                     } catch (err) { alert("File non valido."); }
                 };
                 reader.readAsText(file);
-                input.value = ''; // Reset input per permettere re-import dello stesso file
+                input.value = '';
             },
 
             checkDailyReset() {
@@ -1580,19 +1740,13 @@
 
                 this.data.profiles.forEach(profile => {
                     profile.meds.forEach(med => {
-
-                        // 📉 Scalatura dose
                         if (med.taken) {
                             const doseQty = this.parseDose(med.dose);
                             med.boxQty = Math.max(0, med.boxQty - doseQty);
                         }
-
-                        // 🔁 Reset alert se ricaricato
                         if (med.boxQty > med.minQty) {
                             med.alertShown = false;
                         }
-
-                        // ⚠️ Avviso scorte
                         if (
                             med.minQty > 0 &&
                             med.boxQty <= med.minQty &&
@@ -1601,8 +1755,6 @@
                             this.showLowStockAlert(med);
                             med.alertShown = true;
                         }
-
-                        // 🔄 Reset giornaliero
                         med.taken = false;
                     });
                 });
@@ -1615,14 +1767,14 @@
 
             openProfile(id) {
                 this.currentProfileId = id;
-                const profile = this.data.profiles.find(x => x.id === id); // FIX: Recupera il profilo corretto
+                const profile = this.data.profiles.find(x => x.id === id); 
 
                 document.getElementById('view-profiles').classList.add('hidden');
                 document.getElementById('view-medications').classList.remove('hidden');
                 document.getElementById('btn-back').classList.remove('hidden');
 
                 this.renderMedications();
-                if (profile) this.checkTherapyEnd(profile); // FIX: Usa la variabile profilo definita
+                if (profile) this.checkTherapyEnd(profile);
             },
 
             selectAvatar(type) {
@@ -1640,7 +1792,6 @@
                 const name = document.getElementById('input-profile-name').value.trim();
                 if (!name) return;
 
-                // 🎨 Assegna il prossimo colore in sequenza
                 const themeIndex = this.data.profiles.length % this.profileThemes.length;
 
                 this.data.profiles.push({
@@ -1648,7 +1799,7 @@
                     name,
                     meds: [],
                     themeIndex,
-                    avatar: this.newProfileAvatar // Salva avatar
+                    avatar: this.newProfileAvatar
                 });
 
                 this.saveData();
@@ -1694,7 +1845,6 @@
                 };
 
                 this.data.profiles.forEach(p => {
-                    // 🎨 Recupera il tema, con fallback
                     if (typeof p.themeIndex === 'undefined') {
                         p.themeIndex = Math.floor(Math.random() * this.profileThemes.length);
                     }
@@ -1705,13 +1855,11 @@
                     const perc = total === 0 ? 0 : Math.round((taken / total) * 100);
 
                     const div = document.createElement('div');
-                    // 🎨 Applica le classi del tema
                     div.className = `${theme.bg} ${theme.border} p-4 rounded-xl card-shadow flex justify-between items-center cursor-pointer border hover:shadow-md transition-all`;
                     div.onclick = () => this.openProfile(p.id);
 
                     const percClass = perc === 100 ? 'text-green-600' : theme.progress;
 
-                    // Gestione Icona Avatar o Iniziale
                     let iconContent;
                     if (p.avatar && avatarIcons[p.avatar]) {
                         iconContent = `<i class="fa-solid ${avatarIcons[p.avatar]} text-xl"></i>`;
@@ -1735,14 +1883,13 @@
             },
 
             prepareNewMed() {
-                document.getElementById('input-med-edit-id').value = ''; // Importante: pulisce ID modifica
-                this.currentEditingMed = null; // FIX: Reset del farmaco corrente
+                document.getElementById('input-med-edit-id').value = '';
+                this.currentEditingMed = null;
                 this.resetMedModal();
                 this.showModal('modal-med');
             },
 
             showModal(id) {
-                // Se stiamo aprendo il modale farmaco, verifichiamo se è una modifica o un'aggiunta
                 if (id === 'modal-med') {
                     const editId = document.getElementById('input-med-edit-id').value;
                     if (!editId) {
@@ -1750,10 +1897,9 @@
                     }
                 }
 
-                // Se apro modale profilo, resetto avatar
                 if (id === 'modal-add-profile') {
-                    this.selectAvatar(null); // Deseleziona tutto visivamente
-                    this.newProfileAvatar = null; // Resetta stato
+                    this.selectAvatar(null);
+                    this.newProfileAvatar = null;
                 }
 
                 document.getElementById(id).classList.remove('hidden');
@@ -1767,7 +1913,6 @@
                 document.getElementById('input-med-usage').value = '';
                 document.getElementById('btn-scan').classList.remove('hidden');
                 document.getElementById('therapy-status-box').classList.add('hidden');
-                // Nascondi anche le preview del calendario quando crei nuovo
                 document.getElementById('therapy-preview').classList.add('hidden');
                 document.getElementById('therapy-month-wrapper').classList.add('hidden');
 
@@ -1789,26 +1934,21 @@
                     document.getElementById('med-box-qty').value = med.boxQty ?? 0;
                     document.getElementById('med-min-qty').value = med.minQty ?? 0;
                     document.getElementById('med-frequency').value = med.frequency || "daily";
-                    // ✅ PRECOMPILA TERAPIA
                     document.getElementById('med-start-date').value = med.startDate || "";
                     document.getElementById('med-duration').value = med.durationDays ?? "";
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
                     document.getElementById('btn-scan').classList.add('hidden');
                     
-                    // ⚠️ MODIFICA: Ora carica tutti gli orari associati a questo farmaco (sharedId)
-                    // invece di caricare solo l'orario della singola istanza cliccata.
                     const relatedMeds = profile.meds.filter(m => m.sharedId === med.sharedId);
                     this.selectedTimes = relatedMeds.map(m => m.time);
                     
                     this.selectedDays = Array.isArray(med.days) ? [...med.days] : [];
                     this.updateTherapyStatusUI(med);
                     this.renderTherapyPreview(med);
-                    this.initTherapyMonthSwipe(); // FIX: Non passiamo nulla, lo gestisce internamente
+                    this.initTherapyMonthSwipe();
 
-                    // Show modal first
                     document.getElementById('modal-med').classList.remove('hidden');
 
-                    // Update UI after show to ensure styles apply
                     this.updateTimeUI();
                     this.updateDayUI();
 
@@ -1820,6 +1960,8 @@
                     );
 
                     this.currentEditingMed = med;
+                    // Re-renderizziamo il mese per aggiornare le classi clickable
+                    this.renderTherapyMonth(med);
                 }
             },
 
@@ -1834,7 +1976,6 @@
                 const durationDays = parseInt(document.getElementById('med-duration')?.value) || null;
                 const endDate = this.calculateEndDate(startDate, durationDays, frequency);
 
-                // 🔹 NUOVI CAMPI
                 const boxQty = parseFloat(document.getElementById('med-box-qty').value) || 0;
                 const minQty = parseFloat(document.getElementById('med-min-qty').value) || 0;
 
@@ -1851,8 +1992,11 @@
                     const med = profile.meds.find(m => m.id === editId);
                     if (med) {
                         const sharedId = med.sharedId;
+                        // PRESERVA LE ECCEZIONI: se stiamo modificando, manteniamo il calendario specifico
+                        // Assumiamo che tutte le istanze abbiano le stesse eccezioni
+                        const preservedSpecificDays = med.specificDays || {};
 
-                        // 1. Aggiorna le proprietà comuni a TUTTE le istanze di questo farmaco (sharedId)
+                        // 1. Aggiorna le proprietà comuni
                         profile.meds.forEach(m => {
                             if (m.sharedId === sharedId) {
                                 m.name = name;
@@ -1863,11 +2007,14 @@
                                 m.durationDays = durationDays;
                                 m.endDate = endDate;
                                 m.days = Array.isArray(this.selectedDays) ? [...this.selectedDays] : [];
-                                m.frequency = frequency; // Assicurati che frequency sia aggiornata su tutti
+                                m.frequency = frequency; 
                                 
                                 const oldQty = m.boxQty;
                                 m.boxQty = boxQty;
                                 m.minQty = minQty;
+                                
+                                // Assicurati che l'oggetto abbia la proprietà
+                                m.specificDays = preservedSpecificDays;
 
                                 if (boxQty > minQty && boxQty > oldQty) {
                                     m.alertShown = false;
@@ -1879,18 +2026,13 @@
                         const existingInstances = profile.meds.filter(m => m.sharedId === sharedId);
                         const existingTimes = existingInstances.map(m => m.time);
 
-                        // Orari da aggiungere (selezionati MA non presenti)
                         const timesToAdd = this.selectedTimes.filter(t => !existingTimes.includes(t));
-                        
-                        // Orari da rimuovere (presenti MA non più selezionati)
                         const timesToRemove = existingTimes.filter(t => !this.selectedTimes.includes(t));
 
-                        // Rimuovi istanze non più selezionate
                         if (timesToRemove.length > 0) {
                              profile.meds = profile.meds.filter(m => !(m.sharedId === sharedId && timesToRemove.includes(m.time)));
                         }
 
-                        // Aggiungi nuove istanze per i nuovi orari
                         timesToAdd.forEach(t => {
                              profile.meds.push({
                                 id: this.generateId(),
@@ -1909,7 +2051,8 @@
                                 boxQty,
                                 minQty,
                                 therapyEndedAlertShown: false,
-                                alertShown: false
+                                alertShown: false,
+                                specificDays: preservedSpecificDays // Importante propagare
                             });
                         });
                     }
@@ -1918,12 +2061,12 @@
                     // ➕ NUOVO FARMACO
                     // =========================
                 } else {
-                    const sharedId = this.generateId(); // 🔑 ID condiviso
+                    const sharedId = this.generateId();
 
                     this.selectedTimes.forEach(t => {
                         profile.meds.push({
                             id: this.generateId(),
-                            sharedId: sharedId, // 🔗 collega mattina/pomeriggio/sera
+                            sharedId: sharedId,
                             name,
                             category,
                             dose,
@@ -1938,7 +2081,8 @@
                             boxQty,
                             minQty,
                             therapyEndedAlertShown: false,
-                            alertShown: false
+                            alertShown: false,
+                            specificDays: {} // Inizializza vuoto
                         });
                     });
                 }
@@ -1966,7 +2110,7 @@
 
                 med.taken = !med.taken;
 
-                this.saveData();        // 🔥 FONDAMENTALE
+                this.saveData();
                 this.renderMedications();
             },
 
@@ -1986,7 +2130,6 @@
                 }
             },
 
-            // --- FUNZIONE PER MOSTRARE NOTE ---
             showMedNote(medId) {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 const med = profile.meds.find(m => m.id === medId);
@@ -2006,7 +2149,6 @@
                 let hasMeds = false;
                 let anyTaken = false;
 
-                // FIX: Mappatura giorni fissa per evitare problemi di localizzazione
                 const dayMap = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
                 const todayShort = dayMap[new Date().getDay()];
                 const todayISO = new Date().toISOString().slice(0, 10);
@@ -2015,14 +2157,10 @@
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
                     container.innerHTML = '';
 
-                    // MODIFICA: Rimosso il filtro sui giorni per mostrare tutti i farmaci
                     const meds = profile.meds.filter(m => m.time === time);
 
                     if (meds.length > 0) {
                         hasMeds = true;
-
-                        // Calcola active meds solo per quelli realmente attivi oggi (per logica interna)
-                        const activeMeds = meds.filter(m => this.isMedicationDay(m, todayISO));
 
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
@@ -2037,13 +2175,19 @@
                                     `;
                         container.appendChild(header);
                         meds.forEach(med => {
-                            // MODIFICA: Calcolo combinato per 'isToday'
-                            // 1. Controllo frequenza (es. giorni alterni, date inizio/fine)
-                            const isFreqMatch = this.isMedicationDay(med, todayISO);
-                            // 2. Controllo giorni specifici (Lun, Mar, ecc.)
-                            const isDayMatch = !Array.isArray(med.days) || med.days.length === 0 || med.days.includes(todayShort);
-
-                            const isToday = isFreqMatch && isDayMatch;
+                            // 1. Controllo Override
+                            let isToday = false;
+                            
+                            if (med.specificDays && med.specificDays[todayISO] !== undefined) {
+                                // Se esiste un override per oggi, usalo.
+                                // Il med è attivo se il suo orario è nell'array dell'override
+                                isToday = med.specificDays[todayISO].includes(med.time);
+                            } else {
+                                // 2. Fallback su logica standard
+                                const isFreqMatch = this.isMedicationDay(med, todayISO);
+                                const isDayMatch = !Array.isArray(med.days) || med.days.length === 0 || med.days.includes(todayShort);
+                                isToday = isFreqMatch && isDayMatch;
+                            }
 
                             if (med.taken) anyTaken = true;
                             const card = document.createElement('div');
@@ -2070,17 +2214,17 @@
                                         `;
                             }
 
-                            // LOGICA ICONA NOTE: Se usage non è vuota, crea bottone
                             const noteBtn = med.usage ? 
                                 `<button onclick="app.showMedNote('${med.id}')" class="text-amber-400 hover:text-amber-500 p-2" title="Leggi note"><i class="fa-solid fa-note-sticky"></i></button>` 
                                 : '';
 
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${inactiveClass}`;
+                            
+                            // Strutturiamo il contenuto per separare la parte cliccabile (checkbox) dai bottoni azione
                             card.innerHTML = `
-                                            <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                                            <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
                                                 <input type="checkbox" class="med-checkbox"
                                                 ${med.taken ? 'checked' : ''}
-                                                ${!isToday ? 'disabled' : ''}
                                                 onchange="app.toggleMedication('${med.id}')">
                                                 <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
                                                     <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
@@ -2094,11 +2238,11 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="flex items-center">
+                                            <div class="flex items-center card-actions">
                                                 ${noteBtn}
                                                 <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
                                                 <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
-                                                </div>`;
+                                            </div>`;
                             container.appendChild(card);
                         });
                     }
@@ -2115,7 +2259,6 @@
             },
 
             toggleTimeSelection(time, btn) {
-                // ⚠️ MODIFICA: Rimossa la logica if(editId) per permettere sempre la selezione multipla
                 const idx = this.selectedTimes.indexOf(time);
                 idx > -1 ? this.selectedTimes.splice(idx, 1) : this.selectedTimes.push(time);
                 
@@ -2125,40 +2268,31 @@
             updateTimeUI() {
                 document.querySelectorAll('.time-btn').forEach(b => {
                     const val = b.dataset.val;
-                    this.selectedTimes.includes(val) ? b.classList.add('selected') : b.classList.remove('selected');
+                    if(val) {
+                        this.selectedTimes.includes(val) ? b.classList.add('selected') : b.classList.remove('selected');
+                    }
                 });
             },
 
             handleSwipe(endX, endY) {
-                // Swipe attivo SOLO nella vista profilo
                 if (!this.currentProfileId) return;
-
-                // Nessuno swipe se siamo nelle impostazioni
                 if (!document.getElementById('view-settings').classList.contains('hidden')) return;
-
-                // Nessuno swipe se un modale è aperto
                 if (document.querySelector('.modal-overlay:not(.hidden)')) return;
 
                 const diffX = endX - this.touchStartX;
                 const diffY = endY - this.touchStartY;
 
-                // Se è più verticale che orizzontale → è scroll
                 if (Math.abs(diffY) > Math.abs(diffX)) return;
-
-                // Soglia minima swipe orizzontale
                 if (Math.abs(diffX) < 80) return;
 
                 const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
 
-                // Swipe verso destra
                 if (diffX > 0) {
                     if (currentIndex > 0) {
                         this.openProfile(this.data.profiles[currentIndex - 1].id);
                     }
-                    // ❌ NIENTE ritorno automatico in home
                 }
 
-                // Swipe verso sinistra
                 if (diffX < 0 && currentIndex < this.data.profiles.length - 1) {
                     this.openProfile(this.data.profiles[currentIndex + 1].id);
                 }
