@@ -318,10 +318,13 @@
             border-radius: 6px;
             font-weight: 700;
             display: flex;
+            flex-direction: column; /* Cambiato per allineare numero e icone */
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start; /* Allinea in alto */
+            padding-top: 2px;
             cursor: pointer;
             transition: transform 0.1s;
+            position: relative;
         }
         
         .therapy-day:active {
@@ -332,6 +335,8 @@
             background: #f1f5f9;
             color: #94a3b8;
             cursor: default;
+            justify-content: center; /* Centra solo se non attivo */
+            padding-top: 0;
         }
 
         .therapy-mid {
@@ -356,6 +361,17 @@
         
         .clickable-day:hover {
             filter: brightness(0.95);
+        }
+        
+        /* Stile icone nel calendario */
+        .cal-icon-wrapper {
+            display: flex;
+            gap: 1px;
+            margin-top: 0px;
+            justify-content: center;
+            position: absolute;
+            bottom: 3px;
+            width: 100%;
         }
     </style>
 </head>
@@ -1083,24 +1099,31 @@
 
             getTherapyDayInfo(med, dateISO) {
                 if (!med.startDate || !med.durationDays) {
-                    return { active: false };
+                    return { active: false, activeTimes: [] };
                 }
+
+                // PRENDI LE TIMES STANDARD DAL MODALE CORRENTE (ANTEPRIMA)
+                // Usiamo this.selectedTimes che è live nel modale di editing
+                const standardTimes = this.selectedTimes || [];
 
                 const start = new Date(med.startDate);
                 const target = new Date(dateISO);
 
                 // se prima dell'inizio terapia → fuori
                 if (target < start) {
-                    return { active: false };
+                    return { active: false, activeTimes: [] };
                 }
                 
                 // Verifica override
                 let hasOverride = false;
                 let isOverrideActive = false;
+                let overrideTimes = [];
+                
                 if (med.specificDays && med.specificDays[dateISO] !== undefined) {
                     hasOverride = true;
+                    overrideTimes = med.specificDays[dateISO];
                     // Se l'array non è vuoto, consideriamo il giorno attivo visivamente nel calendario
-                    isOverrideActive = med.specificDays[dateISO].length > 0;
+                    isOverrideActive = overrideTimes.length > 0;
                 }
 
                 let dosesCount = 0;
@@ -1118,13 +1141,26 @@
                         dosesCount++;
 
                         if (iso === dateISO) {
-                            return {
-                                active: hasOverride ? isOverrideActive : true,
-                                index: dosesCount,
-                                isFirst: dosesCount === 1,
-                                isLast: dosesCount === med.durationDays,
-                                hasOverride: hasOverride
-                            };
+                            // SE GIORNO STANDARD ATTIVO
+                            if (hasOverride) {
+                                return {
+                                    active: isOverrideActive,
+                                    activeTimes: overrideTimes,
+                                    index: dosesCount,
+                                    isFirst: dosesCount === 1,
+                                    isLast: dosesCount === med.durationDays,
+                                    hasOverride: hasOverride
+                                };
+                            } else {
+                                return {
+                                    active: true,
+                                    activeTimes: standardTimes, // Usa le times standard
+                                    index: dosesCount,
+                                    isFirst: dosesCount === 1,
+                                    isLast: dosesCount === med.durationDays,
+                                    hasOverride: false
+                                };
+                            }
                         }
                     }
 
@@ -1136,6 +1172,7 @@
                 if (hasOverride && isOverrideActive) {
                      return {
                         active: true,
+                        activeTimes: overrideTimes,
                         index: -1, // Extra
                         isFirst: false,
                         isLast: false,
@@ -1143,7 +1180,7 @@
                     };
                 }
 
-                return { active: false };
+                return { active: false, activeTimes: [] };
             },
 
             getTherapyStatus(med) {
@@ -1325,10 +1362,19 @@
 
                     const info = this.getTherapyDayInfo(med, iso);
 
+                    // MODIFICA: Calcolo se il giorno è nel range della terapia
+                    let isWithinRange = false;
+                    if (med.startDate && med.endDate) {
+                        isWithinRange = (iso >= med.startDate && iso <= med.endDate);
+                    }
+
+                    // Il giorno è cliccabile se è attivo (ha farmaci) O se è nel periodo della terapia (anche se spento/grigio)
+                    const isInteractable = info.active || isWithinRange;
+
                     let cls = 'therapy-day ';
 
                     if (info.active) {
-                        cls += 'clickable-day ';
+                        cls += 'clickable-day '; // Questo ha l'hover effect
                         if (info.isFirst) {
                             cls += 'therapy-start';
                         } else if (info.isLast) {
@@ -1337,20 +1383,47 @@
                             cls += 'therapy-mid';
                         }
                         
-                        // Segna visivamente se c'è un override
                         if(info.hasOverride) {
                            cls += ' border-2 border-blue-500';
                         }
                     } else {
                         cls += 'therapy-out';
                     }
+                    
+                    // Se è interagibile ma spento (grigio), forziamo il cursore pointer
+                    if (isInteractable && !info.active) {
+                        cls += ' cursor-pointer hover:brightness-95'; 
+                    }
 
                     const el = document.createElement('div');
                     el.className = cls;
-                    el.textContent = d;
                     
-                    // Aggiungi click handler solo se il giorno è attivo
-                    if (info.active) {
+                    // Numero Giorno
+                    const spanNum = document.createElement('span');
+                    spanNum.textContent = d;
+                    el.appendChild(spanNum);
+                    
+                    // ICONE ORARI (Solo se attivo)
+                    if (info.active && info.activeTimes && info.activeTimes.length > 0) {
+                        const iconContainer = document.createElement('div');
+                        iconContainer.className = 'cal-icon-wrapper';
+                        
+                        // Ordine fisso: Mattina, Pomeriggio, Sera
+                        const order = ['Mattina', 'Pomeriggio', 'Sera'];
+                        const sortedTimes = info.activeTimes.sort((a,b) => order.indexOf(a) - order.indexOf(b));
+                        
+                        sortedTimes.forEach(t => {
+                            const i = document.createElement('i');
+                            if(t === 'Mattina') i.className = 'fa-solid fa-sun text-[6px] text-orange-600';
+                            if(t === 'Pomeriggio') i.className = 'fa-solid fa-cloud-sun text-[6px] text-blue-700'; 
+                            if(t === 'Sera') i.className = 'fa-solid fa-moon text-[6px] text-indigo-800';
+                            iconContainer.appendChild(i);
+                        });
+                        el.appendChild(iconContainer);
+                    }
+                    
+                    // MODIFICA: Aggiungi click handler se è interagibile
+                    if (isInteractable) {
                         el.onclick = () => this.openDayDetail(iso);
                     }
 
