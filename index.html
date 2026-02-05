@@ -339,19 +339,20 @@
             padding-top: 0;
         }
 
+        /* Colori TENUI (Pastello) */
         .therapy-mid {
-            background: #fde047;
-            color: #1e293b;
+            background: #fef08a; /* Yellow-200 */
+            color: #854d0e; /* Yellow-900 */
         }
 
         .therapy-start {
-            background: #16a34a;
-            color: white;
+            background: #86efac; /* Green-300 */
+            color: #14532d; /* Green-900 */
         }
 
         .therapy-end {
-            background: #dc2626;
-            color: white;
+            background: #fca5a5; /* Red-300 */
+            color: #7f1d1d; /* Red-900 */
         }
 
         .therapy-skip {
@@ -589,7 +590,7 @@
                 </button>
             </div>
 
-            <div class="p-5 overflow-y-auto custom-scrollbar space-y-5">
+            <div id="med-modal-content" class="p-5 overflow-y-auto custom-scrollbar space-y-5">
                 <!-- Nome -->
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Nome Farmaco</label>
@@ -674,7 +675,7 @@
 
                 <!-- Calendario Mensile-->
                 <!-- Aggiunto max-w e mx-auto per ridurre dimensione -->
-                <div id="therapy-month-wrapper" class="mt-4 hidden select-none touch-pan-y max-w-[85%] mx-auto">
+                <div id="therapy-month-wrapper" class="mt-4 hidden select-none touch-pan-y w-full">
                     <p class="text-xs font-bold text-slate-500 uppercase mb-2">
                         Calendario mensile <span class="text-[9px] font-normal text-slate-400 ml-1">(Tocca un giorno per modificare)</span>
                     </p>
@@ -1959,6 +1960,11 @@
                 document.getElementById('input-med-edit-id').value = '';
                 this.currentEditingMed = null;
                 this.resetMedModal();
+                
+                // Scroll to top
+                const content = document.querySelector('#med-modal-content');
+                if(content) content.scrollTop = 0;
+
                 this.showModal('modal-med');
             },
 
@@ -1984,6 +1990,14 @@
                 document.getElementById('input-med-category').value = '';
                 document.getElementById('input-med-dose').value = '';
                 document.getElementById('input-med-usage').value = '';
+                
+                // ADDED: Reset dei nuovi campi
+                document.getElementById('med-box-qty').value = '';
+                document.getElementById('med-min-qty').value = '';
+                document.getElementById('med-start-date').value = '';
+                document.getElementById('med-duration').value = '';
+                document.getElementById('med-frequency').value = 'daily';
+
                 document.getElementById('btn-scan').classList.remove('hidden');
                 document.getElementById('therapy-status-box').classList.add('hidden');
                 document.getElementById('therapy-preview').classList.add('hidden');
