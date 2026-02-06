@@ -374,6 +374,16 @@
             bottom: 4px;
             width: 100%;
         }
+
+        /* FREQUENCY OPTION SELECTED */
+        .freq-option.selected {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            color: #2563eb;
+        }
+        .freq-option.selected .check-icon {
+            display: inline-block;
+        }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -492,7 +502,61 @@
         </section>
     </main>
 
-    <!-- MODALI -->
+    <!-- MODALI DI SISTEMA CUSTOM (Alert, Confirm, Frequency) -->
+    
+    <!-- MODALE ALERT (Sostituisce alert()) -->
+    <div id="modal-alert" class="hidden fixed inset-0 modal-overlay z-[70] flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-4 text-xl">
+                <i class="fa-solid fa-info"></i>
+            </div>
+            <h3 id="alert-title" class="text-xl font-bold text-slate-800 mb-2">Avviso</h3>
+            <p id="alert-message" class="text-slate-500 mb-6 text-sm"></p>
+            <button onclick="app.closeModal('modal-alert')" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">OK</button>
+        </div>
+    </div>
+
+    <!-- MODALE CONFIRM (Sostituisce confirm()) -->
+    <div id="modal-confirm" class="hidden fixed inset-0 modal-overlay z-[70] flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto mb-4 text-xl">
+                <i class="fa-solid fa-question"></i>
+            </div>
+            <h3 id="confirm-title" class="text-xl font-bold text-slate-800 mb-2">Conferma</h3>
+            <p id="confirm-message" class="text-slate-500 mb-6 text-sm"></p>
+            <div class="flex gap-3">
+                <button onclick="app.closeModal('modal-confirm')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+                <button id="confirm-btn-yes" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">Conferma</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE SCELTA FREQUENZA (Sostituisce select) -->
+    <div id="modal-frequency" class="hidden fixed inset-0 modal-overlay z-[70] flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="text-xl font-bold text-slate-800 mb-4">Frequenza Assunzione</h3>
+            <div class="space-y-3">
+                <button onclick="app.selectFrequency('daily')" class="freq-option w-full p-4 border rounded-xl flex items-center justify-between transition-all hover:bg-slate-50" data-val="daily">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-calendar-day"></i></div>
+                        <span class="font-bold text-slate-700">Ogni Giorno</span>
+                    </div>
+                    <i class="fa-solid fa-check text-blue-600 hidden check-icon"></i>
+                </button>
+                <button onclick="app.selectFrequency('alternate')" class="freq-option w-full p-4 border rounded-xl flex items-center justify-between transition-all hover:bg-slate-50" data-val="alternate">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-calendar-days"></i></div>
+                        <span class="font-bold text-slate-700">Giorni Alterni</span>
+                    </div>
+                    <i class="fa-solid fa-check text-blue-600 hidden check-icon"></i>
+                </button>
+            </div>
+            <button onclick="app.closeModal('modal-frequency')" class="w-full mt-6 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+        </div>
+    </div>
+
+    <!-- ALTRI MODALI -->
+
     <!-- MODALE AGGIUNGI PROFILO -->
     <div id="modal-add-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
@@ -655,14 +719,18 @@
                     </div>
                 </div>
 
-                <!-- Frequenza -->
+                <!-- Frequenza (MODIFICATO CON MODALE) -->
                 <div class="mt-3">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Frequenza</label>
-                    <select id="med-frequency"
-                            class="w-full border border-slate-200 rounded-lg p-2 text-sm bg-white">
-                        <option value="daily">Ogni giorno</option>
-                        <option value="alternate">Giorni alterni</option>
-                    </select>
+                    
+                    <div onclick="app.openFrequencyModal()" class="w-full p-3 border border-slate-200 rounded-xl flex items-center justify-between bg-white cursor-pointer active:bg-slate-50 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <i id="freq-icon-display" class="fa-solid fa-calendar-day text-slate-400"></i>
+                            <span id="freq-text-display" class="text-sm font-semibold text-slate-700">Ogni giorno</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+                    </div>
+                    <input type="hidden" id="med-frequency" value="daily">
                 </div>
 
                 <!-- Calendario Semplificato-->
@@ -782,6 +850,7 @@
             stream: null,
             newProfileAvatar: null,
             expandedSections: [],
+            confirmCallback: null,
             
             // Variabili per il modale dettagli giorno
             editingDayDate: null, 
@@ -828,6 +897,14 @@
                     this.handleSwipe(touchEndX, touchEndY);
                 }, { passive: true });
 
+                // Bind confirm button only once
+                document.getElementById('confirm-btn-yes').addEventListener('click', () => {
+                    if (this.confirmCallback) {
+                        this.confirmCallback();
+                    }
+                    this.closeModal('modal-confirm');
+                });
+
                 // ⏱️ Controllo automatico cambio giorno
                 setInterval(() => {
                     // Controlla se siamo in una vista profilo prima di renderizzare
@@ -835,6 +912,61 @@
                         this.renderMedications();
                     }
                 }, 60 * 1000);
+            },
+            
+            // --- GESTIONE MODALI DI SISTEMA ---
+            showAlert(title, message) {
+                document.getElementById('alert-title').textContent = title;
+                document.getElementById('alert-message').textContent = message;
+                this.showModal('modal-alert');
+            },
+
+            showConfirm(title, message, onConfirm) {
+                document.getElementById('confirm-title').textContent = title;
+                document.getElementById('confirm-message').textContent = message;
+                this.confirmCallback = onConfirm;
+                this.showModal('modal-confirm');
+            },
+            
+            // --- GESTIONE MODALE FREQUENZA ---
+            openFrequencyModal() {
+                const currentVal = document.getElementById('med-frequency').value || 'daily';
+                
+                // Aggiorna UI nel modale
+                document.querySelectorAll('.freq-option').forEach(btn => {
+                    if (btn.dataset.val === currentVal) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                });
+                
+                this.showModal('modal-frequency');
+            },
+            
+            selectFrequency(val) {
+                document.getElementById('med-frequency').value = val;
+                
+                // Aggiorna Display nel form
+                const displayTxt = document.getElementById('freq-text-display');
+                const displayIcon = document.getElementById('freq-icon-display');
+                
+                if (val === 'daily') {
+                    displayTxt.textContent = "Ogni Giorno";
+                    displayIcon.className = "fa-solid fa-calendar-day text-blue-500";
+                } else {
+                    displayTxt.textContent = "Giorni Alterni";
+                    displayIcon.className = "fa-solid fa-calendar-days text-orange-500";
+                }
+                
+                // Aggiorna anteprime se necessario
+                const startDate = document.getElementById('med-start-date')?.value || null;
+                const durationDays = parseInt(document.getElementById('med-duration')?.value) || null;
+                if(startDate) {
+                    this.renderTherapyPreview({ startDate, durationDays, frequency: val });
+                }
+                
+                this.closeModal('modal-frequency');
             },
 
             initTherapyMonthSwipe() {
@@ -1463,6 +1595,7 @@
 
                 const today = new Date().toISOString().slice(0, 10);
                 const alertedSharedIds = new Set();
+                let endedMeds = [];
 
                 profile.meds.forEach(med => {
 
@@ -1471,8 +1604,7 @@
                     if (alertedSharedIds.has(med.sharedId)) return;
 
                     if (today >= med.endDate) {
-                        alert(`⚠️ Terapia terminata per il farmaco:\n${med.name}`);
-
+                        endedMeds.push(med.name);
                         alertedSharedIds.add(med.sharedId);
 
                         profile.meds.forEach(m => {
@@ -1482,6 +1614,13 @@
                         });
                     }
                 });
+                
+                if (endedMeds.length > 0) {
+                     this.showAlert(
+                        "Terapie Terminate", 
+                        `I seguenti farmaci hanno terminato il periodo di terapia:\n${endedMeds.join(', ')}`
+                    );
+                }
 
                 this.saveData();
             },
@@ -1501,14 +1640,45 @@
 
                 return 1;
             },
+            
+            // Refactor: Collect all low stock alerts
+            checkDailyReset() {
+                const today = new Date().toISOString().slice(0, 10);
 
-            showLowStockAlert(med) {
-                alert(
-                    `⚠️ Scorte in esaurimento\n\n` +
-                    `Farmaco: ${med.name}\n` +
-                    `Pillole rimaste: ${med.boxQty}\n\n` +
-                    `È consigliato ordinare il farmaco.`
-                );
+                if (this.data.lastOpened === today) return;
+
+                let lowStockMeds = [];
+
+                this.data.profiles.forEach(profile => {
+                    profile.meds.forEach(med => {
+                        if (med.taken) {
+                            const doseQty = this.parseDose(med.dose);
+                            med.boxQty = Math.max(0, med.boxQty - doseQty);
+                        }
+                        if (med.boxQty > med.minQty) {
+                            med.alertShown = false;
+                        }
+                        if (
+                            med.minQty > 0 &&
+                            med.boxQty <= med.minQty &&
+                            med.alertShown === false
+                        ) {
+                            lowStockMeds.push(`${med.name} (${med.boxQty} rimasti)`);
+                            med.alertShown = true;
+                        }
+                        med.taken = false;
+                    });
+                });
+                
+                if (lowStockMeds.length > 0) {
+                    this.showAlert(
+                        "Scorte in esaurimento", 
+                        `I seguenti farmaci sono sotto la soglia minima:\n\n${lowStockMeds.join('\n')}`
+                    );
+                }
+
+                this.data.lastOpened = today;
+                this.saveData();
             },
 
             toggleDaySelection(day, btn) {
@@ -1545,7 +1715,7 @@
                     video.srcObject = this.stream;
                     container.style.display = 'flex';
                 } catch (err) {
-                    alert("Impossibile accedere alla fotocamera. Verifica i permessi.");
+                    this.showAlert("Errore", "Impossibile accedere alla fotocamera. Verifica i permessi.");
                 }
             },
 
@@ -1575,7 +1745,7 @@
 
             async analyzeImage(base64Image) {
                 if (!this.data.apiKey) {
-                    alert("Attenzione: Vai nelle Impostazioni e inserisci la tua API Key per attivare il riconoscimento.");
+                    this.showAlert("Attenzione", "Vai nelle Impostazioni e inserisci la tua API Key per attivare il riconoscimento.");
                     return;
                 }
 
@@ -1624,11 +1794,11 @@
                         document.getElementById('input-med-dose').value = parsedData.dose || "";
                         document.getElementById('input-med-usage').value = parsedData.usage || "";
                     } else {
-                        alert("Non ho riconosciuto il farmaco. Prova a inserirlo manualmente.");
+                         this.showAlert("Mi dispiace", "Non ho riconosciuto il farmaco. Prova a inserirlo manualmente.");
                     }
                 } catch (err) {
                     console.error(err);
-                    alert("Errore durante l'analisi. Verifica la tua API Key.");
+                     this.showAlert("Errore", "Errore durante l'analisi. Verifica la tua API Key.");
                 } finally {
                     this.toggleLoading(false);
                 }
@@ -1682,14 +1852,18 @@
             saveSettings() {
                 this.data.apiKey = document.getElementById('input-settings-apikey').value.trim();
                 this.saveData();
-                alert("Impostazioni salvate!");
+                this.showAlert("Successo", "Impostazioni salvate!");
             },
 
             resetAllData() {
-                if (confirm("Sei sicuro di voler resettare tutto?")) {
-                    this.resetData();
-                    this.goHome();
-                }
+                this.showConfirm(
+                    "Attenzione", 
+                    "Sei sicuro di voler resettare tutto? Tutti i dati andranno persi.", 
+                    () => {
+                        this.resetData();
+                        this.goHome();
+                    }
+                );
             },
 
             // --- DATA LOGIC ---
@@ -1809,40 +1983,12 @@
                             this.saveData();
                             this.goHome();
                         }
-                    } catch (err) { alert("File non valido."); }
+                    } catch (err) { 
+                        this.showAlert("Errore", "File non valido.");
+                    }
                 };
                 reader.readAsText(file);
                 input.value = '';
-            },
-
-            checkDailyReset() {
-                const today = new Date().toISOString().slice(0, 10);
-
-                if (this.data.lastOpened === today) return;
-
-                this.data.profiles.forEach(profile => {
-                    profile.meds.forEach(med => {
-                        if (med.taken) {
-                            const doseQty = this.parseDose(med.dose);
-                            med.boxQty = Math.max(0, med.boxQty - doseQty);
-                        }
-                        if (med.boxQty > med.minQty) {
-                            med.alertShown = false;
-                        }
-                        if (
-                            med.minQty > 0 &&
-                            med.boxQty <= med.minQty &&
-                            med.alertShown === false
-                        ) {
-                            this.showLowStockAlert(med);
-                            med.alertShown = true;
-                        }
-                        med.taken = false;
-                    });
-                });
-
-                this.data.lastOpened = today;
-                this.saveData();
             },
 
             generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); },
@@ -1912,10 +2058,11 @@
             },
 
             deleteCurrentProfile() {
-                if (confirm("Eliminare definitivamente questo profilo?")) {
+                this.showConfirm("Elimina Profilo", "Eliminare definitivamente questo profilo?", () => {
                     this.data.profiles = this.data.profiles.filter(x => x.id !== this.currentProfileId);
-                    this.saveData(); this.goHome();
-                }
+                    this.saveData(); 
+                    this.goHome();
+                });
             },
 
             renderProfiles() {
@@ -2011,7 +2158,9 @@
                 document.getElementById('med-min-qty').value = '';
                 document.getElementById('med-start-date').value = '';
                 document.getElementById('med-duration').value = '';
-                document.getElementById('med-frequency').value = 'daily';
+                
+                // Reset Frequenza UI
+                this.selectFrequency('daily');
 
                 document.getElementById('btn-scan').classList.remove('hidden');
                 document.getElementById('therapy-status-box').classList.add('hidden');
@@ -2035,7 +2184,9 @@
                     document.getElementById('input-med-usage').value = med.usage || "";
                     document.getElementById('med-box-qty').value = med.boxQty ?? 0;
                     document.getElementById('med-min-qty').value = med.minQty ?? 0;
-                    document.getElementById('med-frequency').value = med.frequency || "daily";
+                    
+                    this.selectFrequency(med.frequency || "daily");
+                    
                     document.getElementById('med-start-date').value = med.startDate || "";
                     document.getElementById('med-duration').value = med.durationDays ?? "";
                     document.getElementById('med-modal-title').textContent = "Modifica Farmaco";
@@ -2082,7 +2233,8 @@
                 const minQty = parseFloat(document.getElementById('med-min-qty').value) || 0;
 
                 if (!name || this.selectedTimes.length === 0) {
-                    return alert("Inserisci almeno il Nome e l'Orario.");
+                     this.showAlert("Dati mancanti", "Inserisci almeno il Nome e l'Orario.");
+                     return;
                 }
 
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
@@ -2218,18 +2370,20 @@
 
             uncheckAllMeds() {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
-                if (profile && confirm("Deselezionare tutto?")) {
-                    profile.meds.forEach(m => m.taken = false);
-                    this.saveData(); this.renderMedications();
+                if (profile) {
+                    this.showConfirm("Conferma", "Deselezionare tutto?", () => {
+                        profile.meds.forEach(m => m.taken = false);
+                        this.saveData(); this.renderMedications();
+                    });
                 }
             },
 
             deleteMedication(id) {
-                if (confirm("Eliminare questa assunzione?")) {
+                this.showConfirm("Elimina Assunzione", "Eliminare questa assunzione?", () => {
                     const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                     profile.meds = profile.meds.filter(m => m.id !== id);
                     this.saveData(); this.renderMedications();
-                }
+                });
             },
 
             showMedNote(medId) {
