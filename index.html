@@ -2574,19 +2574,37 @@
                 const diffX = endX - this.touchStartX;
                 const diffY = endY - this.touchStartY;
 
+                // Prevenzione scroll verticale interpretato come swipe
                 if (Math.abs(diffY) > Math.abs(diffX)) return;
-                if (Math.abs(diffX) < 80) return;
+                
+                // Soglia minima movimento
+                if (Math.abs(diffX) < 60) return;
 
-                const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
+                const edgeThreshold = 40; // Pixel dal bordo per attivare la gesture "Indietro"
+                const isLeftEdge = this.touchStartX < edgeThreshold;
+                const isRightEdge = this.touchStartX > (window.innerWidth - edgeThreshold);
 
-                if (diffX > 0) {
-                    if (currentIndex > 0) {
-                        this.openProfile(this.data.profiles[currentIndex - 1].id);
-                    }
+                // --- GESTURE 1: SWIPE DAI BORDI (TORNA ALLA HOME) ---
+                // Bordo SX verso DX  oppure  Bordo DX verso SX
+                if ((isLeftEdge && diffX > 0) || (isRightEdge && diffX < 0)) {
+                    this.goHome();
+                    return; // Blocca qui per non scatenare il cambio profilo
                 }
 
-                if (diffX < 0 && currentIndex < this.data.profiles.length - 1) {
-                    this.openProfile(this.data.profiles[currentIndex + 1].id);
+                // --- GESTURE 2: SWIPE CENTRALE (CAMBIO PROFILO) ---
+                // Solo se NON siamo partiti dai bordi
+                if (!isLeftEdge && !isRightEdge) {
+                    const currentIndex = this.data.profiles.findIndex(p => p.id === this.currentProfileId);
+
+                    if (diffX > 0) {
+                        if (currentIndex > 0) {
+                            this.openProfile(this.data.profiles[currentIndex - 1].id);
+                        }
+                    }
+
+                    if (diffX < 0 && currentIndex < this.data.profiles.length - 1) {
+                        this.openProfile(this.data.profiles[currentIndex + 1].id);
+                    }
                 }
             },
 
