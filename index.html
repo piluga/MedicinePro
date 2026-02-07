@@ -443,7 +443,7 @@
                 </div>
                 <div class="flex flex-col gap-2 items-end">
                     <button onclick="app.exportProfileTxt()" class="text-blue-600 text-xs px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 flex items-center gap-1 transition-all">
-                        <i class="fa-solid fa-file-lines"></i> <span class="xs:inline">Esporta TXT</span>
+                        <i class="fa-solid fa-file-lines"></i> <span class="xs:inline">Report</span>
                     </button>
                     <!-- Tasto Elimina Rimosso da qui e spostato nel modale Modifica -->
                 </div>
@@ -553,18 +553,64 @@
         </div>
     </div>
 
-    <!-- MODALE SCELTA ESPORTAZIONE BACKUP (Nuovo) -->
+    <!-- MODALE SCELTA ESPORTAZIONE BACKUP (Nuovo Design Sicurezza) -->
     <div id="modal-export" class="hidden fixed inset-0 modal-overlay z-[70] flex items-center justify-center p-4 fade-in">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
-            <div class="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4 text-xl">
-                <i class="fa-solid fa-download"></i>
+            <!-- Icona Sicurezza -->
+            <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-4 text-xl">
+                <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Esporta Backup</h3>
-            <p class="text-slate-500 mb-6 text-sm">Come vuoi salvare il file?</p>
+            
+            <h3 class="text-xl font-bold text-slate-800 mb-2">Backup di Sicurezza</h3>
+            
+            <div class="text-sm text-slate-600 mb-6 space-y-3">
+                <p>Stai per scaricare un file contenente tutti i tuoi dati sanitari.</p>
+                
+                <p class="text-orange-600 font-bold bg-orange-50 p-2 rounded-lg border border-orange-100 text-xs uppercase tracking-wide">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> File non criptato
+                </p>
+                
+                <p class="text-xs">Conservalo in un luogo sicuro e non inviarlo a persone di cui non ti fidi.</p>
+            </div>
+
             <div class="flex flex-col gap-3">
-                <button onclick="app.performExport('overwrite')" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700">Sovrascrivi (Nome Standard)</button>
-                <button onclick="app.performExport('new')" class="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50">Crea Nuovo (Con Data)</button>
-                <button onclick="app.closeModal('modal-export')" class="w-full py-2 text-slate-400 text-xs font-bold mt-2">Annulla</button>
+                <!-- Tasto Condividi -->
+                <button onclick="app.shareBackup()" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-share-nodes"></i> Condividi
+                </button>
+                
+                <!-- Tasto Scarica (Standard) -->
+                <button onclick="app.performExport('new')" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-download"></i> Scarica
+                </button>
+                
+                <button onclick="app.closeModal('modal-export')" class="w-full py-2 text-slate-400 text-xs font-bold mt-2 hover:text-slate-600">Annulla</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE ANTEPRIMA ESPORTAZIONE TXT (NUOVO) -->
+    <div id="modal-export-preview" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col max-h-[85vh]">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-file-lines"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800">Anteprima</h3>
+                    <p class="text-xs text-slate-500">Controlla prima di scaricare</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex-1 overflow-y-auto custom-scrollbar">
+                <pre id="export-preview-content" class="text-[10px] font-mono text-slate-700 whitespace-pre-wrap leading-relaxed"></pre>
+            </div>
+
+            <div class="flex gap-3 shrink-0">
+                <button onclick="app.closeModal('modal-export-preview')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+                <button onclick="app.confirmExportTxt()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-download"></i> Scarica
+                </button>
             </div>
         </div>
     </div>
@@ -909,6 +955,9 @@
             // Variabili per il modale dettagli giorno
             editingDayDate: null,
             editingDayTimes: [],
+
+            // Variabili per export txt temporaneo
+            tempExport: { content: null, filename: null },
 
             // 🎨 TEMI DI COLORE
             profileThemes: [
@@ -1813,11 +1862,11 @@
                 this.toggleLoading(true, "Analisi farmaco...");
 
                 const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi:
-                                    - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
-                                    - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
-                                    - 'dose': lascia questo campo vuoto (stringa vuota "").
-                                    - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
-                                    Rispondi solo con il JSON.`;
+                                        - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
+                                        - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
+                                        - 'dose': lascia questo campo vuoto (stringa vuota "").
+                                        - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
+                                        Rispondi solo con il JSON.`;
 
                 const payload = {
                     contents: [{
@@ -2020,6 +2069,31 @@
                 a.click();
                 this.closeModal('modal-export');
             },
+            
+            async shareBackup() {
+                const safeData = JSON.parse(JSON.stringify(this.data));
+                safeData.apiKey = ""; // Rimuovi API key per sicurezza
+                
+                const fileName = `MedicinePro_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+                const file = new File([JSON.stringify(safeData, null, 2)], fileName, { type: "application/json" });
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'MedicinePro Backup',
+                            text: 'Ecco il backup dei miei dati sanitari MedicinePro.',
+                            files: [file]
+                        });
+                        this.closeModal('modal-export');
+                    } catch (err) {
+                        if (err.name !== 'AbortError') {
+                            this.showAlert("Errore", "Impossibile condividere il file su questo dispositivo.");
+                        }
+                    }
+                } else {
+                    this.showAlert("Non supportato", "La condivisione non è supportata da questo browser. Usa il tasto Scarica.");
+                }
+            },
 
             exportProfileTxt() {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
@@ -2042,12 +2116,27 @@
                         content += `\n`;
                     }
                 });
-                const blob = new Blob([content], { type: "text/plain" });
+
+                // Salva temporaneamente
+                this.tempExport.content = content;
+                this.tempExport.filename = `Terapia_${profile.name.replace(/\s+/g, '_')}.txt`;
+
+                // Mostra anteprima
+                document.getElementById('export-preview-content').textContent = content;
+                this.showModal('modal-export-preview');
+            },
+
+            confirmExportTxt() {
+                if (!this.tempExport.content) return;
+
+                const blob = new Blob([this.tempExport.content], { type: "text/plain" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Terapia_${profile.name.replace(/\s+/g, '_')}.txt`;
+                a.download = this.tempExport.filename;
                 a.click();
+
+                this.closeModal('modal-export-preview');
             },
 
             triggerImport() { document.getElementById('import-file').click(); },
@@ -2196,16 +2285,16 @@
                     }
 
                     div.innerHTML = `
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-10 h-10 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50">
-                                                    ${iconContent}
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-10 h-10 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50">
+                                                        ${iconContent}
+                                                    </div>
+                                                    <div>
+                                                        <h3 class="font-bold text-slate-800">${p.name}</h3>
+                                                        <p class="text-xs text-slate-500">${total} farmaci</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h3 class="font-bold text-slate-800">${p.name}</h3>
-                                                    <p class="text-xs text-slate-500">${total} farmaci</p>
-                                                </div>
-                                            </div>
-                                            <span class="text-sm font-bold ${percClass}">${perc}%</span>`;
+                                                <span class="text-sm font-bold ${percClass}">${perc}%</span>`;
                     container.appendChild(div);
                 });
             },
@@ -2526,17 +2615,17 @@
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
 
                         header.innerHTML = `
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
-                                            <i class="fa-solid ${icon} text-lg"></i>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                                                <i class="fa-solid ${icon} text-lg"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
+                                                <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
-                                            <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
-                                        </div>
-                                    </div>
-                                    <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
-                                `;
+                                        <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
+                                    `;
                         container.appendChild(header);
 
                         // Contenitore Lista Farmaci (Nascosto/Visibile)
@@ -2568,20 +2657,20 @@
                             let therapyBadge = '';
                             if (therapy) {
                                 therapyBadge = `
-                                                    <div class="therapy-badge ${therapy.cls}">
-                                                        <span class="label">${therapy.label}</span>
-                                                        <span class="dot">•</span>
-                                                        <span class="sub">${therapy.sub}</span>
-                                                    </div>
-                                                `;
+                                                        <div class="therapy-badge ${therapy.cls}">
+                                                            <span class="label">${therapy.label}</span>
+                                                            <span class="dot">•</span>
+                                                            <span class="sub">${therapy.sub}</span>
+                                                        </div>
+                                                    `;
                             }
 
                             if (!isToday) {
                                 therapyBadge += `
-                                                    <div class="therapy-badge gray">
-                                                        <span class="label">Oggi non previsto</span>
-                                                    </div>
-                                                `;
+                                                        <div class="therapy-badge gray">
+                                                            <span class="label">Oggi non previsto</span>
+                                                        </div>
+                                                    `;
                             }
 
                             const noteBtn = med.usage ?
@@ -2592,27 +2681,27 @@
 
                             // Strutturiamo il contenuto per separare la parte cliccabile (checkbox) dai bottoni azione
                             card.innerHTML = `
-                                                    <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
-                                                        <input type="checkbox" class="med-checkbox"
-                                                        ${med.taken ? 'checked' : ''}
-                                                        onchange="app.toggleMedication('${med.id}')">
-                                                        <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
-                                                            <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                                            <div class="flex flex-col">
-                                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                                                <div class="flex flex-col mt-0.5">
-                                                                    ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                                                    ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
-                                                                    ${therapyBadge}
+                                                        <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
+                                                            <input type="checkbox" class="med-checkbox"
+                                                            ${med.taken ? 'checked' : ''}
+                                                            onchange="app.toggleMedication('${med.id}')">
+                                                            <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
+                                                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                                                <div class="flex flex-col">
+                                                                    ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                                    <div class="flex flex-col mt-0.5">
+                                                                        ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                                                        ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                                                        ${therapyBadge}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="flex items-center card-actions">
-                                                        ${noteBtn}
-                                                        <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
-                                                        <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
-                                                    </div>`;
+                                                        <div class="flex items-center card-actions">
+                                                            ${noteBtn}
+                                                            <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
+                                                            <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
+                                                        </div>`;
                             listContainer.appendChild(card);
                         });
                         container.appendChild(listContainer);
