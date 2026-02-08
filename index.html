@@ -814,12 +814,17 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-500 mb-1">Inizio terapia</label>
-                            <input type="date" id="med-start-date" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white">
+                            <input type="date" id="med-start-date" onchange="app.refreshTherapyUI()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white">
                         </div>
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-500 mb-1">Durata (giorni)</label>
-                            <input type="number" id="med-duration" min="1" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white" placeholder="0">
+                            <input type="number" id="med-duration" min="1" oninput="app.refreshTherapyUI()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white" placeholder="0">
                         </div>
+                    </div>
+                    <div class="flex justify-end mt-3 border-t border-blue-200/50 pt-2">
+                        <button onclick="app.resetTherapyDates()" class="text-[10px] font-bold text-blue-400 hover:text-blue-600 flex items-center gap-1 transition-colors uppercase tracking-wider">
+                            <i class="fa-solid fa-eraser"></i> Resetta date
+                        </button>
                     </div>
                 </div>
 
@@ -1067,11 +1072,10 @@
                     displayIcon.className = "fa-solid fa-calendar-days text-orange-500";
                 }
 
-                // Aggiorna anteprime se necessario
+                // Aggiorna anteprime se necessario usando la nuova funzione dinamica
                 const startDate = document.getElementById('med-start-date')?.value || null;
-                const durationDays = parseInt(document.getElementById('med-duration')?.value) || null;
                 if (startDate) {
-                    this.renderTherapyPreview({ startDate, durationDays, frequency: val });
+                    this.refreshTherapyUI();
                 }
 
                 this.closeModal('modal-frequency');
@@ -2375,6 +2379,54 @@
                 this.updateTimeUI();
                 this.selectedDays = [];
                 this.updateDayUI();
+            },
+
+            resetTherapyDates() {
+                // Svuota i campi input
+                document.getElementById('med-start-date').value = '';
+                document.getElementById('med-duration').value = '';
+
+                // Nascondi tutte le sezioni di anteprima calendario e stato
+                document.getElementById('therapy-preview').classList.add('hidden');
+                document.getElementById('therapy-month-wrapper').classList.add('hidden');
+                document.getElementById('therapy-status-box').classList.add('hidden');
+                document.getElementById('therapy-legend').classList.add('hidden');
+
+                // Resetta la variabile interna del mese visualizzato
+                this.currentTherapyMonth = null;
+            },
+
+            refreshTherapyUI() {
+                const startDate = document.getElementById('med-start-date').value;
+                const duration = document.getElementById('med-duration').value;
+
+                // Se mancano dati, nascondi e esci
+                if (!startDate || !duration) return;
+
+                const durationDays = parseInt(duration);
+                const frequency = document.getElementById('med-frequency').value;
+
+                // Calcola data fine al volo
+                const endDate = this.calculateEndDate(startDate, durationDays, frequency);
+
+                // Oggetto temporaneo simulato
+                const tempMed = {
+                    startDate,
+                    durationDays,
+                    endDate,
+                    frequency,
+                    // Se siamo in modifica, manteniamo le eccezioni esistenti, altrimenti vuoto
+                    specificDays: this.currentEditingMed ? this.currentEditingMed.specificDays : {}
+                };
+
+                // Imposta il mese di visualizzazione se non c'è
+                if (!this.currentTherapyMonth) {
+                    this.currentTherapyMonth = this.parseLocalDate(startDate);
+                }
+
+                // Ridisegna tutto
+                this.renderTherapyPreview(tempMed);
+                this.updateTherapyStatusUI(tempMed);
             },
 
             openEditMedModal(medId) {
