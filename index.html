@@ -804,6 +804,11 @@
                             <input id="med-min-qty" type="number" min="0" step="1" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none" placeholder="0">
                         </div>
                     </div>
+                    <div class="flex justify-end mt-3 border-t border-emerald-200/50 pt-2">
+                        <button onclick="app.resetStocks()" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 transition-colors uppercase tracking-wider">
+                            <i class="fa-solid fa-eraser"></i> Resetta scorte
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Periodo Terapia -->
@@ -2394,6 +2399,11 @@
 
                 // Resetta la variabile interna del mese visualizzato
                 this.currentTherapyMonth = null;
+            },
+
+            resetStocks() {
+                document.getElementById('med-box-qty').value = '';
+                document.getElementById('med-min-qty').value = '';
             },
 
             refreshTherapyUI() {
