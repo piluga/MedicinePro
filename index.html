@@ -2513,6 +2513,15 @@
                     return;
                 }
 
+                // NUOVO CONTROLLO VALIDAZIONE PERIODO TERAPIA
+                if (startDate && durationDays <= 0) {
+                    this.showAlert(
+                        "Periodo Terapia Incompleto",
+                        "Hai selezionato una data di inizio ma non la durata.\n\nInserisci il numero di giorni di terapia oppure clicca su 'Resetta date' se è una cura continuativa senza scadenza."
+                    );
+                    return; // Blocca il salvataggio
+                }
+
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
 
                 // =========================
