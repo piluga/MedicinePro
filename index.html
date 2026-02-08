@@ -890,8 +890,14 @@
                 </div>
 
                 <!-- Orari -->
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Orario Specifico (Opzionale)</label>
+                    <input type="time" id="input-med-specific-time" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-bold bg-slate-50">
+                    <p class="text-[10px] text-slate-400 mt-1 ml-1">Se impostato, il farmaco sarà bloccato prima di quest'ora.</p>
+                </div>
+
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Momento della giornata</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Fascia Oraria (Raggruppamento)</label>
                     <div class="grid grid-cols-3 gap-2">
                         <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-val="Mattina"><i class="fa-solid fa-sun mr-2 text-orange-500"></i> Mattina</button>
                         <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-val="Pomeriggio"><i class="fa-solid fa-cloud-sun mr-2 text-yellow-500"></i> Pom.</button>
@@ -2365,6 +2371,7 @@
                 document.getElementById('input-med-category').value = '';
                 document.getElementById('input-med-dose').value = '';
                 document.getElementById('input-med-usage').value = '';
+                document.getElementById('input-med-specific-time').value = '';
 
                 // ADDED: Reset dei nuovi campi
                 document.getElementById('med-box-qty').value = '';
@@ -2458,6 +2465,7 @@
                     document.getElementById('input-med-category').value = med.category || "";
                     document.getElementById('input-med-dose').value = med.dose || "";
                     document.getElementById('input-med-usage').value = med.usage || "";
+                    document.getElementById('input-med-specific-time').value = med.specificTime || "";
                     document.getElementById('med-box-qty').value = med.boxQty ?? 0;
                     document.getElementById('med-min-qty').value = med.minQty ?? 0;
 
@@ -2499,6 +2507,7 @@
                 const category = document.getElementById('input-med-category').value.trim();
                 const dose = document.getElementById('input-med-dose').value.trim();
                 const usage = document.getElementById('input-med-usage').value.trim();
+                const specificTime = document.getElementById('input-med-specific-time').value;
                 const frequency = document.getElementById('med-frequency').value;
                 const editId = document.getElementById('input-med-edit-id').value;
                 const startDate = document.getElementById('med-start-date')?.value || null;
@@ -2542,6 +2551,7 @@
                                 m.category = category;
                                 m.dose = dose;
                                 m.usage = usage;
+                                m.specificTime = specificTime;
                                 m.startDate = startDate;
                                 m.durationDays = durationDays;
                                 m.endDate = endDate;
@@ -2610,6 +2620,7 @@
                             category,
                             dose,
                             usage,
+                            specificTime,
                             startDate,
                             durationDays,
                             endDate,
@@ -2706,7 +2717,7 @@
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
 
-                        // Logica Accordion: Usa lo stato persistente
+                        // Logica Accordion
                         const isOpen = this.expandedSections.includes(time);
                         const hiddenClass = isOpen ? '' : 'hidden';
                         const rotateClass = isOpen ? 'rotate-180' : '';
@@ -2719,93 +2730,127 @@
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
 
                         header.innerHTML = `
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
-                                                    <i class="fa-solid ${icon} text-lg"></i>
-                                                </div>
-                                                <div>
-                                                    <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
-                                                    <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
-                                                </div>
-                                            </div>
-                                            <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
-                                        `;
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                                <i class="fa-solid ${icon} text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
+                                <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
+                            </div>
+                        </div>
+                        <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
+                    `;
                         container.appendChild(header);
 
-                        // Contenitore Lista Farmaci (Nascosto/Visibile)
+                        // Contenitore Lista Farmaci
                         const listContainer = document.createElement('div');
                         listContainer.id = `list-${time}`;
                         listContainer.className = `space-y-3 ${hiddenClass}`;
 
                         meds.forEach(med => {
-                            // 1. Controllo Override
+                            // 1. Controllo Override (Giorni specifici)
                             let isToday = false;
 
                             if (med.specificDays && med.specificDays[todayISO] !== undefined) {
-                                // Se esiste un override per oggi, usalo.
-                                // Il med è attivo se il suo orario è nell'array dell'override
                                 isToday = med.specificDays[todayISO].includes(med.time);
                             } else {
-                                // 2. Fallback su logica standard
                                 const isFreqMatch = this.isMedicationDay(med, todayISO);
                                 const isDayMatch = !Array.isArray(med.days) || med.days.length === 0 || med.days.includes(todayShort);
                                 isToday = isFreqMatch && isDayMatch;
                             }
 
+                            // --- NUOVA LOGICA: BLOCCO ORARIO ---
+                            let isLocked = false;
+                            // Controlliamo l'ora solo se è previsto per oggi e non è ancora stato preso
+                            if (med.specificTime && !med.taken && isToday) {
+                                const now = new Date();
+                                // Formato HH:MM
+                                const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+                                if (currentTime < med.specificTime) {
+                                    isLocked = true;
+                                }
+                            }
+                            // -----------------------------------
+
                             if (med.taken) anyTaken = true;
                             const card = document.createElement('div');
                             const categoryClass = `med-card-${time.toLowerCase()}`;
-                            const inactiveClass = !isToday ? 'med-card-inactive' : '';
+
+                            // Gestione stili visuali (Inattivo vs Bloccato vs Normale)
+                            let visualClass = '';
+                            if (!isToday) {
+                                visualClass = 'med-card-inactive'; // Grigio scuro, non previsto oggi
+                            } else if (isLocked) {
+                                visualClass = 'opacity-60 bg-slate-100 border-slate-200'; // Grigio chiaro, in attesa orario
+                            }
+
                             const takenClass = med.taken ? 'med-card-taken' : '';
+
+                            // Badge Terapia
                             const therapy = this.getTherapyStatus(med);
                             let therapyBadge = '';
                             if (therapy) {
                                 therapyBadge = `
-                                                            <div class="therapy-badge ${therapy.cls}">
-                                                                <span class="label">${therapy.label}</span>
-                                                                <span class="dot">•</span>
-                                                                <span class="sub">${therapy.sub}</span>
-                                                            </div>
-                                                        `;
+                        <div class="therapy-badge ${therapy.cls}">
+                            <span class="label">${therapy.label}</span>
+                            <span class="dot">•</span>
+                            <span class="sub">${therapy.sub}</span>
+                        </div>
+                    `;
                             }
 
                             if (!isToday) {
                                 therapyBadge += `
-                                                            <div class="therapy-badge gray">
-                                                                <span class="label">Oggi non previsto</span>
-                                                            </div>
-                                                        `;
+                        <div class="therapy-badge gray">
+                            <span class="label">Oggi non previsto</span>
+                        </div>
+                    `;
                             }
+
+                            // Badge Orario Specifico (Nuovo)
+                            const timeDisplay = med.specificTime
+                                ? `<span class="text-xs font-bold ${isLocked ? 'text-orange-500' : 'text-slate-600'} bg-white px-1.5 py-0.5 rounded border mr-2 flex-shrink-0">
+                     ${isLocked ? '<i class="fa-solid fa-lock mr-1"></i>' : ''}${med.specificTime}
+                   </span>`
+                                : '';
 
                             const noteBtn = med.usage ?
                                 `<button onclick="app.showMedNote('${med.id}')" class="text-amber-400 hover:text-amber-500 p-2" title="Leggi note"><i class="fa-solid fa-note-sticky"></i></button>`
                                 : '';
 
-                            card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${inactiveClass}`;
+                            card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${visualClass}`;
 
-                            // Strutturiamo il contenuto per separare la parte cliccabile (checkbox) dai bottoni azione
+                            // HTML Card: Aggiunto timeDisplay e attributo disabled
                             card.innerHTML = `
-                                                            <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
-                                                                <input type="checkbox" class="med-checkbox"
-                                                                ${med.taken ? 'checked' : ''}
-                                                                onchange="app.toggleMedication('${med.id}')">
-                                                                <div class="overflow-hidden cursor-pointer ${med.taken ? 'opacity-40' : ''}">
-                                                                    <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                                                    <div class="flex flex-col">
-                                                                        ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                                                        <div class="flex flex-col mt-0.5">
-                                                                            ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                                                            ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
-                                                                            ${therapyBadge}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex items-center card-actions">
-                                                                ${noteBtn}
-                                                                <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2"title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
-                                                                <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2"title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
-                                                            </div>`;
+                    <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
+                        <input type="checkbox" class="med-checkbox"
+                        ${med.taken ? 'checked' : ''}
+                        ${isLocked || !isToday ? 'disabled' : ''} 
+                        onchange="app.toggleMedication('${med.id}')">
+                        
+                        <div class="overflow-hidden ${med.taken ? 'opacity-40' : ''} ${!isLocked && isToday ? 'cursor-pointer' : ''}">
+                            <div class="flex items-center">
+                                ${timeDisplay}
+                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                            </div>
+                            <div class="flex flex-col">
+                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                <div class="flex flex-col mt-0.5">
+                                    ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                    ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                    ${therapyBadge}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center card-actions">
+                        ${noteBtn}
+                        <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2" title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2" title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
+
                             listContainer.appendChild(card);
                         });
                         container.appendChild(listContainer);
