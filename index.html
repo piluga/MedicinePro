@@ -2398,12 +2398,18 @@
 
             refreshTherapyUI() {
                 const startDate = document.getElementById('med-start-date').value;
-                const duration = document.getElementById('med-duration').value;
+                const durationInput = document.getElementById('med-duration').value;
 
-                // Se mancano dati, nascondi e esci
-                if (!startDate || !duration) return;
+                // MODIFICA: Blocca solo se manca la data.
+                // Se la durata manca, procediamo comunque per mostrare l'inizio.
+                if (!startDate) return;
 
-                const durationDays = parseInt(duration);
+                // MODIFICA: Se la durata è vuota o zero, usa 1 come default per l'anteprima
+                let durationDays = parseInt(durationInput);
+                if (isNaN(durationDays) || durationDays < 1) {
+                    durationDays = 1;
+                }
+
                 const frequency = document.getElementById('med-frequency').value;
 
                 // Calcola data fine al volo
@@ -2415,13 +2421,17 @@
                     durationDays,
                     endDate,
                     frequency,
-                    // Se siamo in modifica, manteniamo le eccezioni esistenti, altrimenti vuoto
                     specificDays: this.currentEditingMed ? this.currentEditingMed.specificDays : {}
                 };
 
-                // Imposta il mese di visualizzazione se non c'è
-                if (!this.currentTherapyMonth) {
-                    this.currentTherapyMonth = this.parseLocalDate(startDate);
+                // Imposta il mese di visualizzazione se non c'è 
+                // oppure se la data selezionata è in un mese diverso da quello visualizzato
+                const startObj = this.parseLocalDate(startDate);
+                if (!this.currentTherapyMonth ||
+                    startObj.getMonth() !== this.currentTherapyMonth.getMonth() ||
+                    startObj.getFullYear() !== this.currentTherapyMonth.getFullYear()) {
+
+                    this.currentTherapyMonth = new Date(startObj.getFullYear(), startObj.getMonth(), 1);
                 }
 
                 // Ridisegna tutto
