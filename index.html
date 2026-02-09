@@ -1027,6 +1027,140 @@
             </div>
         </div>
     </div>
+
+    <!-- Scheda Medico -->
+    <div id="modal-doctor" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-0 overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <div class="bg-blue-600 p-4 text-white flex justify-between items-center shadow-md shrink-0">
+            <div class="flex gap-3 items-center">
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30">
+                    <i class="fa-solid fa-user-doctor text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg leading-tight">Medico di Famiglia</h3>
+                    <p id="doc-profile-name" class="text-[10px] text-blue-100 font-medium opacity-90 uppercase tracking-wide">Profilo: ...</p>
+                </div>
+            </div>
+            <button onclick="app.closeModal('modal-doctor')" class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="p-5 space-y-4 overflow-y-auto custom-scrollbar">
+            
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Nome e Cognome</label>
+                <div class="relative">
+                    <i class="fa-solid fa-user-md absolute left-3 top-3.5 text-slate-400 text-sm"></i>
+                    <input type="text" id="doc-name" class="w-full pl-9 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all" placeholder="Es. Dott. Mario Rossi">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Numero Studio</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-phone-office absolute left-3 top-3.5 text-slate-400 text-xs"></i>
+                        <input type="tel" id="doc-phone-studio" class="w-full pl-8 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all" placeholder="02 123...">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Cell. Dottore</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-mobile-screen absolute left-3 top-3.5 text-slate-400 text-xs"></i>
+                        <input type="tel" id="doc-phone-mobile" class="w-full pl-8 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all" placeholder="333...">
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex items-center gap-2 mb-1.5 ml-1">
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase">WhatsApp</label>
+                    
+                    <button onclick="document.getElementById('wa-tooltip-box').classList.toggle('hidden')" class="text-blue-400 hover:text-blue-600 focus:outline-none active:scale-95 transition-transform">
+                        <i class="fa-solid fa-circle-info text-xs"></i>
+                    </button>
+                </div>
+
+                <div id="wa-tooltip-box" class="hidden mb-2 p-2.5 bg-blue-50 border border-blue-100 rounded-lg text-[10px] text-blue-800 leading-relaxed shadow-sm fade-in">
+                    <p class="font-bold mb-0.5"><i class="fa-brands fa-whatsapp mr-1"></i> Richiesta Ricette</p>
+                    Questo numero sarà usato per inviare la lista dei farmaci da acquistare/prescrivere. Lasciare in bianco per non usare questa funzione.
+                </div>
+
+                <div class="relative">
+                    <i class="fa-brands fa-whatsapp absolute left-3 top-3.5 text-green-500 text-sm"></i>
+                    <input type="tel" id="doc-phone-wa" class="w-full pl-9 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all" placeholder="Numero per messaggi...">
+                </div>
+            </div>
+
+            <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                <label class="block text-[10px] font-bold text-blue-600 uppercase mb-2 flex items-center gap-1">
+                    <i class="fa-regular fa-clock"></i> Orari di Ricevimento
+                </label>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="text-[9px] text-slate-400 font-bold uppercase block mb-1.5 flex items-center gap-1">
+                            <i class="fa-regular fa-sun text-orange-400"></i> Mattina
+                        </span>
+                        <div class="relative mb-1">
+                            <input type="text" id="doc-days-am" class="w-full p-2 border border-blue-200 rounded-t-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-medium bg-white text-xs" placeholder="Giorni (es. Lun-Ven)">
+                        </div>
+                        <div class="relative">
+                            <input type="text" id="doc-hours-am" class="w-full p-2 border-x border-b border-blue-200 rounded-b-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-bold bg-blue-50/30 text-xs text-center" placeholder="Orario (es. 09-12)">
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-[9px] text-slate-400 font-bold uppercase block mb-1.5 flex items-center gap-1">
+                            <i class="fa-solid fa-cloud-sun text-yellow-500"></i> Pomeriggio
+                        </span>
+                        <div class="relative mb-1">
+                            <input type="text" id="doc-days-pm" class="w-full p-2 border border-blue-200 rounded-t-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-medium bg-white text-xs" placeholder="Giorni (es. Mar-Gio)">
+                        </div>
+                        <div class="relative">
+                            <input type="text" id="doc-hours-pm" class="w-full p-2 border-x border-b border-blue-200 rounded-b-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-bold bg-blue-50/30 text-xs text-center" placeholder="Orario (es. 15-18)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Indirizzo Studio</label>
+                <div class="relative">
+                    <i class="fa-solid fa-location-dot absolute left-3 top-3.5 text-slate-400 text-sm"></i>
+                    <textarea id="doc-address" rows="2" class="w-full pl-9 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium bg-slate-50 resize-none text-sm transition-all" placeholder="Via Roma 1, Milano..."></textarea>
+                </div>
+            </div>
+
+            <div id="doc-actions" class="grid grid-cols-3 gap-2 pt-1 hidden">
+                <a id="btn-call-doc" href="#" class="flex flex-col items-center justify-center py-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl hover:bg-blue-100 active:scale-95 transition-all">
+                    <i class="fa-solid fa-phone text-lg mb-1"></i>
+                    <span class="text-[9px] font-bold uppercase">Studio</span>
+                </a>
+                <a id="btn-call-mobile" href="#" class="flex flex-col items-center justify-center py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-100 active:scale-95 transition-all">
+                    <i class="fa-solid fa-mobile-screen text-lg mb-1"></i>
+                    <span class="text-[9px] font-bold uppercase">Cellulare</span>
+                </a>
+                <a id="btn-wa-doc" href="#" target="_blank" class="flex flex-col items-center justify-center py-2 bg-green-50 text-green-600 border border-green-100 rounded-xl hover:bg-green-100 active:scale-95 transition-all">
+                    <i class="fa-brands fa-whatsapp text-lg mb-1"></i>
+                    <span class="text-[9px] font-bold uppercase">WhatsApp</span>
+                </a>
+            </div>
+            <a id="btn-map-doc" href="#" target="_blank" class="hidden w-full flex items-center justify-center gap-2 py-2 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl hover:bg-amber-100 active:scale-95 transition-all">
+                <i class="fa-solid fa-map-location-dot"></i> <span class="text-xs font-bold uppercase">Apri Mappa</span>
+            </a>
+
+        </div>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
+            <button onclick="app.saveDoctorInfo()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-save"></i> Salva Scheda
+            </button>
+        </div>
+    </div>
+</div>
     <script>
         const app = {
             data: { lastOpened: null, profiles: [], apiKey: "" },
@@ -2420,16 +2554,22 @@
                     }
 
                     div.innerHTML = `
-                                                                <div class="flex items-center gap-3">
-                                                                    <div class="w-10 h-10 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50">
-                                                                        ${iconContent}
-                                                                    </div>
-                                                                    <div>
-                                                                        <h3 class="font-bold text-slate-800">${p.name}</h3>
-                                                                        <p class="text-xs text-slate-500">${total} farmaci</p>
-                                                                    </div>
-                                                                </div>
-                                                                <span class="text-sm font-bold ${percClass}">${perc}%</span>`;
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
+                            ${iconContent}
+                            ${p.doctor && p.doctor.name ? '<div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5"><i class="fa-solid fa-user-doctor text-xs text-green-500"></i></div>' : ''}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-lg leading-tight">${p.name}</h3>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs text-slate-500">${total} farmaci</span>
+                                <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm">
+                                    <i class="fa-solid fa-user-doctor mr-1"></i> Medico
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="text-sm font-bold ${percClass}">${perc}%</span>`;
                     container.appendChild(div);
                 });
             },
@@ -2824,7 +2964,9 @@
 
                 const dayMap = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
                 const todayShort = dayMap[new Date().getDay()];
-                const todayISO = new Date().toISOString().slice(0, 10);
+                // Calcolo DATA LOCALE (non UTC) per reset a mezzanotte preciso
+                const now = new Date();
+                const todayISO = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
 
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
@@ -2848,13 +2990,19 @@
                         header.className = "cursor-pointer bg-white p-3 rounded-xl card-shadow border border-slate-100 mb-2 flex items-center justify-between transition-all hover:bg-slate-50";
                         header.onclick = () => this.toggleSection(time);
 
-                        let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
+                        // --- MODIFICA QUI: SELEZIONE ICONA CORRETTA ---
+                        let icon = '';
+                        if (time === 'Mattina') icon = 'fa-sun text-orange-400';
+                        else if (time === 'Pomeriggio') icon = 'fa-cloud-sun text-yellow-500';
+                        else if (time === 'Sera') icon = 'fa-moon text-indigo-400';
+                        else if (time === 'Al Bisogno') icon = 'fa-kit-medical text-red-500'; // Icona corretta!
+                        // ----------------------------------------------
 
                         header.innerHTML = `
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
-                                            <i class="fa-solid ${icon} text-lg"></i>
-                                        </div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                                    <i class="fa-solid ${icon} text-lg"></i>
+                                </div>
                                         <div>
                                             <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
                                             <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
@@ -2952,41 +3100,72 @@
 
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${visualClass}`;
 
-                            // HTML Card: Aggiunto timeDisplay e attributo disabled
+                            // --- GESTIONE "AL BISOGNO" (Con Calcolo Totale) ---
                             if (time === 'Al Bisogno') {
-                                // Calcola quante volte è stato preso OGGI
-                                const todayISO = new Date().toISOString().slice(0, 10);
-                                const countToday = (med.prnHistory || []).filter(date => date.startsWith(todayISO)).length;
+                                // 1. Conta quante volte è stato preso oggi
+                                // Filtra convertendo ogni salvataggio in data locale
+                                const countToday = (med.prnHistory || []).filter(ts => {
+                                    const d = new Date(ts);
+                                    const localDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                                    return localDate === todayISO;
+                                }).length;
 
-                                // Stile Card specifico (Rosso/Viola)
-                                card.className = `p-4 rounded-xl card-shadow border border-slate-200 bg-white mb-3 flex items-center justify-between`;
+                                // 2. Logica Calcolo Totale (Smart)
+                                // Default: mostra solo il numero di assunzioni
+                                let totalDisplay = `Oggi: ${countToday} ${countToday === 1 ? 'volta' : 'volte'}`;
+                                
+                                // Se la dose inizia con un numero (es. "2 compresse", "0.5 mg"), calcola il totale
+                                if (countToday > 0 && med.dose) {
+                                    // Regex per estrarre numero e testo (es. "500" e "mg")
+                                    const match = med.dose.match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+                                    if (match) {
+                                        const val = parseFloat(match[1].replace(',', '.')); // Gestisce virgola e punto
+                                        const unit = match[2]; // Es. "mg", "pillole"
+                                        const total = parseFloat((val * countToday).toFixed(2)); // Totale pulito
+                                        totalDisplay = `Totale: ${total} ${unit} <span class="text-slate-400 font-normal">(${countToday} ass.)</span>`;
+                                    }
+                                }
+
+                                // Stile Card (Si illumina se preso almeno una volta)
+                                const activeBorder = countToday > 0 ? 'border-red-200 bg-red-50/30' : 'border-slate-200 bg-white';
+                                
+                                card.className = `p-4 rounded-xl card-shadow border ${activeBorder} mb-3 flex items-center justify-between transition-all`;
 
                                 card.innerHTML = `
-                        <div class="flex items-center gap-4 flex-1 overflow-hidden">
-                            <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center font-bold text-lg border border-red-100 shrink-0">
-                                ${countToday}
-                            </div>
-                            
-                            <div class="overflow-hidden">
-                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                <div class="flex flex-col mt-0.5">
-                                    <p class="text-[10px] text-slate-400 font-bold uppercase">
-                                        Assunzioni oggi: <span class="text-slate-700">${countToday}</span>
-                                    </p>
-                                    ${med.dose ? `<p class="text-xs text-slate-500">${med.dose}</p>` : ''}
-                                </div>
-                            </div>
-                        </div>
+                                    <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                                        <div class="w-10 h-10 rounded-full ${countToday > 0 ? 'bg-red-500 text-white shadow-md border-red-600' : 'bg-slate-50 text-slate-300 border-slate-200'} flex items-center justify-center font-bold text-lg border shrink-0 transition-colors">
+                                            ${countToday}
+                                        </div>
+                                        
+                                        <div class="overflow-hidden">
+                                            <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                            <div class="flex flex-col">
+                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                
+                                                <p class="text-xs font-bold ${countToday > 0 ? 'text-red-600' : 'text-slate-400'} mt-0.5 mb-0.5 truncate">
+                                                    ${totalDisplay}
+                                                </p>
 
-                        <div class="flex items-center gap-2">
-                             <button onclick="app.takePrnMed('${med.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1">
-                                <i class="fa-solid fa-plus"></i> Prendi
-                            </button>
-                            <div class="flex flex-col gap-1 ml-1 border-l pl-2 border-slate-100">
-                                <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 text-xs"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 text-xs"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>`;
+                                                <div class="flex flex-col">
+                                                    ${med.dose ? `<p class="text-[10px] text-slate-400 opacity-80">Dose singola: ${med.dose}</p>` : ''}
+                                                    ${therapyBadge || ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-1 pl-2">
+                                        ${noteBtn}
+
+                                        <button onclick="app.takePrnMed('${med.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 ml-1 mr-1">
+                                            <i class="fa-solid fa-plus"></i> Prendi
+                                        </button>
+
+                                        <div class="flex flex-col gap-1 ml-1 border-l pl-2 border-slate-100">
+                                            <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 text-xs p-1"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </div>`;
                             }
                             // --- GESTIONE STANDARD (MATTINA/POM/SERA) ---
                             else {
@@ -3227,11 +3406,129 @@
                 }
             },
 
-            copyShoppingList() {
-                const text = this.getShoppingListText();
-                navigator.clipboard.writeText(text).then(() => {
-                    this.showAlert("Copiato", "Lista copiata negli appunti!");
-                });
+            // --- GESTIONE MEDICO DI FAMIGLIA (Aggiornato con Giorni Mattina/Pom) ---
+
+            openDoctorModal(profileId) {
+                this.currentProfileId = profileId;
+                const profile = this.data.profiles.find(p => p.id === profileId);
+                if (!profile) return;
+
+                // Resetta campi
+                document.getElementById('doc-profile-name').textContent = `PROFILO: ${profile.name}`;
+                document.getElementById('doc-name').value = '';
+                document.getElementById('doc-phone-studio').value = '';
+                document.getElementById('doc-phone-mobile').value = '';
+                document.getElementById('doc-phone-wa').value = '';
+                
+                // Reset Orari (4 campi)
+                document.getElementById('doc-days-am').value = '';
+                document.getElementById('doc-hours-am').value = '';
+                document.getElementById('doc-days-pm').value = '';
+                document.getElementById('doc-hours-pm').value = '';
+                
+                document.getElementById('doc-address').value = '';
+
+                // Nascondi pulsanti azioni
+                document.getElementById('doc-actions').classList.add('hidden');
+                document.getElementById('btn-map-doc').classList.add('hidden');
+
+                if (profile.doctor) {
+                    document.getElementById('doc-name').value = profile.doctor.name || '';
+                    document.getElementById('doc-phone-studio').value = profile.doctor.phoneStudio || '';
+                    document.getElementById('doc-phone-mobile').value = profile.doctor.phoneMobile || '';
+                    document.getElementById('doc-phone-wa').value = profile.doctor.phoneWa || '';
+                    
+                    // Load Orari
+                    document.getElementById('doc-days-am').value = profile.doctor.daysAm || ''; // NUOVO
+                    document.getElementById('doc-hours-am').value = profile.doctor.hoursAm || '';
+                    document.getElementById('doc-days-pm').value = profile.doctor.daysPm || ''; // NUOVO
+                    document.getElementById('doc-hours-pm').value = profile.doctor.hoursPm || '';
+                    
+                    document.getElementById('doc-address').value = profile.doctor.address || '';
+
+                    // --- Logica Pulsanti Azione ---
+                    let hasMainActions = false;
+
+                    const btnCall = document.getElementById('btn-call-doc');
+                    if (profile.doctor.phoneStudio) {
+                        btnCall.classList.remove('opacity-40', 'pointer-events-none');
+                        btnCall.href = `tel:${profile.doctor.phoneStudio}`;
+                        hasMainActions = true;
+                    } else {
+                        btnCall.classList.add('opacity-40', 'pointer-events-none');
+                    }
+
+                    const btnMobile = document.getElementById('btn-call-mobile');
+                    if (profile.doctor.phoneMobile) {
+                        btnMobile.classList.remove('opacity-40', 'pointer-events-none');
+                        btnMobile.href = `tel:${profile.doctor.phoneMobile}`;
+                        hasMainActions = true;
+                    } else {
+                        btnMobile.classList.add('opacity-40', 'pointer-events-none');
+                    }
+
+                    const btnWa = document.getElementById('btn-wa-doc');
+                    if (profile.doctor.phoneWa) {
+                        btnWa.classList.remove('opacity-40', 'pointer-events-none');
+                        const cleanNum = profile.doctor.phoneWa.replace(/[^0-9]/g, ''); 
+                        const waNum = cleanNum.startsWith('39') ? cleanNum : '39' + cleanNum;
+                        btnWa.href = `https://wa.me/${waNum}`;
+                        hasMainActions = true;
+                    } else {
+                        btnWa.classList.add('opacity-40', 'pointer-events-none');
+                    }
+
+                    if (hasMainActions) {
+                        document.getElementById('doc-actions').classList.remove('hidden');
+                    }
+
+                    const btnMap = document.getElementById('btn-map-doc');
+                    if (profile.doctor.address) {
+                        btnMap.classList.remove('hidden');
+                        const encodedAddr = encodeURIComponent(profile.doctor.address);
+                        btnMap.href = `https://www.google.com/maps/search/?api=1&query=${encodedAddr}`;
+                    }
+                }
+
+                this.showModal('modal-doctor');
+            },
+
+            saveDoctorInfo() {
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                if (!profile) return;
+
+                const name = document.getElementById('doc-name').value.trim();
+                const phoneStudio = document.getElementById('doc-phone-studio').value.trim();
+                const phoneMobile = document.getElementById('doc-phone-mobile').value.trim();
+                const phoneWa = document.getElementById('doc-phone-wa').value.trim();
+                
+                // Campi Orario
+                const daysAm = document.getElementById('doc-days-am').value.trim();
+                const hoursAm = document.getElementById('doc-hours-am').value.trim();
+                const daysPm = document.getElementById('doc-days-pm').value.trim();
+                const hoursPm = document.getElementById('doc-hours-pm').value.trim();
+                
+                const address = document.getElementById('doc-address').value.trim();
+
+                profile.doctor = {
+                    name,
+                    phoneStudio,
+                    phoneMobile,
+                    phoneWa,
+                    daysAm,  // SALVA GIORNI MATTINA
+                    hoursAm,
+                    daysPm,  // SALVA GIORNI POMERIGGIO
+                    hoursPm,
+                    address
+                };
+
+                this.saveData();
+                this.renderProfiles(); 
+                this.closeModal('modal-doctor');
+                
+                if (name) {
+                    this.showAlert("Salvato", "Scheda medico aggiornata.");
+                }
             },
 
             setupManifest() {
