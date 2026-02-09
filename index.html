@@ -727,7 +727,24 @@
             <h3 class="text-xl font-bold text-slate-800 mb-1">Modifica Giorno</h3>
             <p id="day-detail-date" class="text-sm text-slate-500 font-semibold mb-5 uppercase tracking-wide"></p>
 
-            <p class="text-xs text-slate-400 mb-3">Seleziona quando assumere il farmaco in questa data specifica:</p>
+            <p class="text-xs text-slate-400 mb-3">Personalizza orario e momento per questa data:</p>
+
+            <div class="mb-5 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">
+                    <i class="fa-solid fa-clock text-blue-500 mr-1"></i> Orario Specifico
+                </label>
+                <div class="flex gap-2">
+                    <input type="time"
+                           id="day-detail-time"
+                           class="flex-1 h-10 px-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-bold bg-white text-center shadow-sm text-sm">
+                    <button onclick="document.getElementById('day-detail-time').value = ''" class="w-10 h-10 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors shadow-sm" title="Rimuovi orario">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
+                <p class="text-[9px] text-slate-400 mt-2 leading-tight">
+                    Se inserito, questo orario sostituirà quello standard solo per oggi.
+                </p>
+            </div>
 
             <div class="space-y-3 mb-6">
                 <button onclick="app.toggleDayDetailTime('Mattina')" class="detail-time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm transition-all" data-val="Mattina">
@@ -1145,7 +1162,6 @@
                 this.editingDayDate = dateIso;
                 this.editingDayTimes = []; // Reset
 
-                // 1. Cerca il farmaco attuale (o i suoi fratelli per sharedId)
                 if (!this.currentEditingMed) return;
 
                 // Formatta data per titolo
@@ -1153,30 +1169,33 @@
                 const options = { weekday: 'long', day: 'numeric', month: 'long' };
                 document.getElementById('day-detail-date').textContent = dateObj.toLocaleDateString('it-IT', options);
 
-                // 2. Verifica se esiste già un override per questa data
+                // --- CARICAMENTO ORARIO GIORNALIERO (NUOVO) ---
+                const dayTimeInput = document.getElementById('day-detail-time');
+                // Se esiste la struttura dati e c'è un valore per questa data, impostalo
+                if (this.currentEditingMed.daySpecificTimes && this.currentEditingMed.daySpecificTimes[dateIso]) {
+                    dayTimeInput.value = this.currentEditingMed.daySpecificTimes[dateIso];
+                } else {
+                    dayTimeInput.value = ''; // Altrimenti pulisci
+                }
+                // ----------------------------------------------
+
+                // Logica esistente per i momenti (Mattina, Sera...)
                 const specificDays = this.currentEditingMed.specificDays || {};
 
                 if (specificDays[dateIso]) {
-                    // Se esiste un override, usa quello
                     this.editingDayTimes = [...specificDays[dateIso]];
                 } else {
-                    // Se non esiste, determina quali sarebbero gli orari standard attivi per oggi
-                    // Controlla la frequenza generale
-                    const isStandardActive = this.isMedicationDay(this.currentEditingMed, dateIso, true); // true = ignora override
-
+                    // Fallback standard
+                    const isStandardActive = this.isMedicationDay(this.currentEditingMed, dateIso, true);
                     if (isStandardActive) {
-                        // Se il giorno è attivo secondo la frequenza, prendi tutti gli orari configurati per questo farmaco
-                        // Dobbiamo cercare tutti i meds con lo stesso sharedId nel profilo
                         const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
                         if (profile) {
                             const siblings = profile.meds.filter(m => m.sharedId === this.currentEditingMed.sharedId);
                             this.editingDayTimes = siblings.map(m => m.time);
                         } else {
-                            // Fallback se stiamo creando un nuovo profilo e non è ancora salvato (raro qui perché il calendario appare in edit)
                             this.editingDayTimes = [...this.selectedTimes];
                         }
                     } else {
-                        // Giorno normalmente inattivo -> nessun orario selezionato di default
                         this.editingDayTimes = [];
                     }
                 }
@@ -1209,17 +1228,23 @@
             saveDayDetail() {
                 if (!this.currentEditingMed || !this.editingDayDate) return;
 
-                // Salva temporaneamente l'override nell'oggetto corrente
-                // Nota: questo viene salvato definitivamente solo quando si clicca "Salva" nel modale farmaco principale
-                // Ma per la UI live del calendario, dobbiamo aggiornarlo subito in memoria
+                // Assicuriamoci che gli oggetti contenitore esistano
+                if (!this.currentEditingMed.specificDays) this.currentEditingMed.specificDays = {};
+                if (!this.currentEditingMed.daySpecificTimes) this.currentEditingMed.daySpecificTimes = {}; // NUOVO
 
-                if (!this.currentEditingMed.specificDays) {
-                    this.currentEditingMed.specificDays = {};
-                }
-
+                // 1. Salva i momenti (Mattina/Sera)
                 this.currentEditingMed.specificDays[this.editingDayDate] = [...this.editingDayTimes];
 
-                // Aggiorna il calendario mensile
+                // 2. Salva l'Orario Specifico (NUOVO)
+                const timeVal = document.getElementById('day-detail-time').value;
+                if (timeVal) {
+                    this.currentEditingMed.daySpecificTimes[this.editingDayDate] = timeVal;
+                } else {
+                    // Se l'utente ha cancellato l'orario, rimuoviamo la chiave per liberare memoria
+                    delete this.currentEditingMed.daySpecificTimes[this.editingDayDate];
+                }
+
+                // Aggiorna vista calendario
                 this.renderTherapyMonth(this.currentEditingMed);
                 this.closeModal('modal-day-detail');
             },
@@ -1665,15 +1690,32 @@
                     const el = document.createElement('div');
                     el.className = cls;
 
-                    // Numero Giorno
+                    // --- NUOVA POSIZIONE: ALTO A SINISTRA ---
+                    // Se c'è un orario specifico, aggiungi l'icona nell'angolo
+                    if (med.daySpecificTimes && med.daySpecificTimes[iso]) {
+                        const tlIcon = document.createElement('div');
+                        // 'absolute' la sgancia dal flusso normale
+                        // 'top-0.5 left-1' la posiziona nell'angolo con un po' di margine
+                        tlIcon.className = 'absolute top-0.5 left-1.5';
+
+                        // Icona piccola color fucsia
+                        tlIcon.innerHTML = `<i class="fa-solid fa-clock text-[10px] text-blue-600"></i>`;
+
+                        el.appendChild(tlIcon);
+                    }
+                    // ----------------------------------------
+
+                    // Numero Giorno (Viene aggiunto dopo, così sta sopra/accanto senza problemi)
                     const spanNum = document.createElement('span');
                     spanNum.textContent = d;
                     el.appendChild(spanNum);
 
-                    // ICONE ORARI (Solo se attivo)
+                    // ICONE ORARI (Solo se attivo) - Questo gestisce SOLO le icone in basso (Sole/Luna)
                     if (info.active && info.activeTimes && info.activeTimes.length > 0) {
                         const iconContainer = document.createElement('div');
                         iconContainer.className = 'cal-icon-wrapper';
+
+                        // --- RIMOSSO IL BLOCCO CHE AGGIUNGEVA L'OROLOGIO QUI ---
 
                         // Ordine fisso: Mattina, Pomeriggio, Sera
                         const order = ['Mattina', 'Pomeriggio', 'Sera'];
@@ -2757,7 +2799,7 @@
                         listContainer.className = `space-y-3 ${hiddenClass}`;
 
                         meds.forEach(med => {
-                            // 1. Controllo Override (Giorni specifici)
+                            // 1. Controllo Override (Giorni specifici - Rimane invariato)
                             let isToday = false;
 
                             if (med.specificDays && med.specificDays[todayISO] !== undefined) {
@@ -2768,19 +2810,28 @@
                                 isToday = isFreqMatch && isDayMatch;
                             }
 
-                            // --- NUOVA LOGICA: BLOCCO ORARIO ---
+                            // --- MODIFICA: CALCOLO ORARIO EFFETTIVO E BLOCCO ---
+
+                            // A. Determiniamo quale orario usare (Standard o Override di oggi?)
+                            let effectiveTime = med.specificTime; // Default: orario generale
+
+                            // Se esiste un orario specifico salvato ESATTAMENTE per oggi, vince lui
+                            if (med.daySpecificTimes && med.daySpecificTimes[todayISO]) {
+                                effectiveTime = med.daySpecificTimes[todayISO];
+                            }
+
                             let isLocked = false;
-                            // Controlliamo l'ora solo se è previsto per oggi e non è ancora stato preso
-                            if (med.specificTime && !med.taken && isToday) {
+
+                            // B. Controlliamo il blocco usando 'effectiveTime' (non med.specificTime)
+                            if (effectiveTime && !med.taken && isToday) {
                                 const now = new Date();
-                                // Formato HH:MM
                                 const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
 
-                                if (currentTime < med.specificTime) {
+                                if (currentTime < effectiveTime) {
                                     isLocked = true;
                                 }
                             }
-                            // -----------------------------------
+                            // ---------------------------------------------------
 
                             if (med.taken) anyTaken = true;
                             const card = document.createElement('div');
@@ -2817,11 +2868,11 @@
                     `;
                             }
 
-                            // Badge Orario Specifico (Nuovo)
-                            const timeDisplay = med.specificTime
+                            // C. Aggiorna il badge visivo usando effectiveTime
+                            const timeDisplay = effectiveTime
                                 ? `<span class="text-xs font-bold ${isLocked ? 'text-orange-500' : 'text-slate-600'} bg-white px-1.5 py-0.5 rounded border mr-2 flex-shrink-0">
-                     ${isLocked ? '<i class="fa-solid fa-lock mr-1"></i>' : ''}${med.specificTime}
-                   </span>`
+                                        ${isLocked ? '<i class="fa-solid fa-lock mr-1"></i>' : ''}${effectiveTime}
+                                   </span>`
                                 : '';
 
                             const noteBtn = med.usage ?
