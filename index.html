@@ -515,7 +515,7 @@
 
     <!-- MODALI DI SISTEMA CUSTOM (Alert, Confirm, Frequency) -->
     <!-- MODALE ALERT (Sostituisce alert()) -->
-    <div id="modal-alert" class="hidden fixed inset-0 modal-overlay z-[70] flex items-center justify-center p-4 fade-in">
+    <div id="modal-alert" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
             <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-4 text-xl">
                 <i class="fa-solid fa-info"></i>
@@ -526,8 +526,7 @@
         </div>
     </div>
 
-    <!-- MODALE CONFIRM (Sostituisce confirm()) -->
-    <div id="modal-confirm" class="hidden fixed inset-0 modal-overlay z-[70] flex items-center justify-center p-4 fade-in">
+    <div id="modal-confirm" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
             <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto mb-4 text-xl">
                 <i class="fa-solid fa-question"></i>
@@ -997,7 +996,7 @@
     </div>
 
     <!-- Lista Spesa -->
-    <div id="modal-doctor-list" class="hidden"></div> <div id="modal-shopping-list" class="hidden fixed inset-0 modal-overlay z-[90] flex items-center justify-center p-4 fade-in">
+     <div id="modal-shopping-list" class="hidden fixed inset-0 modal-overlay z-[90] flex items-center justify-center p-4 fade-in">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-0 overflow-hidden flex flex-col max-h-[85vh]">
             <div class="p-4 bg-emerald-50 border-b border-emerald-100 flex justify-between items-center shrink-0">
                 <div class="flex items-center gap-3">
@@ -3297,35 +3296,41 @@
 
                 // --- SEZIONE DA ORDINARE (Raggruppata per Paziente) ---
                 this.data.profiles.forEach(profile => {
-                    // Filtra farmaci da ordinare
-                    const medsToOrder = profile.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && !m.isOrdered);
+                    // 1. Trova TUTTE le istanze da ordinare
+                    const allMedsToOrder = profile.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && !m.isOrdered);
 
-                    if (medsToOrder.length > 0) {
+                    // 2. RIMUOVI DUPLICATI (Es. Lasix Mattina e Lasix Sera -> Mostra solo Lasix)
+                    const uniqueMedsToOrder = [];
+                    const seenIds = new Set();
+
+                    allMedsToOrder.forEach(m => {
+                        if (!seenIds.has(m.sharedId)) {
+                            uniqueMedsToOrder.push(m);
+                            seenIds.add(m.sharedId);
+                        }
+                    });
+
+                    // Se ci sono farmaci (univoci) da ordinare
+                    if (uniqueMedsToOrder.length > 0) {
                         hasAnyItem = true;
 
-                        // Crea il blocco del Paziente
                         const section = document.createElement('div');
                         section.className = "bg-white mb-2 border-b border-slate-200 shadow-sm";
 
-                        // Info Medico
                         let docInfo = '<span class="text-slate-400 italic text-[10px] ml-2">(Nessun medico)</span>';
                         let actionBlock = '';
 
-                        // Se c'è il numero WhatsApp
                         if (profile.doctor && profile.doctor.phoneWa) {
                             docInfo = `<span class="text-blue-500 font-medium text-[10px] ml-2"><i class="fa-solid fa-user-doctor mr-1"></i>${profile.doctor.name}</span>`;
 
-                            // Genera il testo predefinito del messaggio
+                            // Genera Messaggio WA (Senza duplicati e senza dosaggio)
                             let defaultMsg = `👋 Buongiorno Dott. ${profile.doctor.name || ''},\n`;
                             defaultMsg += `Sono ${profile.name}, avrei bisogno di ordinare i seguenti farmaci:\n\n`;
-                            medsToOrder.forEach(m => {
-                                defaultMsg += `- ${m.name}`;
-                                if (m.dose) defaultMsg += ` (${m.dose})`;
-                                defaultMsg += `\n`;
+                            uniqueMedsToOrder.forEach(m => {
+                                defaultMsg += `- ${m.name}\n`;
                             });
                             defaultMsg += `\nGrazie mille.`;
 
-                            // Blocco Azione: Tasto "Prepara" + Area Editor (Nascosta)
                             actionBlock = `
                     <div class="mt-3">
                         <button id="btn-prep-${profile.id}" onclick="app.toggleOrderEditor('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 active:scale-95 transition-all text-sm">
@@ -3348,7 +3353,6 @@
                     </div>
                 `;
                         } else {
-                            // Avviso se manca il numero
                             actionBlock = `
                     <button onclick="app.showAlert('Dati mancanti', 'Aggiungi il numero WhatsApp nella scheda medico di ${profile.name} per ordinare.')" class="w-full mt-3 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-400 font-bold rounded-lg cursor-not-allowed text-xs">
                         <i class="fa-brands fa-whatsapp"></i> Numero mancante
@@ -3356,15 +3360,14 @@
                 `;
                         }
 
-                        // Lista Farmaci (Visiva)
+                        // Lista Visiva (Senza duplicati, senza dosaggio)
                         let listHtml = '';
-                        medsToOrder.forEach(med => {
+                        uniqueMedsToOrder.forEach(med => {
                             listHtml += `
                     <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
                         <i class="fa-solid fa-circle-exclamation text-orange-500 text-xs"></i>
                         <div class="flex-1">
                             <p class="font-bold text-slate-700 text-sm">${med.name}</p>
-                            <p class="text-[10px] text-slate-400">${med.dose || ''}</p>
                         </div>
                     </div>
                 `;
@@ -3388,12 +3391,18 @@
                     }
                 });
 
-                // --- SEZIONE 2: FARMACI ORDINATI (Invariata) ---
-                // (Questa parte del codice per visualizzare i farmaci già ordinati rimane identica a prima)
+                // --- SEZIONE 2: FARMACI ORDINATI (Con filtro duplicati) ---
                 let orderedMeds = [];
+                const seenOrderedIds = new Set(); // Set per duplicati anche qui
+
                 this.data.profiles.forEach(p => {
                     const ord = p.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && m.isOrdered);
-                    ord.forEach(m => orderedMeds.push({ ...m, pName: p.name, pId: p.id }));
+                    ord.forEach(m => {
+                        if (!seenOrderedIds.has(m.sharedId)) {
+                            orderedMeds.push({ ...m, pName: p.name, pId: p.id });
+                            seenOrderedIds.add(m.sharedId);
+                        }
+                    });
                 });
 
                 if (orderedMeds.length > 0) {
@@ -3452,11 +3461,15 @@
 
                 this.data.profiles.forEach(profile => {
                     let profileMeds = [];
+                    // Set locale per questo profilo
+                    const seenIds = new Set();
+
                     profile.meds.forEach(med => {
-                        if (med.minQty > 0 && med.boxQty <= med.minQty) {
-                            // Controllo duplicati anche qui
-                            if (!profileMeds.find(m => m.sharedId === med.sharedId)) {
+                        if (med.minQty > 0 && med.boxQty <= med.minQty && !med.isOrdered) {
+                            // Controllo sharedId per evitare duplicati
+                            if (!seenIds.has(med.sharedId)) {
                                 profileMeds.push(med);
+                                seenIds.add(med.sharedId);
                             }
                         }
                     });
@@ -3465,18 +3478,27 @@
                         text += `👤 *${profile.name}*\n`;
                         profileMeds.forEach(m => {
                             count++;
-                            text += `- ${m.name}`;
-                            if (m.dose) text += ` (${m.dose})`;
-                            text += `\n  ⚠️ Rimasti: ${m.boxQty} (Min: ${m.minQty})\n`;
+                            // Solo Nome, niente dose
+                            text += `- ${m.name}\n`;
                         });
                         text += "\n";
                     }
                 });
 
-                if (count === 0) return "Tutte le scorte sono sufficienti! ✅";
+                if (count === 0) return "Tutte le scorte sono sufficienti o i farmaci sono già stati ordinati! ✅";
 
                 text += "--------------------------\nGenerato con MedicinePro";
                 return text;
+            },
+
+            copyShoppingList() {
+                const text = this.getShoppingListText();
+                navigator.clipboard.writeText(text).then(() => {
+                    this.showAlert("Copiato", "La lista completa è stata copiata negli appunti!");
+                }).catch(err => {
+                    console.error('Errore copia', err);
+                    this.showAlert("Errore", "Impossibile copiare negli appunti.");
+                });
             },
 
             shareShoppingList() {
@@ -3614,34 +3636,6 @@
                 if (name) {
                     this.showAlert("Salvato", "Scheda medico aggiornata.");
                 }
-            },
-
-            sendShoppingListToWa() {
-                // 1. Trova il profilo corrente
-                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
-
-                // 2. Controlla se c'è un numero WhatsApp salvato nella scheda medico
-                if (!profile || !profile.doctor || !profile.doctor.phoneWa) {
-                    this.showAlert("Dati mancanti", "Non hai salvato il numero WhatsApp del medico per questo profilo. Vai nella scheda 'Medico' per aggiungerlo.");
-                    return;
-                }
-
-                // 3. Pulisci il numero (rimuovi spazi, trattini, parentesi)
-                let phone = profile.doctor.phoneWa.replace(/[^0-9]/g, '');
-
-                // Se manca il prefisso internazionale (39 per Italia), aggiungilo
-                if (!phone.startsWith('39')) {
-                    phone = '39' + phone;
-                }
-
-                // 4. Genera il testo della lista
-                const text = this.getShoppingListText();
-
-                // 5. Crea il link universale di WhatsApp e aprilo
-                // encodeURIComponent serve a rendere il testo leggibile nell'URL (gestisce spazi e a capo)
-                const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-
-                window.open(url, '_blank');
             },
 
             // --- NUOVE FUNZIONI PER MODIFICA MESSAGGIO ---
