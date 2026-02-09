@@ -3295,9 +3295,9 @@
 
                 let hasAnyItem = false;
 
-                // --- SEZIONE 1: DA ORDINARE (Raggruppata per Paziente) ---
+                // --- SEZIONE DA ORDINARE (Raggruppata per Paziente) ---
                 this.data.profiles.forEach(profile => {
-                    // Filtra farmaci: Sotto scorta E NON ancora ordinati
+                    // Filtra farmaci da ordinare
                     const medsToOrder = profile.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && !m.isOrdered);
 
                     if (medsToOrder.length > 0) {
@@ -3307,29 +3307,56 @@
                         const section = document.createElement('div');
                         section.className = "bg-white mb-2 border-b border-slate-200 shadow-sm";
 
-                        // Intestazione Paziente
+                        // Info Medico
                         let docInfo = '<span class="text-slate-400 italic text-[10px] ml-2">(Nessun medico)</span>';
-                        let btnAction = '';
+                        let actionBlock = '';
 
-                        // Verifica se c'è un medico e un numero WA per abilitare il tasto
+                        // Se c'è il numero WhatsApp
                         if (profile.doctor && profile.doctor.phoneWa) {
                             docInfo = `<span class="text-blue-500 font-medium text-[10px] ml-2"><i class="fa-solid fa-user-doctor mr-1"></i>${profile.doctor.name}</span>`;
 
-                            // Pulsante WhatsApp SPECIFICO per questo paziente
-                            btnAction = `
-                    <button onclick="app.orderForProfile('${profile.id}')" class="w-full mt-3 flex items-center justify-center gap-2 py-2.5 bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 active:scale-95 transition-all text-sm">
-                        <i class="fa-brands fa-whatsapp text-lg"></i> Ordina per ${profile.name}
-                    </button>
+                            // Genera il testo predefinito del messaggio
+                            let defaultMsg = `👋 Buongiorno Dott. ${profile.doctor.name || ''},\n`;
+                            defaultMsg += `Sono ${profile.name}, avrei bisogno di ordinare i seguenti farmaci:\n\n`;
+                            medsToOrder.forEach(m => {
+                                defaultMsg += `- ${m.name}`;
+                                if (m.dose) defaultMsg += ` (${m.dose})`;
+                                defaultMsg += `\n`;
+                            });
+                            defaultMsg += `\nGrazie mille.`;
+
+                            // Blocco Azione: Tasto "Prepara" + Area Editor (Nascosta)
+                            actionBlock = `
+                    <div class="mt-3">
+                        <button id="btn-prep-${profile.id}" onclick="app.toggleOrderEditor('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 active:scale-95 transition-all text-sm">
+                            <i class="fa-brands fa-whatsapp text-lg"></i> Prepara Messaggio per ${profile.name}
+                        </button>
+
+                        <div id="editor-${profile.id}" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 fade-in">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Modifica Messaggio:</label>
+                            <textarea id="msg-area-${profile.id}" rows="6" class="w-full p-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-none mb-2 font-mono text-slate-700 leading-snug">${defaultMsg}</textarea>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="app.toggleOrderEditor('${profile.id}')" class="py-2 bg-white text-slate-500 border border-slate-300 rounded-lg font-bold text-xs hover:bg-slate-100">
+                                    Annulla
+                                </button>
+                                <button onclick="app.sendCustomOrder('${profile.id}')" class="py-2 bg-green-600 text-white rounded-lg font-bold text-xs shadow hover:bg-green-700 flex items-center justify-center gap-2">
+                                    <i class="fa-regular fa-paper-plane"></i> Invia WhatsApp
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 `;
                         } else {
                             // Avviso se manca il numero
-                            btnAction = `
+                            actionBlock = `
                     <button onclick="app.showAlert('Dati mancanti', 'Aggiungi il numero WhatsApp nella scheda medico di ${profile.name} per ordinare.')" class="w-full mt-3 flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-400 font-bold rounded-lg cursor-not-allowed text-xs">
                         <i class="fa-brands fa-whatsapp"></i> Numero mancante
                     </button>
                 `;
                         }
 
+                        // Lista Farmaci (Visiva)
                         let listHtml = '';
                         medsToOrder.forEach(med => {
                             listHtml += `
@@ -3337,7 +3364,7 @@
                         <i class="fa-solid fa-circle-exclamation text-orange-500 text-xs"></i>
                         <div class="flex-1">
                             <p class="font-bold text-slate-700 text-sm">${med.name}</p>
-                            <p class="text-[10px] text-slate-400">${med.dose || ''} • Rimasti: ${med.boxQty}</p>
+                            <p class="text-[10px] text-slate-400">${med.dose || ''}</p>
                         </div>
                     </div>
                 `;
@@ -3351,22 +3378,22 @@
                         </h4>
                         ${docInfo}
                     </div>
-                    <div class="pl-2 border-l-2 border-orange-100 space-y-1">
+                    <div class="pl-2 border-l-2 border-orange-100 space-y-1 mb-2">
                         ${listHtml}
                     </div>
-                    ${btnAction}
+                    ${actionBlock}
                 </div>
             `;
                         container.appendChild(section);
                     }
                 });
 
-                // --- SEZIONE 2: FARMACI ORDINATI (Storico) ---
-                // Raccogliamo tutti i farmaci ordinati di tutti i profili
+                // --- SEZIONE 2: FARMACI ORDINATI (Invariata) ---
+                // (Questa parte del codice per visualizzare i farmaci già ordinati rimane identica a prima)
                 let orderedMeds = [];
                 this.data.profiles.forEach(p => {
                     const ord = p.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && m.isOrdered);
-                    ord.forEach(m => orderedMeds.push({ ...m, pName: p.name, pId: p.id })); // Aggiungiamo info profilo
+                    ord.forEach(m => orderedMeds.push({ ...m, pName: p.name, pId: p.id }));
                 });
 
                 if (orderedMeds.length > 0) {
@@ -3387,9 +3414,7 @@
                             <p class="text-[10px] text-slate-400">${m.pName}</p>
                         </div>
                     </div>
-                    <button onclick="app.restoreFromOrdered('${m.id}')" class="text-xs text-blue-400 font-bold hover:underline ml-2">
-                        Annulla
-                    </button>
+                    <button onclick="app.restoreFromOrdered('${m.id}')" class="text-xs text-blue-400 font-bold hover:underline ml-2">Annulla</button>
                 </div>
             `;
                     });
@@ -3406,7 +3431,6 @@
                     container.appendChild(orderedSection);
                 }
 
-                // Stato Vuoto
                 if (!hasAnyItem) {
                     container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-12 text-center opacity-60">
@@ -3414,7 +3438,7 @@
                     <i class="fa-solid fa-basket-shopping"></i>
                 </div>
                 <h3 class="text-lg font-bold text-slate-700">Tutto in ordine</h3>
-                <p class="text-sm text-slate-500 px-6">Le scorte sono sufficienti o hai già ordinato tutto.</p>
+                <p class="text-sm text-slate-500 px-6">Non ci sono farmaci da acquistare.</p>
             </div>
         `;
                 }
@@ -3620,45 +3644,47 @@
                 window.open(url, '_blank');
             },
 
-            // --- FUNZIONI ORDINE SPECIFICO ---
+            // --- NUOVE FUNZIONI PER MODIFICA MESSAGGIO ---
 
-            orderForProfile(profileId) {
+            toggleOrderEditor(profileId) {
+                const btn = document.getElementById(`btn-prep-${profileId}`);
+                const editor = document.getElementById(`editor-${profileId}`);
+
+                if (editor.classList.contains('hidden')) {
+                    // Mostra editor, nascondi bottone grande
+                    editor.classList.remove('hidden');
+                    btn.classList.add('hidden');
+                } else {
+                    // Nascondi editor, mostra bottone grande
+                    editor.classList.add('hidden');
+                    btn.classList.remove('hidden');
+                }
+            },
+
+            sendCustomOrder(profileId) {
                 const profile = this.data.profiles.find(p => p.id === profileId);
                 if (!profile) return;
 
-                // 1. Trova i farmaci da ordinare per QUESTO profilo
-                const medsToOrder = profile.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && !m.isOrdered);
-                if (medsToOrder.length === 0) return;
+                // 1. Recupera il testo modificato dall'utente
+                const customText = document.getElementById(`msg-area-${profileId}`).value;
 
-                // 2. Prepara il testo per WhatsApp
-                let text = `👋 Buongiorno Dott. ${profile.doctor.name || ''},\n`;
-                text += `Sono ${profile.name}, avrei bisogno di ordinare i seguenti farmaci:\n\n`;
-
-                medsToOrder.forEach(m => {
-                    text += `- ${m.name}`;
-                    if (m.dose) text += ` (${m.dose})`;
-                    text += `\n`;
-                });
-
-                text += `\nGrazie mille.`;
-
-                // 3. Prepara il numero
+                // 2. Prepara il numero WhatsApp
                 let phone = profile.doctor.phoneWa.replace(/[^0-9]/g, '');
                 if (!phone.startsWith('39')) phone = '39' + phone;
 
-                // 4. Invia (Apre WhatsApp)
-                const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+                // 3. Invia (apre WhatsApp)
+                const url = `https://wa.me/${phone}?text=${encodeURIComponent(customText)}`;
                 window.open(url, '_blank');
 
-                // 5. MAGIC: Sposta automaticamente in "Ordinati"
+                // 4. Marca i farmaci come ordinati
+                const medsToOrder = profile.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && !m.isOrdered);
                 medsToOrder.forEach(m => {
-                    m.isOrdered = true; // Flag magico
+                    m.isOrdered = true;
                 });
 
                 this.saveData();
 
-                // 6. Ricarica il modale per vedere l'aggiornamento
-                // Piccolo ritardo per dare tempo all'utente di vedere il click
+                // 5. Aggiorna interfaccia (ritardo per UX)
                 setTimeout(() => {
                     this.openShoppingListModal();
                 }, 500);
