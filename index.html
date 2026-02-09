@@ -453,6 +453,8 @@
             <div id="med-list-pomeriggio" class="mb-6"></div>
             <div id="med-list-sera" class="mb-6"></div>
 
+            <div id="med-list-al bisogno" class="mb-6 border-t-2 border-dashed border-slate-200 pt-6"></div>
+
             <div id="med-empty-state" class="hidden flex flex-col items-center justify-center py-12 text-slate-400">
                 <i class="fa-solid fa-prescription-bottle-medical text-5xl mb-4 text-slate-200"></i>
                 <p>Nessun farmaco aggiunto.</p>
@@ -485,13 +487,23 @@
                     <i class="fa-solid fa-database text-blue-500"></i> Gestione Dati
                 </h3>
                 <div class="grid grid-cols-2 gap-3">
+                    <button onclick="app.openShoppingListModal()" class="col-span-2 flex items-center justify-center gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-colors group">
+                        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+                        <div class="text-left">
+                            <span class="block text-emerald-800 font-bold text-sm">Genera Lista Spesa</span>
+                            <span class="block text-emerald-600/70 text-[10px]">Farmaci in esaurimento</span>
+                        </div>
+                    </button>
+
                     <button onclick="app.triggerImport()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                         <i class="fa-solid fa-file-import text-blue-600 mb-2"></i>
-                        <span class="text-xs font-bold">Importa Backup</span>
+                        <span class="text-xs font-bold">Importa</span>
                     </button>
                     <button onclick="app.exportData()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                         <i class="fa-solid fa-download text-green-600 mb-2"></i>
-                        <span class="text-xs font-bold">Esporta Backup</span>
+                        <span class="text-xs font-bold">Backup</span>
                     </button>
                 </div>
                 <button onclick="app.resetAllData()" class="w-full mt-4 bg-red-50 text-red-600 py-3 rounded-xl font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2">
@@ -923,10 +935,14 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Fascia Oraria (Raggruppamento)</label>
-                    <div class="grid grid-cols-3 gap-2">
+                    <div class="grid grid-cols-2 gap-2">
                         <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-val="Mattina"><i class="fa-solid fa-sun mr-2 text-orange-500"></i> Mattina</button>
                         <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-val="Pomeriggio"><i class="fa-solid fa-cloud-sun mr-2 text-yellow-500"></i> Pom.</button>
                         <button onclick="app.toggleTimeSelection('Sera', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-val="Sera"><i class="fa-solid fa-moon mr-2 text-indigo-500"></i> Sera</button>
+
+                        <button onclick="app.toggleTimeSelection('Al Bisogno', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm font-bold text-slate-600" data-val="Al Bisogno">
+                            <i class="fa-solid fa-kit-medical mr-2 text-red-500"></i> Al Bisogno
+                        </button>
                     </div>
                 </div>
 
@@ -980,6 +996,37 @@
         <p id="loading-text" class="font-bold">Analisi in corso...</p>
     </div>
 
+    <!-- Lista Spesa -->
+    <div id="modal-shopping-list" class="hidden fixed inset-0 modal-overlay z-[90] flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-0 overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-4 bg-emerald-50 border-b border-emerald-100 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                        <i class="fa-solid fa-prescription-bottle-medical"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">Da Acquistare</h3>
+                        <p class="text-xs text-slate-500">Farmaci sotto soglia minima</p>
+                    </div>
+                </div>
+                <button onclick="app.closeModal('modal-shopping-list')" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/50 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div id="shopping-list-content" class="p-4 overflow-y-auto custom-scrollbar space-y-3 bg-slate-50/50 flex-1">
+            </div>
+
+            <div class="p-4 border-t border-slate-100 bg-white grid grid-cols-2 gap-3 shrink-0">
+                <button onclick="app.copyShoppingList()" class="flex items-center justify-center gap-2 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all active:scale-95">
+                    <i class="fa-regular fa-copy"></i> Copia
+                </button>
+                <button onclick="app.shareShoppingList()" class="flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-md hover:bg-emerald-700 transition-all active:scale-95">
+                    <i class="fa-solid fa-share-nodes"></i> Condividi
+                </button>
+            </div>
+        </div>
+    </div>
     <script>
         const app = {
             data: { lastOpened: null, profiles: [], apiKey: "" },
@@ -1932,11 +1979,11 @@
                 this.toggleLoading(true, "Analisi farmaco...");
 
                 const prompt = `Analizza questa immagine di un farmaco. Restituisci un oggetto JSON con questi campi precisi:
-                                            - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
-                                            - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
-                                            - 'dose': lascia questo campo vuoto (stringa vuota "").
-                                            - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
-                                            Rispondi solo con il JSON.`;
+                                                        - 'name': il nome commerciale seguito dalla concentrazione (es. 'Pantoprazolo Teva 40mg').
+                                                        - 'category': la forma farmaceutica o categoria (es. 'compresse gastroresistenti', 'bustine', 'sciroppo').
+                                                        - 'dose': lascia questo campo vuoto (stringa vuota "").
+                                                        - 'usage': a cosa serve il farmaco (es. 'Trattamento ulcere').
+                                                        Rispondi solo con il JSON.`;
 
                 const payload = {
                     contents: [{
@@ -2373,16 +2420,16 @@
                     }
 
                     div.innerHTML = `
-                                                    <div class="flex items-center gap-3">
-                                                        <div class="w-10 h-10 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50">
-                                                            ${iconContent}
-                                                        </div>
-                                                        <div>
-                                                            <h3 class="font-bold text-slate-800">${p.name}</h3>
-                                                            <p class="text-xs text-slate-500">${total} farmaci</p>
-                                                        </div>
-                                                    </div>
-                                                    <span class="text-sm font-bold ${percClass}">${perc}%</span>`;
+                                                                <div class="flex items-center gap-3">
+                                                                    <div class="w-10 h-10 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50">
+                                                                        ${iconContent}
+                                                                    </div>
+                                                                    <div>
+                                                                        <h3 class="font-bold text-slate-800">${p.name}</h3>
+                                                                        <p class="text-xs text-slate-500">${total} farmaci</p>
+                                                                    </div>
+                                                                </div>
+                                                                <span class="text-sm font-bold ${percClass}">${perc}%</span>`;
                     container.appendChild(div);
                 });
             },
@@ -2491,7 +2538,7 @@
                     specificDays: this.currentEditingMed ? this.currentEditingMed.specificDays : {}
                 };
 
-                // Imposta il mese di visualizzazione se non c'è 
+                // Imposta il mese di visualizzazione se non c'è
                 // oppure se la data selezionata è in un mese diverso da quello visualizzato
                 const startObj = this.parseLocalDate(startDate);
                 if (!this.currentTherapyMonth ||
@@ -2714,6 +2761,30 @@
                 this.renderMedications();
             },
 
+            takePrnMed(id) {
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                const med = profile.meds.find(m => m.id === id);
+                if (!med) return;
+
+                // Inizializza l'array dello storico se non esiste
+                if (!med.prnHistory) med.prnHistory = [];
+
+                // Aggiungi il timestamp di adesso
+                med.prnHistory.push(new Date().toISOString());
+
+                // Scala la scorta se gestita
+                if (med.boxQty > 0) {
+                    const dose = this.parseDose(med.dose);
+                    med.boxQty = Math.max(0, med.boxQty - dose);
+                }
+
+                this.saveData();
+                this.renderMedications();
+
+                // Feedback visivo rapido
+                this.showAlert("Registrato", `${med.name}: assunzione registrata.`);
+            },
+
             uncheckAllMeds() {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (profile) {
@@ -2747,7 +2818,7 @@
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (!profile) return;
                 document.getElementById('current-profile-name').textContent = profile.name;
-                const times = ['Mattina', 'Pomeriggio', 'Sera'];
+                const times = ['Mattina', 'Pomeriggio', 'Sera', 'Al Bisogno'];
                 let hasMeds = false;
                 let anyTaken = false;
 
@@ -2780,17 +2851,17 @@
                         let icon = time === 'Mattina' ? 'fa-sun text-orange-400' : (time === 'Pomeriggio' ? 'fa-cloud-sun text-yellow-500' : 'fa-moon text-indigo-400');
 
                         header.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
-                                <i class="fa-solid ${icon} text-lg"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
-                                <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
-                            </div>
-                        </div>
-                        <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
-                    `;
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                                            <i class="fa-solid ${icon} text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
+                                            <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
+                                        </div>
+                                    </div>
+                                    <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
+                                `;
                         container.appendChild(header);
 
                         // Contenitore Lista Farmaci
@@ -2852,27 +2923,27 @@
                             let therapyBadge = '';
                             if (therapy) {
                                 therapyBadge = `
-                        <div class="therapy-badge ${therapy.cls}">
-                            <span class="label">${therapy.label}</span>
-                            <span class="dot">•</span>
-                            <span class="sub">${therapy.sub}</span>
-                        </div>
-                    `;
+                                    <div class="therapy-badge ${therapy.cls}">
+                                        <span class="label">${therapy.label}</span>
+                                        <span class="dot">•</span>
+                                        <span class="sub">${therapy.sub}</span>
+                                    </div>
+                                `;
                             }
 
                             if (!isToday) {
                                 therapyBadge += `
-                        <div class="therapy-badge gray">
-                            <span class="label">Oggi non previsto</span>
-                        </div>
-                    `;
+                                    <div class="therapy-badge gray">
+                                        <span class="label">Oggi non previsto</span>
+                                    </div>
+                                `;
                             }
 
                             // C. Aggiorna il badge visivo usando effectiveTime
                             const timeDisplay = effectiveTime
                                 ? `<span class="text-xs font-bold ${isLocked ? 'text-orange-500' : 'text-slate-600'} bg-white px-1.5 py-0.5 rounded border mr-2 flex-shrink-0">
-                                        ${isLocked ? '<i class="fa-solid fa-lock mr-1"></i>' : ''}${effectiveTime}
-                                   </span>`
+                                                    ${isLocked ? '<i class="fa-solid fa-lock mr-1"></i>' : ''}${effectiveTime}
+                                               </span>`
                                 : '';
 
                             const noteBtn = med.usage ?
@@ -2882,33 +2953,73 @@
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${visualClass}`;
 
                             // HTML Card: Aggiunto timeDisplay e attributo disabled
-                            card.innerHTML = `
-                    <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
-                        <input type="checkbox" class="med-checkbox"
-                        ${med.taken ? 'checked' : ''}
-                        ${isLocked || !isToday ? 'disabled' : ''} 
-                        onchange="app.toggleMedication('${med.id}')">
-                        
-                        <div class="overflow-hidden ${med.taken ? 'opacity-40' : ''} ${!isLocked && isToday ? 'cursor-pointer' : ''}">
-                            <div class="flex items-center">
-                                ${timeDisplay}
-                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                            if (time === 'Al Bisogno') {
+                                // Calcola quante volte è stato preso OGGI
+                                const todayISO = new Date().toISOString().slice(0, 10);
+                                const countToday = (med.prnHistory || []).filter(date => date.startsWith(todayISO)).length;
+
+                                // Stile Card specifico (Rosso/Viola)
+                                card.className = `p-4 rounded-xl card-shadow border border-slate-200 bg-white mb-3 flex items-center justify-between`;
+
+                                card.innerHTML = `
+                        <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                            <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center font-bold text-lg border border-red-100 shrink-0">
+                                ${countToday}
                             </div>
-                            <div class="flex flex-col">
-                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                            
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
                                 <div class="flex flex-col mt-0.5">
-                                    ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                    ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
-                                    ${therapyBadge}
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase">
+                                        Assunzioni oggi: <span class="text-slate-700">${countToday}</span>
+                                    </p>
+                                    ${med.dose ? `<p class="text-xs text-slate-500">${med.dose}</p>` : ''}
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="flex items-center card-actions">
-                        ${noteBtn}
-                        <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2" title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2" title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>`;
+
+                        <div class="flex items-center gap-2">
+                             <button onclick="app.takePrnMed('${med.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> Prendi
+                            </button>
+                            <div class="flex flex-col gap-1 ml-1 border-l pl-2 border-slate-100">
+                                <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 text-xs"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 text-xs"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                            }
+                            // --- GESTIONE STANDARD (MATTINA/POM/SERA) ---
+                            else {
+                                // ... (Incolla qui tutto il vecchio codice innerHTML per le card standard che avevi prima) ...
+                                // Assicurati di chiudere la parentesi graffa dell'else!
+                                card.innerHTML = `
+                        <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
+                            <input type="checkbox" class="med-checkbox"
+                            ${med.taken ? 'checked' : ''}
+                            ${isLocked || !isToday ? 'disabled' : ''} 
+                            onchange="app.toggleMedication('${med.id}')">
+                            
+                            <div class="overflow-hidden ${med.taken ? 'opacity-40' : ''} ${!isLocked && isToday ? 'cursor-pointer' : ''}">
+                                <div class="flex items-center">
+                                    ${timeDisplay}
+                                    <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                </div>
+                                <div class="flex flex-col">
+                                    ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                    <div class="flex flex-col mt-0.5">
+                                        ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                        ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                        ${therapyBadge}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center card-actions">
+                            ${noteBtn}
+                            <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2" title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2" title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>`;
+                            }
 
                             listContainer.appendChild(card);
                         });
@@ -2995,6 +3106,132 @@
                         this.openProfile(this.data.profiles[currentIndex + 1].id);
                     }
                 }
+            },
+
+            // --- GESTIONE LISTA SPESA ---
+
+            openShoppingListModal() {
+                const container = document.getElementById('shopping-list-content');
+                container.innerHTML = '';
+
+                let lowStockMeds = [];
+
+                // 1. Cerca farmaci sotto scorta in tutti i profili
+                this.data.profiles.forEach(profile => {
+                    profile.meds.forEach(med => {
+                        // Consideriamo solo farmaci con una soglia impostata (>0)
+                        if (med.minQty > 0 && med.boxQty <= med.minQty) {
+                            // Evita duplicati (se stesso farmaco preso più volte al giorno, appare una volta sola)
+                            const exists = lowStockMeds.find(m => m.sharedId === med.sharedId);
+                            if (!exists) {
+                                lowStockMeds.push({
+                                    name: med.name,
+                                    category: med.category || '',
+                                    dose: med.dose || '',
+                                    qty: med.boxQty,
+                                    min: med.minQty,
+                                    profile: profile.name
+                                });
+                            }
+                        }
+                    });
+                });
+
+                // 2. Gestione Stato Vuoto
+                if (lowStockMeds.length === 0) {
+                    container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-10 text-center opacity-60">
+                <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4 text-emerald-500 text-3xl">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700">Tutto ok!</h3>
+                <p class="text-sm text-slate-500 px-6">Non ci sono farmaci sotto la soglia minima di scorta.</p>
+            </div>
+        `;
+                } else {
+                    // 3. Generazione Lista
+                    lowStockMeds.forEach(item => {
+                        const isCritical = item.qty <= 0;
+                        const statusColor = isCritical ? 'bg-red-50 border-red-100' : 'bg-orange-50 border-orange-100';
+                        const iconColor = isCritical ? 'text-red-500' : 'text-orange-500';
+                        const iconClass = isCritical ? 'fa-triangle-exclamation' : 'fa-box-open';
+
+                        const div = document.createElement('div');
+                        div.className = `p-3 rounded-xl border ${statusColor} flex items-center justify-between shadow-sm`;
+                        div.innerHTML = `
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-10 h-10 rounded-full bg-white flex-shrink-0 flex items-center justify-center ${iconColor} text-lg shadow-sm">
+                        <i class="fa-solid ${iconClass}"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h4 class="font-bold text-slate-800 truncate">${item.name}</h4>
+                        <p class="text-[10px] text-slate-500 truncate">
+                            ${item.profile} • ${item.category} ${item.dose}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end pl-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Rimasti</span>
+                    <span class="text-lg font-bold ${iconColor}">${item.qty}</span>
+                </div>
+            `;
+                        container.appendChild(div);
+                    });
+                }
+
+                this.showModal('modal-shopping-list');
+            },
+
+            getShoppingListText() {
+                let text = "🛒 *LISTA FARMACI DA ACQUISTARE* 🛒\n\n";
+                let count = 0;
+
+                this.data.profiles.forEach(profile => {
+                    let profileMeds = [];
+                    profile.meds.forEach(med => {
+                        if (med.minQty > 0 && med.boxQty <= med.minQty) {
+                            // Controllo duplicati anche qui
+                            if (!profileMeds.find(m => m.sharedId === med.sharedId)) {
+                                profileMeds.push(med);
+                            }
+                        }
+                    });
+
+                    if (profileMeds.length > 0) {
+                        text += `👤 *${profile.name}*\n`;
+                        profileMeds.forEach(m => {
+                            count++;
+                            text += `- ${m.name}`;
+                            if (m.dose) text += ` (${m.dose})`;
+                            text += `\n  ⚠️ Rimasti: ${m.boxQty} (Min: ${m.minQty})\n`;
+                        });
+                        text += "\n";
+                    }
+                });
+
+                if (count === 0) return "Tutte le scorte sono sufficienti! ✅";
+
+                text += "--------------------------\nGenerato con MedicinePro";
+                return text;
+            },
+
+            shareShoppingList() {
+                const text = this.getShoppingListText();
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Lista Farmacia',
+                        text: text
+                    }).catch(console.error);
+                } else {
+                    this.copyShoppingList();
+                }
+            },
+
+            copyShoppingList() {
+                const text = this.getShoppingListText();
+                navigator.clipboard.writeText(text).then(() => {
+                    this.showAlert("Copiato", "Lista copiata negli appunti!");
+                });
             },
 
             setupManifest() {
