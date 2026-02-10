@@ -2313,11 +2313,21 @@
 
             showSettings() {
                 this.currentProfileId = null;
+
+                // 1. Nascondi Profili e Farmaci
                 document.getElementById('view-profiles').classList.add('hidden');
                 document.getElementById('view-medications').classList.add('hidden');
-                document.getElementById('view-settings').classList.remove('hidden');
+
+                // 2. Mostra Settings
+                const settingsView = document.getElementById('view-settings');
+                settingsView.classList.remove('hidden');
+
+                // 3. Mostra tasto indietro
                 document.getElementById('btn-back').classList.remove('hidden');
+
+                // 4. Carica dati e scrolla in cima
                 document.getElementById('input-settings-apikey').value = this.data.apiKey || "";
+                window.scrollTo(0, 0);
             },
 
             goToSettingsFromModal() {
@@ -2331,6 +2341,9 @@
                 this.data.apiKey = document.getElementById('input-settings-apikey').value.trim();
                 this.saveData();
                 this.showAlert("Successo", "Impostazioni salvate!");
+
+                // Aggiungi questa riga per tornare alla home dopo il salvataggio
+                this.goHome();
             },
 
             resetAllData() {
@@ -4137,10 +4150,19 @@
 
             // Funzione helper per tornare indietro (se non ce l'hai già)
             goHome() {
-                document.getElementById('view-medications').classList.add('hidden');
-                document.getElementById('view-profiles').classList.remove('hidden');
-                // Mostra il vecchio pulsante back se serve altrove, oppure lascialo nascosto
                 this.currentProfileId = null;
+
+                // 1. Nascondi TUTTE le altre viste
+                document.getElementById('view-medications').classList.add('hidden');
+                document.getElementById('view-settings').classList.add('hidden'); // Fondamentale per chiudere impostazioni
+
+                // 2. Nascondi il pulsante indietro
+                document.getElementById('btn-back').classList.add('hidden');
+
+                // 3. Mostra la vista Profili (la tua Home)
+                document.getElementById('view-profiles').classList.remove('hidden');
+
+                // 4. Aggiorna
                 this.renderProfiles();
             },
 
