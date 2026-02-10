@@ -822,16 +822,34 @@
                     <p class="text-xs font-bold text-emerald-700 uppercase mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-boxes-stacked text-emerald-600"></i> Gestione Scorte
                     </p>
+
+                    <div class="mb-3 pb-3 border-b border-emerald-200/50">
+                        <p class="text-[9px] font-bold text-emerald-600/70 uppercase mb-1">Calcolo Rapido (Opzionale)</p>
+                        <div class="flex items-end gap-2">
+                            <div class="flex-1">
+                                <label class="block text-[9px] font-semibold text-slate-500 mb-0.5">N° Blister</label>
+                                <input id="med-blister-count" type="number" min="0" oninput="app.calculateTotalStock()" class="w-full border border-emerald-200 rounded-lg p-2 text-sm focus:border-emerald-500 outline-none bg-white text-center" placeholder="0">
+                            </div>
+                            <span class="mb-2 text-slate-400 text-xs"><i class="fa-solid fa-xmark"></i></span>
+                            <div class="flex-1">
+                                <label class="block text-[9px] font-semibold text-slate-500 mb-0.5">Comp./Blister</label>
+                                <input id="med-pills-per-blister" type="number" min="0" oninput="app.calculateTotalStock()" class="w-full border border-emerald-200 rounded-lg p-2 text-sm focus:border-emerald-500 outline-none bg-white text-center" placeholder="0">
+                            </div>
+                            <span class="mb-2 text-emerald-500 text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">In Scatola</label>
-                            <input id="med-box-qty" type="number" min="0" step="0.5" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none" placeholder="0">
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Totale In Scatola</label>
+                            <input id="med-box-qty" type="number" min="0" step="0.5" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white transition-colors" placeholder="0">
                         </div>
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-500 mb-1">Soglia Avviso</label>
-                            <input id="med-min-qty" type="number" min="0" step="1" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none" placeholder="0">
+                            <input id="med-min-qty" type="number" min="0" step="1" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white" placeholder="0">
                         </div>
                     </div>
+
                     <div class="flex justify-end mt-3 border-t border-emerald-200/50 pt-2">
                         <button onclick="app.resetStocks()" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 transition-colors uppercase tracking-wider">
                             <i class="fa-solid fa-eraser"></i> Resetta scorte
@@ -2604,6 +2622,9 @@
             resetMedModal() {
                 document.getElementById('med-modal-title').textContent = "Nuovo Farmaco";
                 document.getElementById('input-med-name').value = '';
+                // MODIFICA QUI: Reset dei nuovi campi blister
+                document.getElementById('med-blister-count').value = '';
+                document.getElementById('med-pills-per-blister').value = '';
                 document.getElementById('input-med-category').value = '';
                 document.getElementById('input-med-dose').value = '';
                 document.getElementById('input-med-usage').value = '';
@@ -2753,6 +2774,10 @@
                 const boxQty = parseFloat(document.getElementById('med-box-qty').value) || 0;
                 const minQty = parseFloat(document.getElementById('med-min-qty').value) || 0;
 
+                // NUOVO: Leggi i valori dei blister
+                const blisterCount = parseFloat(document.getElementById('med-blister-count').value) || 0;
+                const pillsPerBlister = parseFloat(document.getElementById('med-pills-per-blister').value) || 0;
+
                 if (!name || this.selectedTimes.length === 0) {
                     this.showAlert("Dati mancanti", "Inserisci almeno il Nome e l'Orario.");
                     return;
@@ -2835,6 +2860,8 @@
                                 taken: false,
                                 boxQty,
                                 minQty,
+                                blisterCount,
+                                pillsPerBlister,
                                 therapyEndedAlertShown: false,
                                 alertShown: false,
                                 specificDays: preservedSpecificDays // Importante propagare
@@ -2866,6 +2893,8 @@
                             taken: false,
                             boxQty,
                             minQty,
+                            blisterCount,
+                            pillsPerBlister,
                             therapyEndedAlertShown: false,
                             alertShown: false,
                             specificDays: {} // Inizializza vuoto
@@ -3294,23 +3323,24 @@
 
                 let hasAnyItem = false;
 
-                // --- SEZIONE DA ORDINARE (Raggruppata per Paziente) ---
+                // --- SEZIONE 1: DA ORDINARE (Raggruppata per Paziente) ---
                 this.data.profiles.forEach(profile => {
-                    // 1. Trova TUTTE le istanze da ordinare
+                    // 1. Trova TUTTE le istanze sotto scorta
                     const allMedsToOrder = profile.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && !m.isOrdered);
 
-                    // 2. RIMUOVI DUPLICATI (Es. Lasix Mattina e Lasix Sera -> Mostra solo Lasix)
+                    // 2. FILTRO DUPLICATI (Il cuore della correzione)
+                    // Usiamo un Set per tenere traccia degli ID già visti per questo profilo
                     const uniqueMedsToOrder = [];
                     const seenIds = new Set();
 
-                    allMedsToOrder.forEach(m => {
-                        if (!seenIds.has(m.sharedId)) {
-                            uniqueMedsToOrder.push(m);
-                            seenIds.add(m.sharedId);
+                    allMedsToOrder.forEach(med => {
+                        if (!seenIds.has(med.sharedId)) {
+                            uniqueMedsToOrder.push(med);
+                            seenIds.add(med.sharedId); // Segna questo farmaco come "visto"
                         }
                     });
 
-                    // Se ci sono farmaci (univoci) da ordinare
+                    // 3. Genera l'HTML solo se ci sono farmaci (univoci)
                     if (uniqueMedsToOrder.length > 0) {
                         hasAnyItem = true;
 
@@ -3323,11 +3353,11 @@
                         if (profile.doctor && profile.doctor.phoneWa) {
                             docInfo = `<span class="text-blue-500 font-medium text-[10px] ml-2"><i class="fa-solid fa-user-doctor mr-1"></i>${profile.doctor.name}</span>`;
 
-                            // Genera Messaggio WA (Senza duplicati e senza dosaggio)
+                            // Genera messaggio WhatsApp (usando la lista univoca)
                             let defaultMsg = `👋 Buongiorno Dott. ${profile.doctor.name || ''},\n`;
                             defaultMsg += `Sono ${profile.name}, avrei bisogno di ordinare i seguenti farmaci:\n\n`;
                             uniqueMedsToOrder.forEach(m => {
-                                defaultMsg += `- ${m.name}\n`;
+                                defaultMsg += `- ${m.name}\n`; // Solo nome
                             });
                             defaultMsg += `\nGrazie mille.`;
 
@@ -3360,7 +3390,7 @@
                 `;
                         }
 
-                        // Lista Visiva (Senza duplicati, senza dosaggio)
+                        // Genera Lista Visiva (usando la lista univoca)
                         let listHtml = '';
                         uniqueMedsToOrder.forEach(med => {
                             listHtml += `
@@ -3391,13 +3421,16 @@
                     }
                 });
 
-                // --- SEZIONE 2: FARMACI ORDINATI (Con filtro duplicati) ---
+                // --- SEZIONE 2: FARMACI GIÀ ORDINATI (Con Filtro Duplicati) ---
                 let orderedMeds = [];
-                const seenOrderedIds = new Set(); // Set per duplicati anche qui
+                const seenOrderedIds = new Set(); // Nuovo Set per evitare doppi anche qui
 
                 this.data.profiles.forEach(p => {
-                    const ord = p.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && m.isOrdered);
-                    ord.forEach(m => {
+                    // Prendi tutti quelli ordinati
+                    const allOrdered = p.meds.filter(m => m.minQty > 0 && m.boxQty <= m.minQty && m.isOrdered);
+
+                    allOrdered.forEach(m => {
+                        // Se non abbiamo già aggiunto questo ID alla lista visiva
                         if (!seenOrderedIds.has(m.sharedId)) {
                             orderedMeds.push({ ...m, pName: p.name, pId: p.id });
                             seenOrderedIds.add(m.sharedId);
@@ -3685,15 +3718,54 @@
             },
 
             restoreFromOrdered(medId) {
-                // Cerca il farmaco in tutti i profili per ripristinarlo
-                this.data.profiles.forEach(profile => {
-                    const med = profile.meds.find(m => m.id === medId);
-                    if (med) {
-                        med.isOrdered = false; // Rimuovi il flag
+                // 1. Trova il farmaco originale per ottenere il suo sharedId
+                let targetSharedId = null;
+
+                // Cerchiamo l'ID condiviso scandagliando i profili
+                for (const profile of this.data.profiles) {
+                    const found = profile.meds.find(m => m.id === medId);
+                    if (found) {
+                        targetSharedId = found.sharedId;
+                        break;
                     }
+                }
+
+                if (!targetSharedId) return;
+
+                // 2. Ripristina TUTTE le istanze con quello sharedId in TUTTI i profili
+                let restoredCount = 0;
+                this.data.profiles.forEach(profile => {
+                    profile.meds.forEach(med => {
+                        // Se ha lo stesso sharedId ed è marcato come ordinato -> Ripristina
+                        if (med.sharedId === targetSharedId && med.isOrdered) {
+                            med.isOrdered = false;
+                            restoredCount++;
+                        }
+                    });
                 });
+
+                // 3. Salva e Aggiorna
                 this.saveData();
-                this.openShoppingListModal(); // Aggiorna vista
+                this.openShoppingListModal(); // Ricarica la lista
+
+                // Feedback opzionale (se vuoi vedere quanti ne ha ripristinati in console)
+                console.log(`Ripristinati ${restoredCount} farmaci collegati.`);
+            },
+
+            calculateTotalStock() {
+                const blisters = parseFloat(document.getElementById('med-blister-count').value);
+                const pills = parseFloat(document.getElementById('med-pills-per-blister').value);
+
+                // Se entrambi i campi hanno un valore valido
+                if (!isNaN(blisters) && !isNaN(pills) && blisters > 0 && pills > 0) {
+                    const total = blisters * pills;
+                    document.getElementById('med-box-qty').value = total;
+
+                    // Piccolo effetto visivo sul campo totale
+                    const totalInput = document.getElementById('med-box-qty');
+                    totalInput.classList.add('bg-emerald-100');
+                    setTimeout(() => totalInput.classList.remove('bg-emerald-100'), 300);
+                }
             },
 
             setupManifest() {
