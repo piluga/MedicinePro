@@ -3543,7 +3543,7 @@
 
                             <div class="flex items-center gap-2 shrink-0">
                                 
-                                <button onclick="app.restoreFromOrdered('${m.id}')" class="w-9 h-9 rounded-lg bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-50 hover:text-red-500 active:scale-95 transition-all shadow-sm" title="Annulla Ordine">
+                                <button onclick="app.askConfirmRestore('${m.id}')" class="w-9 h-9 rounded-lg bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-50 hover:text-red-500 active:scale-95 transition-all shadow-sm" title="Annulla Ordine">
                                     <i class="fa-solid fa-rotate-left"></i>
                                 </button>
 
@@ -3957,6 +3957,37 @@
 
                 // Pulisci memoria temporanea
                 this.tempReceiveData = null;
+            },
+
+            // --- NUOVA FUNZIONE DI CONFERMA ANNULLAMENTO ---
+            askConfirmRestore(medId) {
+                // 1. Trova il nome del farmaco per un messaggio chiaro
+                let medName = "questo farmaco";
+                for (const p of this.data.profiles) {
+                    const found = p.meds.find(m => m.id === medId);
+                    if (found) {
+                        medName = found.name;
+                        break;
+                    }
+                }
+
+                // 2. Imposta Testi del Modale 'modal-confirm'
+                document.getElementById('confirm-title').textContent = "Annulla Ordine";
+                document.getElementById('confirm-message').innerHTML = `Vuoi rimuovere <b>${medName}</b> dai farmaci in arrivo?<br>Tornerà nella lista "Da Ordinare".`;
+
+                // 3. Configura il tasto "Conferma" (Sostituzione nodo per pulire eventi vecchi)
+                const btnYes = document.getElementById('confirm-btn-yes');
+                const newBtn = btnYes.cloneNode(true);
+                btnYes.parentNode.replaceChild(newBtn, btnYes);
+
+                // Assegna la nuova azione
+                newBtn.onclick = () => {
+                    this.restoreFromOrdered(medId); // Chiama la funzione originale
+                    this.closeModal('modal-confirm');
+                };
+
+                // 4. Mostra il modale
+                this.showModal('modal-confirm');
             },
 
             setupManifest() {
