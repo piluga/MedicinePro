@@ -2581,6 +2581,7 @@
             renderProfiles() {
                 const container = document.getElementById('profiles-list');
                 container.innerHTML = '';
+
                 if (this.data.profiles.length === 0) {
                     container.innerHTML = `<p class="text-center text-slate-400 py-10">Nessun profilo presente.</p>`;
                     return;
@@ -2603,6 +2604,9 @@
                     const taken = p.meds.filter(m => m.taken).length;
                     const perc = total === 0 ? 0 : Math.round((taken / total) * 100);
 
+                    // Controllo se il medico è stato inserito
+                    const hasDoctor = p.doctor && p.doctor.name && p.doctor.name.trim() !== '';
+
                     const div = document.createElement('div');
                     div.className = `${theme.bg} ${theme.border} p-4 rounded-xl card-shadow flex justify-between items-center cursor-pointer border hover:shadow-md transition-all`;
                     div.onclick = () => this.openProfile(p.id);
@@ -2616,23 +2620,41 @@
                         iconContent = p.name.charAt(0).toUpperCase();
                     }
 
+                    // --- DEFINIZIONE ELEMENTI DINAMICI ---
+
+                    // 1. Badge Medico (Visibile SOLO se c'è il dottore)
+                    // Cliccando l'icona si apre il modale medico
+                    const doctorBadge = hasDoctor ? `
+            <div onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" 
+                 class="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform z-10"
+                 title="Modifica Dottore">
+                <i class="fa-solid fa-user-doctor text-[10px] text-blue-500"></i>
+            </div>
+        ` : '';
+
+                    // 2. Pulsante Testo (Visibile SOLO se NON c'è il dottore)
+                    const doctorBtn = !hasDoctor ? `
+            <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm ml-2">
+                <i class="fa-solid fa-user-doctor mr-1"></i> Medico
+            </button>
+        ` : '';
+
+                    // --- COMPOSIZIONE HTML ---
                     div.innerHTML = `
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
-                                    ${iconContent}
-                                    ${p.doctor && p.doctor.name ? '<div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5"><i class="fa-solid fa-user-doctor text-xs text-green-500"></i></div>' : ''}
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-slate-800 text-lg leading-tight">${p.name}</h3>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <span class="text-xs text-slate-500">${total} farmaci</span>
-                                        <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm">
-                                            <i class="fa-solid fa-user-doctor mr-1"></i> Medico
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <span class="text-sm font-bold ${percClass}">${perc}%</span>`;
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
+                    ${iconContent}
+                    ${doctorBadge} </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 text-lg leading-tight">${p.name}</h3>
+                    <div class="flex items-center mt-1">
+                        <span class="text-xs text-slate-500">${total} farmaci</span>
+                        ${doctorBtn} </div>
+                </div>
+            </div>
+            <span class="text-sm font-bold ${percClass}">${perc}%</span>
+        `;
+
                     container.appendChild(div);
                 });
             },
