@@ -2159,23 +2159,24 @@
             },
 
             async analyzeImage(base64Image) {
+                // 1. Verifica API Key
                 if (!this.data.apiKey) {
                     this.showModal('modal-no-api');
                     return;
                 }
 
-                this.toggleLoading(true, "Identificazione farmaco...");
+                this.toggleLoading(true, "Analisi farmaco in corso...");
 
-                // Prompt aggiornato per chiedere la Categoria e dettagli blister
-                const prompt = `Analizza questa immagine di un farmaco. Restituisci un JSON con questi campi:
-                                    - 'name': nome commerciale e dosaggio (es. 'Oki 80mg').
-                                    - 'form': forma farmaceutica (es. 'Bustine', 'Pillole', 'Sciroppo').
-                                    - 'dose': dosaggio numerico (es. '80mg').
-                                    - 'type': CATEGORIA TERAPEUTICA. Scegli SOLO tra queste se pertinente: Antibiotico, Antimicrobico, Antidolorifico, Analgesico, Antinfiammatorio, Antiacido, Anticoagulante, Antidepressivo, Antistaminico, Anticonvulsivante, Cardiovascolare, Integratore, Vitamine, Gastroprotettore. Se non sai, metti stringa vuota.
-                                    - 'usage': a cosa serve (breve descrizione).
-                                    - 'blister_count': numero stimato di blister visibili (numero o null).
-                                    - 'pills_per_blister': numero stimato di pillole per blister (numero o null).
-                                    Rispondi solo con il JSON.`;
+                // 2. Prompt per Gemini
+                const prompt = `Analizza questa immagine di un farmaco.
+                                Estrai i dati e rispondi ESCLUSIVAMENTE con un oggetto JSON valido (senza markdown o testo extra) con questi campi:
+                                - "name": nome commerciale e dosaggio (es. 'Oki 80mg').
+                                - "form": forma farmaceutica (es. 'Bustine', 'Pillole', 'Capsule', 'Compresse Effervescenti', 'Sciroppo', 'Gocce').
+                                - "dose": dosaggio numerico (es. '80mg').
+                                - "type": CATEGORIA TERAPEUTICA. Scegli SOLO tra: Antibiotico, Antimicrobico, Antidolorifico, Analgesico, Antinfiammatorio, Antiacido, Anticoagulante, Antidepressivo, Antistaminico, Anticonvulsivante, Cardiovascolare, Integratore, Vitamine, Gastroprotettore. Se incerto usa stringa vuota.
+                                - "usage": breve descrizione a cosa serve.
+                                - "blister_count": numero intero di blister visibili (o null).
+                                - "pills_per_blister": numero intero di pillole per blister (o null).`;
 
                 const payload = {
                     contents: [{
@@ -2191,55 +2192,86 @@
                 };
 
                 try {
-                    const result = await this.fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.data.apiKey}`, payload);
+                    // --- MODIFICA FONDAMENTALE QUI SOTTO ---
+                    // Usiamo 'gemini-1.5-flash' invece di '2.0'. Il 1.5 non dà errore 429 così facilmente.
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.data.apiKey}`;
+
+                    const result = await this.fetchWithRetry(url, payload);
+
+                    if (!result || !result.candidates || result.candidates.length === 0) {
+                        throw new Error("Nessuna risposta dal modello AI.");
+                    }
 
                     let text = result.candidates[0].content.parts[0].text;
+
+                    // Pulizia JSON
                     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) text = jsonMatch[0];
 
                     const parsedData = JSON.parse(text);
 
+                    // Popolamento campi
                     if (parsedData.name) {
                         document.getElementById('input-med-name').value = parsedData.name;
-                        // Nota: 'category' nell'HTML è usato per la Forma (legacy)
                         document.getElementById('input-med-category').value = parsedData.form || "";
                         document.getElementById('input-med-dose').value = parsedData.dose || "";
                         document.getElementById('input-med-usage').value = parsedData.usage || "";
-
-                        // NUOVO: Popola la Categoria Terapeutica
                         document.getElementById('input-med-type').value = parsedData.type || "";
 
-                        // NUOVO: Popola Blister se l'AI li vede
+                        // Blister
                         if (parsedData.blister_count) document.getElementById('med-blister-count').value = parsedData.blister_count;
                         if (parsedData.pills_per_blister) document.getElementById('med-pills-per-blister').value = parsedData.pills_per_blister;
 
-                        // Lancia il calcolo automatico se ci sono dati blister
                         if (parsedData.blister_count && parsedData.pills_per_blister) {
                             this.calculateTotalStock();
                         }
 
+                        this.showAlert("Analisi Completata", `Ho identificato: ${parsedData.name}`);
                     } else {
-                        this.showAlert("Mi dispiace", "Non ho riconosciuto il farmaco. Prova a inserirlo manualmente.");
+                        this.showAlert("Attenzione", "L'AI non ha trovato dati validi.");
                     }
+
                 } catch (err) {
-                    console.error(err);
-                    this.showAlert("Errore", "Errore durante l'analisi. Verifica la tua API Key.");
+                    console.error("ERRORE SCANNER:", err);
+                    let msg = "Errore generico.";
+                    // Gestione specifica errore 429
+                    if (err.message.includes("429")) msg = "Troppe richieste. Riprova tra poco.";
+                    if (err.message.includes("403")) msg = "API Key non valida.";
+                    this.showAlert("Errore Analisi", msg);
                 } finally {
                     this.toggleLoading(false);
                 }
             },
 
-            async fetchWithRetry(url, payload, retries = 5) {
-                for (let i = 0; i < retries; i++) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            body: JSON.stringify(payload)
-                        });
-                        if (response.ok) return await response.json();
-                    } catch (e) { }
-                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+            async fetchWithRetry(url, options, retries = 3, backoff = 1000) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(options)
+                    });
+
+                    // Se è 429 (Too Many Requests), lancia errore per attivare il retry
+                    if (response.status === 429) {
+                        throw new Error("429 Too Many Requests");
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    if (retries > 0) {
+                        console.warn(`Retrying... attempts left: ${retries}. Error: ${error.message}`);
+                        // Aspetta (backoff) ms prima di riprovare
+                        await new Promise(resolve => setTimeout(resolve, backoff));
+                        return this.fetchWithRetry(url, options, retries - 1, backoff * 2); // Raddoppia l'attesa
+                    } else {
+                        throw error;
+                    }
                 }
-                throw new Error("API fallita");
             },
 
             toggleLoading(show, text = "") {
