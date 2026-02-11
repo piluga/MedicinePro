@@ -3848,30 +3848,33 @@
                     if (med.isOTCOrdered) {
                         const qty = med.otcOrderQty || 1;
 
-                        // --- LIMITAZIONE TESTO ---
-                        // Se il nome è più lungo di 18 caratteri, lo taglia e aggiunge "..."
+                        // (Il codice per limitare la lunghezza del nome displayName rimane qui sopra invariato)
                         let displayName = med.name;
-                        if (displayName.length > 18) {
-                            displayName = displayName.substring(0, 18) + '...';
+                        if (displayName.length > 28) {
+                            displayName = displayName.substring(0, 28) + '...';
                         }
-                        // -------------------------
 
                         hasOrdered = true;
                         const div = document.createElement('div');
                         div.className = "bg-purple-50 border border-purple-200 rounded-xl p-3 flex justify-between items-center";
+
+                        // MODIFICA QUI SOTTO:
                         div.innerHTML = `
                     <div class="flex items-center gap-3 overflow-hidden">
                         <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
                             <i class="fa-solid fa-basket-shopping"></i>
                         </div>
                         <div class="truncate">
-                            <h4 class="font-bold text-slate-800 text-sm truncate flex items-center gap-2">
-                                <span>${displayName}</span>
-                                <span class="min-w-[20px] h-5 px-1 inline-flex items-center justify-center rounded-md bg-blue-50 text-blue-700 border-blue-100 text-[10px] font-black shrink-0 shadow-sm">
-                                    ${qty}
-                                </span>
+                            <h4 class="font-bold text-slate-800 text-sm truncate">
+                                ${displayName}
                             </h4>
-                            <p class="text-[10px] text-purple-600 font-bold uppercase">Ordine Manuale</p>
+                            
+                            <p class="text-[10px] text-purple-600 font-bold uppercase flex items-center gap-2">
+                                Ordine Manuale
+                                <span class="px-1.5 py-0.5 rounded-md bg-white border border-purple-200 text-purple-600 text-[10px] font-black shadow-sm">
+                                    x${qty}
+                                </span>
+                            </p>
                         </div>
                     </div>
                     <div class="flex gap-2 shrink-0">
@@ -3884,6 +3887,7 @@
                     </div>
                 `;
                         orderedContainer.appendChild(div);
+
                     } else {
                         // --- SEZIONE: DISPONIBILI PER L'ORDINE ---
                         const div = document.createElement('div');
@@ -4738,3 +4742,4 @@
     </script>
 </body>
 </html>
+
