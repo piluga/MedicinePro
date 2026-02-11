@@ -518,7 +518,7 @@
                 <button onclick="app.resetAllData()" class="w-full mt-6 bg-red-50 text-red-600 py-3 rounded-xl font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2">
                     <i class="fa-solid fa-triangle-exclamation"></i> Resetta tutti i dati
                 </button>
-            </div>>
+            </div>
         </section>
     </main>
 
@@ -697,57 +697,112 @@
     <!-- ALTRI MODALI -->
     <!-- MODALE AGGIUNGI PROFILO -->
     <div id="modal-add-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 class="text-xl font-bold mb-4">Nuovo Profilo</h3>
 
-            <p class="text-xs text-slate-500 font-bold uppercase mb-2">Scegli Avatar</p>
+            <p class="text-xs text-slate-500 font-bold uppercase mb-2">Scegli Avatar (Definisce il Sesso)</p>
             <div class="grid grid-cols-4 gap-3 mb-4">
-                <button onclick="app.selectAvatar('man')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="man">
-                    <i class="fa-solid fa-person"></i>
-                </button>
-                <button onclick="app.selectAvatar('woman')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="woman">
-                    <i class="fa-solid fa-person-dress"></i>
-                </button>
-                <button onclick="app.selectAvatar('dog')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="dog">
-                    <i class="fa-solid fa-dog"></i>
-                </button>
-                <button onclick="app.selectAvatar('cat')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="cat">
-                    <i class="fa-solid fa-cat"></i>
-                </button>
+                <button onclick="app.selectAvatar('man')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="man" title="Uomo (M)"><i class="fa-solid fa-person"></i></button>
+                <button onclick="app.selectAvatar('woman')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="woman" title="Donna (F)"><i class="fa-solid fa-person-dress"></i></button>
+                <button onclick="app.selectAvatar('dog')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="dog"><i class="fa-solid fa-dog"></i></button>
+                <button onclick="app.selectAvatar('cat')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="cat"><i class="fa-solid fa-cat"></i></button>
             </div>
 
-            <p class="text-xs text-slate-500 font-bold uppercase mb-2">Nome</p>
-            <input type="text" id="input-profile-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Mario Rossi">
-            <div class="flex justify-end gap-3 mt-6">
-                <button onclick="app.closeModal('modal-add-profile')" class="px-4 py-2 text-slate-500">Annulla</button>
-                <button onclick="app.createProfile()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium">Crea</button>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Nome e Cognome *</label>
+                    <input type="text" id="input-profile-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold" placeholder="Es. Mario Rossi">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Nickname</label>
+                        <input type="text" id="input-profile-nickname" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. Nonno">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Data di Nascita</label>
+                        <input type="date" id="input-profile-dob" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Indirizzo</label>
+                    <input type="text" id="input-profile-address" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Via Roma 1...">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Luogo di Nascita</label>
+                    <input type="text" id="input-profile-birthplace" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Comune (es. Milano)">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Codice Fiscale</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="input-profile-cf" class="flex-1 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono uppercase tracking-widest text-slate-700 font-bold" placeholder="CODICE...">
+                        <button onclick="app.generateFiscalCode('add')" class="px-3 bg-slate-800 text-white rounded-lg text-xs font-bold shadow hover:bg-slate-700 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[60px]">
+                            <i class="fa-solid fa-wand-magic-sparkles mb-1 text-yellow-400"></i> Genera
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+                <button onclick="app.closeModal('modal-add-profile')" class="px-4 py-2 text-slate-500 text-sm font-bold">Annulla</button>
+                <button onclick="app.createProfile()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow hover:bg-blue-700 transition-colors">Crea Profilo</button>
             </div>
         </div>
     </div>
 
     <!-- MODALE MODIFICA PROFILO (Aggiornato con Avatar ed Elimina) -->
     <div id="modal-edit-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 class="text-xl font-bold mb-4">Modifica Profilo</h3>
 
-            <p class="text-xs text-slate-500 font-bold uppercase mb-2">Scegli Avatar</p>
+            <p class="text-xs text-slate-500 font-bold uppercase mb-2">Avatar (Definisce il Sesso)</p>
             <div class="grid grid-cols-4 gap-3 mb-4">
-                <button onclick="app.selectAvatar('man')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="man">
-                    <i class="fa-solid fa-person"></i>
-                </button>
-                <button onclick="app.selectAvatar('woman')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="woman">
-                    <i class="fa-solid fa-person-dress"></i>
-                </button>
-                <button onclick="app.selectAvatar('dog')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="dog">
-                    <i class="fa-solid fa-dog"></i>
-                </button>
-                <button onclick="app.selectAvatar('cat')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="cat">
-                    <i class="fa-solid fa-cat"></i>
-                </button>
+                <button onclick="app.selectAvatar('man')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="man"><i class="fa-solid fa-person"></i></button>
+                <button onclick="app.selectAvatar('woman')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="woman"><i class="fa-solid fa-person-dress"></i></button>
+                <button onclick="app.selectAvatar('dog')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="dog"><i class="fa-solid fa-dog"></i></button>
+                <button onclick="app.selectAvatar('cat')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="cat"><i class="fa-solid fa-cat"></i></button>
             </div>
 
-            <p class="text-xs text-slate-500 font-bold uppercase mb-2">Nome</p>
-            <input type="text" id="input-edit-profile-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Nome e Cognome</label>
+                    <input type="text" id="input-edit-profile-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Nickname</label>
+                        <input type="text" id="input-edit-profile-nickname" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Data di Nascita</label>
+                        <input type="date" id="input-edit-profile-dob" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Indirizzo</label>
+                    <input type="text" id="input-edit-profile-address" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Luogo di Nascita</label>
+                    <input type="text" id="input-edit-profile-birthplace" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Codice Fiscale</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="input-edit-profile-cf" class="flex-1 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono uppercase tracking-widest text-slate-600 font-bold">
+                        <button onclick="app.generateFiscalCode('edit')" class="px-3 bg-slate-800 text-white rounded-lg text-xs font-bold shadow hover:bg-slate-700 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[60px]">
+                            <i class="fa-solid fa-wand-magic-sparkles mb-1 text-yellow-400"></i> Genera
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
                 <button onclick="app.deleteCurrentProfile()" class="text-red-500 text-xs px-3 py-2 border border-red-200 rounded-lg hover:bg-red-50 flex items-center gap-1 transition-all">
@@ -755,8 +810,8 @@
                 </button>
 
                 <div class="flex gap-2">
-                    <button onclick="app.closeModal('modal-edit-profile')" class="px-4 py-2 text-slate-500 font-bold">Annulla</button>
-                    <button onclick="app.saveEditedProfile()" class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold shadow-md hover:bg-blue-700">Salva</button>
+                    <button onclick="app.closeModal('modal-edit-profile')" class="px-4 py-2 text-slate-500 font-bold text-sm">Annulla</button>
+                    <button onclick="app.saveEditedProfile()" class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all text-sm">Salva</button>
                 </div>
             </div>
         </div>
@@ -2597,20 +2652,44 @@
 
             createProfile() {
                 const name = document.getElementById('input-profile-name').value.trim();
-                if (!name) return;
+                const nickname = document.getElementById('input-profile-nickname').value.trim();
+                const dob = document.getElementById('input-profile-dob').value; // Data di nascita ISO (YYYY-MM-DD)
+                const address = document.getElementById('input-profile-address').value.trim();
+                const birthplace = document.getElementById('input-profile-birthplace').value.trim();
+                const cf = document.getElementById('input-profile-cf').value.trim().toUpperCase();
+
+                if (!name) {
+                    this.showAlert("Attenzione", "Il nome è obbligatorio.");
+                    return;
+                }
+
+                // Calcolo età approssimativa per visualizzazione (Opzionale)
+                let age = "";
+                if (dob) {
+                    const diff = Date.now() - new Date(dob).getTime();
+                    age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+                }
 
                 const themeIndex = this.data.profiles.length % this.profileThemes.length;
 
                 this.data.profiles.push({
                     id: this.generateId(),
-                    name,
+                    name, nickname, dob, age, address, birthplace, cf,
                     meds: [],
                     themeIndex,
                     avatar: this.newProfileAvatar
                 });
 
                 this.saveData();
+
+                // Reset e chiusura
                 document.getElementById('input-profile-name').value = '';
+                document.getElementById('input-profile-nickname').value = '';
+                document.getElementById('input-profile-dob').value = '';
+                document.getElementById('input-profile-address').value = '';
+                document.getElementById('input-profile-birthplace').value = '';
+                document.getElementById('input-profile-cf').value = '';
+
                 this.closeModal('modal-add-profile');
                 this.renderProfiles();
             },
@@ -2618,23 +2697,65 @@
             openEditProfileModal() {
                 const p = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (p) {
-                    document.getElementById('input-edit-profile-name').value = p.name;
-                    // Seleziona l'avatar corrente o resettalo
-                    this.selectAvatar(p.avatar || null);
+                    // Carica i dati nei campi edit
+                    document.getElementById('input-edit-profile-name').value = p.name || '';
+                    document.getElementById('input-edit-profile-nickname').value = p.nickname || '';
+                    document.getElementById('input-edit-profile-dob').value = p.dob || ''; // Data Nascita
+                    document.getElementById('input-edit-profile-address').value = p.address || '';
+                    document.getElementById('input-edit-profile-birthplace').value = p.birthplace || '';
+                    document.getElementById('input-edit-profile-cf').value = p.cf || '';
+
+                    // Imposta visualmente l'avatar E aggiorna la variabile interna per il calcolo del sesso
+                    this.selectAvatar(p.avatar || 'man');
+
                     this.showModal('modal-edit-profile');
                 }
             },
 
             saveEditedProfile() {
-                const newName = document.getElementById('input-edit-profile-name').value.trim();
                 const p = this.data.profiles.find(x => x.id === this.currentProfileId);
-                if (p && newName) {
-                    p.name = newName;
-                    p.avatar = this.newProfileAvatar; // Salva il nuovo avatar
-                    this.saveData();
-                    this.renderMedications();
-                    this.closeModal('modal-edit-profile');
+                if (!p) return;
+
+                // Leggi i valori
+                const newName = document.getElementById('input-edit-profile-name').value.trim();
+                const newNickname = document.getElementById('input-edit-profile-nickname').value.trim();
+                const newDob = document.getElementById('input-edit-profile-dob').value;
+                const newAddress = document.getElementById('input-edit-profile-address').value.trim();
+                const newBirthplace = document.getElementById('input-edit-profile-birthplace').value.trim();
+                const newCf = document.getElementById('input-edit-profile-cf').value.trim().toUpperCase();
+
+                if (!newName) {
+                    this.showAlert("Errore", "Il nome non può essere vuoto.");
+                    return;
                 }
+
+                // Calcolo età (opzionale, per coerenza coi dati)
+                let newAge = "";
+                if (newDob) {
+                    const diff = Date.now() - new Date(newDob).getTime();
+                    newAge = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+                }
+
+                // Aggiorna Oggetto
+                p.name = newName;
+                p.nickname = newNickname;
+                p.dob = newDob;
+                p.age = newAge; // Aggiorniamo anche l'età calcolata
+                p.address = newAddress;
+                p.birthplace = newBirthplace;
+                p.cf = newCf;
+                p.avatar = this.newProfileAvatar;
+
+                this.saveData();
+
+                // Aggiorna UI
+                // Usa il nickname se c'è, altrimenti il nome (come da tua logica precedente)
+                const displayName = (p.nickname && p.nickname.trim() !== '') ? p.nickname : p.name;
+                document.getElementById('current-profile-name').textContent = displayName;
+
+                this.renderProfiles();
+                this.closeModal('modal-edit-profile');
+                this.showAlert("Salvato", "Profilo aggiornato.");
             },
 
             deleteCurrentProfile() {
@@ -2671,9 +2792,11 @@
                     const total = p.meds.length;
                     const taken = p.meds.filter(m => m.taken).length;
                     const perc = total === 0 ? 0 : Math.round((taken / total) * 100);
-
-                    // Controllo se il medico è stato inserito
                     const hasDoctor = p.doctor && p.doctor.name && p.doctor.name.trim() !== '';
+
+                    // --- MODIFICA 1: Logica Visualizzazione Nome ---
+                    // Se c'è il nickname usa quello, altrimenti il nome completo
+                    const displayName = (p.nickname && p.nickname.trim() !== '') ? p.nickname : p.name;
 
                     const div = document.createElement('div');
                     div.className = `${theme.bg} ${theme.border} p-4 rounded-xl card-shadow flex justify-between items-center cursor-pointer border hover:shadow-md transition-all`;
@@ -2685,43 +2808,40 @@
                     if (p.avatar && avatarIcons[p.avatar]) {
                         iconContent = `<i class="fa-solid ${avatarIcons[p.avatar]} text-xl"></i>`;
                     } else {
-                        iconContent = p.name.charAt(0).toUpperCase();
+                        // Usa l'iniziale del nickname se presente
+                        iconContent = displayName.charAt(0).toUpperCase();
                     }
 
-                    // --- DEFINIZIONE ELEMENTI DINAMICI ---
-
-                    // 1. Badge Medico (Visibile SOLO se c'è il dottore)
-                    // Cliccando l'icona si apre il modale medico
                     const doctorBadge = hasDoctor ? `
-            <div onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" 
-                 class="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform z-10"
-                 title="Modifica Dottore">
-                <i class="fa-solid fa-user-doctor text-[10px] text-blue-500"></i>
-            </div>
-        ` : '';
+                        <div onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" 
+                             class="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform z-10"
+                             title="Modifica Dottore">
+                            <i class="fa-solid fa-user-doctor text-[10px] text-blue-500"></i>
+                        </div>
+                    ` : '';
 
-                    // 2. Pulsante Testo (Visibile SOLO se NON c'è il dottore)
                     const doctorBtn = !hasDoctor ? `
-            <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm ml-2">
-                <i class="fa-solid fa-user-doctor mr-1"></i> Medico
-            </button>
-        ` : '';
+                        <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm ml-2">
+                            <i class="fa-solid fa-user-doctor mr-1"></i> Medico
+                        </button>
+                    ` : '';
 
-                    // --- COMPOSIZIONE HTML ---
                     div.innerHTML = `
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
-                    ${iconContent}
-                    ${doctorBadge} </div>
-                <div>
-                    <h3 class="font-bold text-slate-800 text-lg leading-tight">${p.name}</h3>
-                    <div class="flex items-center mt-1">
-                        <span class="text-xs text-slate-500">${total} farmaci</span>
-                        ${doctorBtn} </div>
-                </div>
-            </div>
-            <span class="text-sm font-bold ${percClass}">${perc}%</span>
-        `;
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
+                                ${iconContent}
+                                ${doctorBadge}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-lg leading-tight">${displayName}</h3>
+                                <div class="flex items-center mt-1">
+                                    <span class="text-xs text-slate-500">${total} farmaci</span>
+                                    ${doctorBtn}
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-sm font-bold ${percClass}">${perc}%</span>
+                    `;
 
                     container.appendChild(div);
                 });
@@ -3127,9 +3247,13 @@
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 if (!profile) return;
 
-                document.getElementById('current-profile-name').textContent = profile.name;
+                // --- MODIFICA 2: Titolo Profilo ---
+                // Usa nickname se presente, altrimenti nome completo
+                const displayName = (profile.nickname && profile.nickname.trim() !== '') ? profile.nickname : profile.name;
+                document.getElementById('current-profile-name').textContent = displayName;
+                // ----------------------------------
 
-                // --- NUOVO: RENDER TOOLBAR (Tutto Preso / Deseleziona) ---
+                // --- DA QUI IN GIÙ IL CODICE RESTA INVARIATO (Toolbar e Liste) ---
                 const toolbarContainer = document.getElementById('med-toolbar');
                 if (toolbarContainer) {
                     const anyTakenGlobal = profile.meds.some(m => m.taken);
@@ -3146,11 +3270,9 @@
             </div>
         `;
                 }
-                // ---------------------------------------------------------
 
                 const times = ['Mattina', 'Pomeriggio', 'Sera', 'Al Bisogno'];
                 let hasMeds = false;
-                // let anyTaken = false; // (Non serve più qui perché calcolato sopra per la toolbar)
 
                 const dayMap = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
                 const todayShort = dayMap[new Date().getDay()];
@@ -3159,7 +3281,7 @@
 
                 times.forEach(time => {
                     const container = document.getElementById(`med-list-${time.toLowerCase()}`);
-                    if (!container) return; // Sicurezza se manca un div nell'HTML
+                    if (!container) return;
 
                     container.innerHTML = '';
 
@@ -3171,12 +3293,10 @@
                         const totalCount = meds.length;
                         const takenCount = meds.filter(m => m.taken).length;
 
-                        // Logica Accordion
                         const isOpen = this.expandedSections.includes(time);
                         const hiddenClass = isOpen ? '' : 'hidden';
                         const rotateClass = isOpen ? 'rotate-180' : '';
 
-                        // Header Cliccabile
                         const header = document.createElement('div');
                         header.className = "cursor-pointer bg-white p-3 rounded-xl card-shadow border border-slate-100 mb-2 flex items-center justify-between transition-all hover:bg-slate-50";
                         header.onclick = () => this.toggleSection(time);
@@ -3201,7 +3321,6 @@
             `;
                         container.appendChild(header);
 
-                        // Contenitore Lista Farmaci
                         const listContainer = document.createElement('div');
                         listContainer.id = `list-${time}`;
                         listContainer.className = `space-y-3 ${hiddenClass}`;
@@ -3217,7 +3336,6 @@
                                 isToday = isFreqMatch && isDayMatch;
                             }
 
-                            // Calcolo Orario e Blocco
                             let effectiveTime = med.specificTime;
                             if (med.daySpecificTimes && med.daySpecificTimes[todayISO]) {
                                 effectiveTime = med.daySpecificTimes[todayISO];
@@ -3244,7 +3362,6 @@
 
                             const takenClass = med.taken ? 'med-card-taken' : '';
 
-                            // Badge Terapia
                             const therapy = this.getTherapyStatus(med);
                             let therapyBadge = '';
                             if (therapy) {
@@ -3264,7 +3381,6 @@
 
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${visualClass}`;
 
-                            // --- GESTIONE "AL BISOGNO" ---
                             if (time === 'Al Bisogno') {
                                 const countToday = (med.prnHistory || []).filter(ts => {
                                     const d = new Date(ts);
@@ -3313,9 +3429,7 @@
                                 <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </div>`;
-                            }
-                            // --- GESTIONE STANDARD ---
-                            else {
+                            } else {
                                 card.innerHTML = `
                         <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
                             <input type="checkbox" class="med-checkbox"
@@ -3350,8 +3464,6 @@
                     }
                 });
 
-                const anyTakenOverall = profile.meds.some(m => m.taken);
-                // document.getElementById('btn-uncheck-all').classList.toggle('hidden', !anyTakenOverall); // Vecchio tasto, puoi rimuoverlo
                 document.getElementById('med-empty-state').classList.toggle('hidden', hasMeds);
             },
 
@@ -4200,6 +4312,127 @@
                     // ma è utile per sicurezza.
                     this.showAlert("Info", "Nessun farmaco da deselezionare.");
                 }
+            },
+
+            // --- GENERATORE CODICE FISCALE ---
+
+            async generateFiscalCode(mode = 'add') {
+                const prefix = mode === 'add' ? 'input-profile' : 'input-edit-profile';
+
+                // 1. Recupera Dati
+                const nameField = document.getElementById(`${prefix}-name`).value.trim().toUpperCase();
+                const dob = document.getElementById(`${prefix}-dob`).value;
+                const city = document.getElementById(`${prefix}-birthplace`).value.trim().toUpperCase();
+
+                // Determina sesso dall'avatar selezionato (Man/Dog = M, Woman/Cat = F)
+                // Se siamo in edit, dobbiamo recuperare l'avatar corrente dal profilo se non cambiato
+                let gender = 'M';
+                if (this.newProfileAvatar === 'woman' || this.newProfileAvatar === 'cat') gender = 'F';
+                // (In edit mode potresti dover leggere this.currentProfileId, ma per ora usiamo la selezione attiva)
+
+                if (!nameField || !dob || !city) {
+                    this.showAlert("Dati mancanti", "Inserisci Nome, Data di Nascita e Comune per generare il codice.");
+                    return;
+                }
+
+                this.toggleLoading(true, "Calcolo Codice Fiscale...");
+
+                try {
+                    // 2. Separa Nome e Cognome (Assumiamo l'ultimo spazio come separatore)
+                    const parts = nameField.split(' ');
+                    let surname = parts.length > 1 ? parts.pop() : parts[0];
+                    let name = parts.length > 1 ? parts.join('') : parts[0]; // Fallback se solo una parola
+
+                    // Helper Consonanti/Vocali
+                    const getConsonants = (str) => str.replace(/[^BCDFGHJKLMNPQRSTVWXYZ]/g, '');
+                    const getVowels = (str) => str.replace(/[^AEIOU]/g, '');
+                    const normalize = (str) => (str + 'XXX').slice(0, 3);
+
+                    // A. COGNOME (Prime 3 consonanti)
+                    let codeSurname = getConsonants(surname);
+                    if (codeSurname.length < 3) codeSurname += getVowels(surname);
+                    codeSurname = normalize(codeSurname);
+
+                    // B. NOME (1a, 3a, 4a cons se ce ne sono >=4, altrimenti prime 3)
+                    let codeNameCons = getConsonants(name);
+                    let codeName = "";
+                    if (codeNameCons.length >= 4) {
+                        codeName = codeNameCons[0] + codeNameCons[2] + codeNameCons[3];
+                    } else {
+                        codeName = codeNameCons + getVowels(name);
+                    }
+                    codeName = normalize(codeName);
+
+                    // C. DATA E SESSO
+                    const d = new Date(dob);
+                    const year = String(d.getFullYear()).slice(-2);
+                    const monthCodes = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'M', 'P', 'R', 'S', 'T'];
+                    const month = monthCodes[d.getMonth()];
+                    let day = d.getDate();
+                    if (gender === 'F') day += 40;
+                    const dayStr = String(day).padStart(2, '0');
+
+                    // D. COMUNE (Fetch JSON Comuni)
+                    const cityCode = await this.getCityCode(city);
+                    if (!cityCode) throw new Error("Comune non trovato. Controlla l'ortografia.");
+
+                    // E. CODICE PARZIALE (Primi 15 caratteri)
+                    const partialCF = codeSurname + codeName + year + month + dayStr + cityCode;
+
+                    // F. CARATTERE DI CONTROLLO (CIN)
+                    const cin = this.calculateCIN(partialCF);
+
+                    const finalCF = partialCF + cin;
+
+                    // Risultato
+                    document.getElementById(`${prefix}-cf`).value = finalCF;
+                    this.showAlert("Fatto", "Codice Fiscale generato!");
+
+                } catch (err) {
+                    console.error(err);
+                    this.showAlert("Errore", err.message || "Impossibile calcolare il codice.");
+                } finally {
+                    this.toggleLoading(false);
+                }
+            },
+
+            async getCityCode(cityName) {
+                try {
+                    // Usa un repository pubblico leggero per i comuni
+                    const response = await fetch('https://raw.githubusercontent.com/matteocontrini/comuni-json/master/comuni.json');
+                    const comuni = await response.json();
+
+                    const found = comuni.find(c => c.nome.toUpperCase() === cityName);
+                    return found ? found.codiceCatastale : null;
+                } catch (e) {
+                    return null; // Fallback manuale
+                }
+            },
+
+            calculateCIN(cf15) {
+                const oddValues = {
+                    '0': 1, '1': 0, '2': 5, '3': 7, '4': 9, '5': 13, '6': 15, '7': 17, '8': 19, '9': 21,
+                    'A': 1, 'B': 0, 'C': 5, 'D': 7, 'E': 9, 'F': 13, 'G': 15, 'H': 17, 'I': 19, 'J': 21,
+                    'K': 2, 'L': 4, 'M': 18, 'N': 20, 'O': 11, 'P': 3, 'Q': 6, 'R': 8, 'S': 12, 'T': 14,
+                    'U': 16, 'V': 10, 'W': 22, 'X': 25, 'Y': 24, 'Z': 23
+                };
+                const evenValues = {
+                    '0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
+                    'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8, 'J': 9,
+                    'K': 10, 'L': 11, 'M': 12, 'N': 13, 'O': 14, 'P': 15, 'Q': 16, 'R': 17, 'S': 18, 'T': 19,
+                    'U': 20, 'V': 21, 'W': 22, 'X': 23, 'Y': 24, 'Z': 25
+                };
+
+                let sum = 0;
+                for (let i = 0; i < 15; i++) {
+                    const char = cf15[i];
+                    if ((i + 1) % 2 !== 0) { // Dispari (1°, 3°...)
+                        sum += oddValues[char];
+                    } else { // Pari (2°, 4°...)
+                        sum += evenValues[char];
+                    }
+                }
+                return String.fromCharCode((sum % 26) + 65);
             },
 
             setupManifest() {
