@@ -2272,7 +2272,7 @@
                 try {
                     // --- MODIFICA FONDAMENTALE QUI SOTTO ---
                     // Usiamo 'gemini-1.5-flash' invece di '2.0'. Il 1.5 non dà errore 429 così facilmente.
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.data.apiKey}`;
 
                     const result = await this.fetchWithRetry(url, payload);
 
@@ -2322,18 +2322,34 @@
                 }
             },
 
-            async fetchWithRetry(url, payload, retries = 5) {
-                for (let i = 0; i < retries; i++) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            body: JSON.stringify(payload)
-                        });
-                        if (response.ok) return await response.json();
-                    } catch (e) { }
-                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+            async fetchWithRetry(url, options, retries = 3, backoff = 1000) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(options)
+                    });
+
+                    // Se è 429 (Too Many Requests), lancia errore per attivare il retry
+                    if (response.status === 429) {
+                        throw new Error("429 Too Many Requests");
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    return await response.json();
+                } catch (error) {
+                    if (retries > 0) {
+                        console.warn(`Retrying... attempts left: ${retries}. Error: ${error.message}`);
+                        // Aspetta (backoff) ms prima di riprovare
+                        await new Promise(resolve => setTimeout(resolve, backoff));
+                        return this.fetchWithRetry(url, options, retries - 1, backoff * 2); // Raddoppia l'attesa
+                    } else {
+                        throw error;
+                    }
                 }
-                throw new Error("API fallita");
             },
 
             toggleLoading(show, text = "") {
