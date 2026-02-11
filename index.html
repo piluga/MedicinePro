@@ -1198,7 +1198,7 @@
             <h3 id="otc-detail-name" class="text-xl font-bold text-slate-800 mb-1">Nome Farmaco</h3>
             <p id="otc-detail-form" class="text-xs text-slate-500 font-bold uppercase mb-4 tracking-wide">Forma</p>
 
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-left mb-6 space-y-2">
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-left mb-4 space-y-2">
                 <div>
                     <span class="text-[10px] text-slate-400 font-bold uppercase block">Dosaggio</span>
                     <span id="otc-detail-dose" class="text-sm font-semibold text-slate-700">-</span>
@@ -1209,7 +1209,14 @@
                 </div>
             </div>
 
-            <p class="text-sm text-slate-600 mb-6 font-medium">Vuoi aggiungere questo farmaco alla lista degli ordini in arrivo?</p>
+            <div class="mb-6">
+                <p class="text-xs text-slate-400 font-bold uppercase mb-2">Quantità da ordinare</p>
+                <div class="flex items-center justify-center gap-4">
+                    <button onclick="app.adjustOTCQty(-1)" class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold text-xl transition-colors shadow-sm active:scale-95">-</button>
+                    <input type="number" id="otc-qty-input" value="1" min="1" class="w-16 text-center font-bold text-2xl text-indigo-600 outline-none bg-transparent" readonly>
+                    <button onclick="app.adjustOTCQty(1)" class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold text-xl transition-colors shadow-sm active:scale-95">+</button>
+                </div>
+            </div>
 
             <div class="flex gap-3">
                 <button onclick="app.closeModal('modal-otc-detail')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
@@ -1365,46 +1372,6 @@
                 </button>
             </div>
         </div>
-
-        <div id="modal-otc-list" class="hidden fixed inset-0 modal-overlay z-[90] flex items-center justify-center p-4 fade-in">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-0 overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="p-4 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center shrink-0">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center border border-indigo-200">
-                            <i class="fa-solid fa-basket-shopping"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-800">Farmaci da Banco</h3>
-                            <p class="text-xs text-slate-500">Acquisto e Ricezione</p>
-                        </div>
-                    </div>
-                    <button onclick="app.closeModal('modal-otc-list')" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/50 transition-colors">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
-                </div>
-
-                <div class="overflow-y-auto custom-scrollbar flex-1 bg-slate-50 p-4 space-y-6">
-
-                    <div id="otc-ordered-section" class="hidden">
-                        <h4 class="font-bold text-xs text-orange-500 uppercase mb-2 flex items-center gap-2">
-                            <i class="fa-solid fa-truck-fast"></i> Farmaci Ordinati (In Arrivo)
-                        </h4>
-                        <div id="otc-ordered-list" class="space-y-2"></div>
-                    </div>
-
-                    <div>
-                        <h4 class="font-bold text-xs text-slate-500 uppercase mb-2 flex items-center gap-2">
-                            <i class="fa-solid fa-pills"></i> Disponibili per l'ordine
-                        </h4>
-                        <input type="text" id="otc-search" onkeyup="app.filterOTCList()" placeholder="Cerca farmaco..." class="w-full p-3 mb-3 text-sm border border-slate-200 rounded-xl outline-none focus:border-indigo-500 bg-white">
-                        <div id="otc-all-list" class="space-y-2"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-
     </div>
     <script>
         const app = {
@@ -3879,7 +3846,16 @@
                 allMeds.forEach(med => {
                     // MODIFICA: Controlliamo isOTCOrdered invece di isOrdered
                     if (med.isOTCOrdered) {
-                        // --- SEZIONE: ORDINATI MANUALMENTE (DA BANCO) ---
+                        const qty = med.otcOrderQty || 1;
+
+                        // --- LIMITAZIONE TESTO ---
+                        // Se il nome è più lungo di 18 caratteri, lo taglia e aggiunge "..."
+                        let displayName = med.name;
+                        if (displayName.length > 18) {
+                            displayName = displayName.substring(0, 18) + '...';
+                        }
+                        // -------------------------
+
                         hasOrdered = true;
                         const div = document.createElement('div');
                         div.className = "bg-purple-50 border border-purple-200 rounded-xl p-3 flex justify-between items-center";
@@ -3889,7 +3865,12 @@
                             <i class="fa-solid fa-basket-shopping"></i>
                         </div>
                         <div class="truncate">
-                            <h4 class="font-bold text-slate-800 text-sm truncate">${med.name}</h4>
+                            <h4 class="font-bold text-slate-800 text-sm truncate flex items-center gap-2">
+                                <span>${displayName}</span>
+                                <span class="min-w-[20px] h-5 px-1 inline-flex items-center justify-center rounded-md bg-blue-50 text-blue-700 border-blue-100 text-[10px] font-black shrink-0 shadow-sm">
+                                    ${qty}
+                                </span>
+                            </h4>
                             <p class="text-[10px] text-purple-600 font-bold uppercase">Ordine Manuale</p>
                         </div>
                     </div>
@@ -3939,7 +3920,6 @@
             },
 
             openOTCPurchaseModal(medId) {
-                // Trova il farmaco
                 let med = null;
                 for (let p of this.data.profiles) {
                     med = p.meds.find(m => m.id === medId);
@@ -3948,13 +3928,14 @@
 
                 if (!med) return;
 
-                // Popola il modale dettaglio
                 document.getElementById('otc-detail-name').textContent = med.name;
                 document.getElementById('otc-detail-form').textContent = med.category || "Forma non specificata";
                 document.getElementById('otc-detail-dose').textContent = med.dose || "N/D";
                 document.getElementById('otc-detail-usage').textContent = med.usage || "Nessuna descrizione disponibile.";
 
-                // Imposta azione bottone conferma
+                // RESET QUANTITÀ A 1
+                document.getElementById('otc-qty-input').value = 1;
+
                 const btn = document.getElementById('btn-confirm-otc-buy');
                 btn.onclick = () => this.confirmOTCPurchase(med.sharedId);
 
@@ -3962,11 +3943,14 @@
             },
 
             confirmOTCPurchase(sharedId) {
-                // MODIFICA: Imposta isOTCOrdered = true invece di isOrdered
+                // Leggi la quantità scelta
+                const qty = parseInt(document.getElementById('otc-qty-input').value) || 1;
+
                 this.data.profiles.forEach(p => {
                     p.meds.forEach(m => {
                         if (m.sharedId === sharedId) {
-                            m.isOTCOrdered = true; // Nuova proprietà specifica
+                            m.isOTCOrdered = true;
+                            m.otcOrderQty = qty; // SALVIAMO LA QUANTITÀ NELL'OGGETTO
                         }
                     });
                 });
@@ -3974,7 +3958,7 @@
                 this.saveData();
                 this.closeModal('modal-otc-detail');
                 this.renderOTCList();
-                this.showAlert("Aggiunto", "Farmaco aggiunto alla lista ordini manuali.");
+                this.showAlert("Aggiunto", `Aggiunte ${qty} confezioni alla lista ordini.`);
             },
 
             cancelOTCOrder(sharedId) {
@@ -4308,6 +4292,14 @@
                     sharedId: foundMed.sharedId,
                     oneBoxContent: oneBoxContent
                 };
+
+                // 3.1. Se è un ordine OTC, preimposta la quantità
+                let defaultQty = 1;
+                if (foundMed.isOTCOrdered && foundMed.otcOrderQty) {
+                    defaultQty = foundMed.otcOrderQty;
+                }
+                document.getElementById('receive-qty-input').value = defaultQty;
+                // --------------------
 
                 // 4. Popola e Apri il Modale
                 document.getElementById('receive-med-name').textContent = foundMed.name;
@@ -4717,6 +4709,14 @@
                     }
                 }
                 return String.fromCharCode((sum % 26) + 65);
+            },
+
+            adjustOTCQty(delta) {
+                const input = document.getElementById('otc-qty-input');
+                let val = parseInt(input.value) || 1;
+                val += delta;
+                if (val < 1) val = 1;
+                input.value = val;
             },
 
             setupManifest() {
