@@ -495,7 +495,8 @@
                         </div>
                         <div class="text-left">
                             <span class="block text-emerald-800 font-bold text-sm">Genera Lista Spesa</span>
-                            <span class="block text-emerald-600/70 text-[10px]">Farmaci in esaurimento</span>
+
+                            <span id="shopping-btn-subtitle" class="block text-emerald-600/70 text-[10px]">Farmaci in esaurimento</span>
                         </div>
                     </button>
                 </div>
@@ -2513,6 +2514,8 @@
                 // 4. Carica dati e scrolla in cima
                 document.getElementById('input-settings-apikey').value = this.data.apiKey || "";
                 window.scrollTo(0, 0);
+
+                this.updateShoppingBtnState();
             },
 
             goToSettingsFromModal() {
@@ -2596,7 +2599,10 @@
                 this.saveData();
             },
 
-            saveData() { localStorage.setItem('MedicineProData', JSON.stringify(this.data)); },
+            saveData() {
+                localStorage.setItem('MedicineProData', JSON.stringify(this.data));
+                this.updateShoppingBtnState();
+            },
 
             // Nuova logica di export (Stile ControlliPro)
             openBackupModal() {
@@ -4843,6 +4849,41 @@
                 });
 
                 this.showModal('modal-pharmacy-view');
+            },
+
+            updateShoppingBtnState() {
+                const subtitleEl = document.getElementById('shopping-btn-subtitle');
+                if (!subtitleEl) return;
+
+                let hasItems = false;
+
+                // Controlla se c'è almeno un farmaco da ordinare O in arrivo
+                for (const p of this.data.profiles) {
+                    for (const m of p.meds) {
+                        // Caso 1: Da ordinare (Sotto scorta E non già ordinato)
+                        if (m.minQty > 0 && m.boxQty <= m.minQty && !m.isOrdered) {
+                            hasItems = true;
+                            break;
+                        }
+                        // Caso 2: Già ordinato (In arrivo)
+                        if (m.isOrdered) {
+                            hasItems = true;
+                            break;
+                        }
+                    }
+                    if (hasItems) break;
+                }
+
+                // Imposta il testo in base al risultato
+                if (hasItems) {
+                    subtitleEl.textContent = "Farmaci in esaurimento o in arrivo";
+                    subtitleEl.classList.remove('text-slate-400');
+                    subtitleEl.classList.add('text-emerald-600/70'); // Colore verde (attivo)
+                } else {
+                    subtitleEl.textContent = "Non ci sono farmaci da acquistare o in arrivo";
+                    subtitleEl.classList.remove('text-emerald-600/70');
+                    subtitleEl.classList.add('text-slate-400'); // Colore grigio (spento)
+                }
             },
 
             setupManifest() {
