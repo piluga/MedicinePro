@@ -943,31 +943,44 @@
                     </datalist>
                 </div>
 
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase mb-2 ml-1">Configurazione Confezione (Opzionale)</p>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Note / A cosa serve</label>
+                    <textarea id="input-med-usage" rows="3" class="w-full p-3 rounded-xl border border-slate-200 text-sm resize-none focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Prendere a stomaco pieno..."></textarea>
+                </div>
+
+                <div class="p-4 bg-violet-50 rounded-2xl border border-violet-100 mb-4">
+                    <p class="text-xs font-bold text-violet-700 uppercase mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-table-cells text-violet-600"></i> Configurazione Confezione
+                    </p>
+
                     <div class="flex items-center gap-3">
                         <div class="flex-1">
-                            <label class="block text-[9px] font-semibold text-slate-500 mb-1">N° Blister</label>
-                            <input id="med-blister-count" type="number" min="0" oninput="app.calculateTotalStock()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white text-center" placeholder="0">
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">N° Blister</label>
+                            <input id="med-blister-count" type="number" min="0" oninput="app.calculateTotalStock()" class="w-full border border-violet-200 rounded-lg p-2 text-sm focus:border-violet-500 outline-none bg-white text-center" placeholder="0">
                         </div>
-                        <span class="text-slate-300 text-xs mt-4"><i class="fa-solid fa-xmark"></i></span>
+
+                        <span class="text-violet-300 text-xs mt-4"><i class="fa-solid fa-xmark"></i></span>
+
                         <div class="flex-1">
-                            <label class="block text-[9px] font-semibold text-slate-500 mb-1">Comp./Blister</label>
-                            <input id="med-pills-per-blister" type="number" min="0" oninput="app.calculateTotalStock()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white text-center" placeholder="0">
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Comp./Blister</label>
+                            <input id="med-pills-per-blister" type="number" min="0" oninput="app.calculateTotalStock()" class="w-full border border-violet-200 rounded-lg p-2 text-sm focus:border-violet-500 outline-none bg-white text-center" placeholder="0">
                         </div>
-                        <span class="text-slate-300 text-xs mt-4"><i class="fa-solid fa-equals"></i></span>
+
+                        <span class="text-violet-300 text-xs mt-4"><i class="fa-solid fa-equals"></i></span>
+
                         <div class="flex-1">
-                            <label class="block text-[9px] font-semibold text-slate-500 mb-1">Totale</label>
-                            <div class="p-2 bg-blue-50 border border-blue-100 rounded-lg text-center text-blue-600 text-sm h-[38px] flex items-center justify-center">
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Totale</label>
+                            <div class="p-2 bg-white border border-violet-200 rounded-lg text-center text-violet-600 text-sm h-[38px] flex items-center justify-center shadow-sm">
                                 <span id="calc-preview">0</span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Note / A cosa serve</label>
-                    <textarea id="input-med-usage" rows="3" class="w-full p-3 rounded-xl border border-slate-200 text-sm resize-none focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Prendere a stomaco pieno..."></textarea>
+                    <div class="flex justify-end mt-3 border-t border-violet-200/50 pt-2">
+                        <button onclick="app.resetPackageConfig()" class="text-[10px] font-bold text-violet-600 hover:text-violet-800 flex items-center gap-1 transition-colors uppercase tracking-wider">
+                            <i class="fa-solid fa-eraser"></i> Resetta confezione
+                        </button>
+                    </div>
                 </div>
 
                 <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
@@ -3065,6 +3078,13 @@
                 document.getElementById('med-min-qty').value = '';
             },
 
+            // Aggiungi questa funzione:
+            resetPackageConfig() {
+                document.getElementById('med-blister-count').value = '';
+                document.getElementById('med-pills-per-blister').value = '';
+                document.getElementById('calc-preview').textContent = '0';
+            },
+
             refreshTherapyUI() {
                 const startDate = document.getElementById('med-start-date').value;
                 const durationInput = document.getElementById('med-duration').value;
@@ -3268,11 +3288,12 @@
                                 specificDays: preservedSpecificDays // Importante propagare
                             });
                         });
+                        this.showAlert("Modificato", `Il farmaco ${name} è stato aggiornato correttamente.`);
                     }
 
-                    // =========================
-                    // ➕ NUOVO FARMACO
-                    // =========================
+                // =========================
+                // ➕ NUOVO FARMACO
+                // =========================
                 } else {
                     const sharedId = this.generateId();
 
@@ -3301,6 +3322,7 @@
                             specificDays: {} // Inizializza vuoto
                         });
                     });
+                    this.showAlert("Creato", `Il farmaco ${name} è stato creato correttamente.`);
                 }
 
                 this.saveData();
