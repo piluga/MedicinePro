@@ -1295,7 +1295,8 @@
                     <div>
                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Numero Studio</label>
                         <div class="relative">
-                            <i class="fa-solid fa-phone-office absolute left-3 top-3.5 text-slate-400 text-xs"></i>
+                            <i class="fa-solid fa-phone absolute left-3 top-3.5 text-slate-400 text-sm"></i>
+
                             <input type="tel" id="doc-phone-studio" class="w-full pl-8 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all" placeholder="02 123...">
                         </div>
                     </div>
@@ -2678,9 +2679,9 @@
                         content += `[${time.toUpperCase()}]\n`;
                         meds.forEach(m => {
                             content += `- ${m.name}`;
-                            if (m.category) content += ` (${m.category})`;
+                            //if (m.category) content += ` (${m.category})`;
                             if (m.dose) content += ` | Dose: ${m.dose}`;
-                            if (m.usage) content += ` | Uso: ${m.usage}`;
+                            //if (m.usage) content += ` | Uso: ${m.usage}`;
                             content += `\n`;
                         });
                         content += `\n`;
