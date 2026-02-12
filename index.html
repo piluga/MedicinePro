@@ -3371,6 +3371,36 @@
                 });
             },
 
+            quickAddToShoppingList(medId) {
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                const med = profile.meds.find(m => m.id === medId);
+                if (!med) return;
+
+                // Evita duplicati se è già ordinato
+                if (med.isOTCOrdered) {
+                    this.showAlert("Già in lista", "Questo farmaco è già presente nella lista da acquistare.");
+                    return;
+                }
+
+                // Imposta come ordinato manualmente (OTC)
+                // Usiamo sharedId per coerenza con la logica "Da Banco"
+                const sharedId = med.sharedId;
+
+                profile.meds.forEach(m => {
+                    if (m.sharedId === sharedId) {
+                        m.isOTCOrdered = true;
+                        // Se non ha una quantità impostata, metti 1
+                        if (!m.otcOrderQty || m.otcOrderQty < 1) m.otcOrderQty = 1;
+                    }
+                });
+
+                this.saveData();
+                this.updateShoppingBtnState(); // Aggiorna il colore del tasto home
+
+                // Feedback visivo
+                this.showAlert("Aggiunto al carrello", `${med.name} è stato aggiunto alla lista spesa.`);
+            },
+
             showMedNote(medId) {
                 const profile = this.data.profiles.find(x => x.id === this.currentProfileId);
                 const med = profile.meds.find(m => m.id === medId);
@@ -3517,7 +3547,7 @@
                             const noteBtn = med.usage ?
                                 `<button onclick="app.showMedNote('${med.id}')" class="text-amber-400 hover:text-amber-500 p-2" title="Leggi note"><i class="fa-solid fa-note-sticky"></i></button>`
                                 : '';
-
+                            const cartBtn = `<button onclick="app.quickAddToShoppingList('${med.id}')" class="text-emerald-400 hover:text-emerald-600 p-2 transition-colors" title="Aggiungi alla spesa"><i class="fa-solid fa-cart-plus"></i></button>`;
                             card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${visualClass}`;
 
                             if (time === 'Al Bisogno') {
@@ -3591,7 +3621,7 @@
                                         </div>
                                     </div>
                                     <div class="flex items-center card-actions">
-                                        ${noteBtn}
+                                        ${cartBtn}  ${noteBtn}
                                         <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2" title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
                                         <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2" title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
                                     </div>`;
