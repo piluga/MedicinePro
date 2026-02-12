@@ -485,7 +485,7 @@
 
             <div class="bg-white p-5 rounded-2xl card-shadow">
                 <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-pills text-blue-500"></i> Farmaci
+                    <i class="fa-solid fa-pills text-blue-500"></i> Gestione Farmaci
                 </h3>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -2394,7 +2394,7 @@
                 try {
                     // --- MODIFICA FONDAMENTALE QUI SOTTO ---
                     // Usiamo 'gemini-1.5-flash' invece di '2.0'. Il 1.5 non dà errore 429 così facilmente.
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.data.apiKey}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`;                           
 
                     const result = await this.fetchWithRetry(url, payload);
 
@@ -4764,11 +4764,16 @@
                 let count = 0;
                 let medsToBuy = [];
 
+                // Usiamo un Set per tracciare gli ID univoci ed evitare duplicati
+                let seenIds = new Set();
+
                 // Cerca tutti i farmaci con isOTCOrdered = true
                 this.data.profiles.forEach(p => {
                     p.meds.forEach(m => {
-                        if (m.isOTCOrdered) {
+                        // MODIFICA QUI: Aggiungi solo se è ordinato E se non l'abbiamo già messo in lista
+                        if (m.isOTCOrdered && !seenIds.has(m.sharedId)) {
                             medsToBuy.push(m);
+                            seenIds.add(m.sharedId); // Segniamo questo farmaco come "preso"
                         }
                     });
                 });
@@ -4778,18 +4783,18 @@
                 // Ordina alfabeticamente
                 medsToBuy.sort((a, b) => a.name.localeCompare(b.name));
 
+                // Genera il testo per WhatsApp
                 medsToBuy.forEach(m => {
                     const qty = m.otcOrderQty || 1;
                     text += `- ${m.name}`;
-                    if (qty > 1) text += ` (x${qty})`; // Aggiunge quantità se > 1
-                    if (m.dose) text += ` [${m.dose}]`;
-                    if (m.category) text += ` - ${m.category}`;
+                    if (qty > 1) text += ` (x${qty})`;
+                    if (m.type) text += ` [${m.type}]`; // Mostra categoria
                     text += "\n";
                     count++;
                 });
 
                 text += "\nGrazie!";
-                return { text, count, medsToBuy }; // Ritorna anche l'array per la vista farmacia
+                return { text, count, medsToBuy }; // Ritorna l'array pulito senza duplicati
             },
 
             shareOTCListWhatsApp() {
