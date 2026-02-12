@@ -3879,74 +3879,73 @@
                 allMeds.sort((a, b) => a.name.localeCompare(b.name));
 
                 allMeds.forEach(med => {
-                    // MODIFICA: Controlliamo isOTCOrdered invece di isOrdered
                     if (med.isOTCOrdered) {
+                        // --- FARMACI ORDINATI (VIOLA) ---
                         const qty = med.otcOrderQty || 1;
-
-                        // (Il codice per limitare la lunghezza del nome displayName rimane qui sopra invariato)
                         let displayName = med.name;
-                        if (displayName.length > 28) {
-                            displayName = displayName.substring(0, 28) + '...';
+                        if (displayName.length > 18) {
+                            displayName = displayName.substring(0, 18) + '...';
                         }
 
                         hasOrdered = true;
                         const div = document.createElement('div');
                         div.className = "bg-purple-50 border border-purple-200 rounded-xl p-3 flex justify-between items-center";
-
-                        // MODIFICA QUI SOTTO:
                         div.innerHTML = `
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                                <i class="fa-solid fa-basket-shopping"></i>
-                            </div>
-                            <div class="truncate">
-                                <h4 class="font-bold text-slate-800 text-sm truncate">
-                                    ${displayName}
-                                </h4>
-
-                                <p class="text-[10px] text-purple-600 font-bold uppercase flex items-center gap-2">
-                                    Ordine Manuale
-                                    <span class="px-1.5 py-0.5 rounded-md bg-white border border-purple-200 text-purple-600 text-[10px] font-black shadow-sm">
-                                        x${qty}
-                                    </span>
-                                </p>
-                            </div>
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-basket-shopping"></i>
                         </div>
-                        <div class="flex gap-2 shrink-0">
-                            <button onclick="app.cancelOTCOrder('${med.sharedId}')" class="w-8 h-8 rounded-lg bg-white border border-purple-200 text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors" title="Annulla Ordine">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                            <button onclick="app.receiveMedication('${med.id}')" class="h-8 px-3 rounded-lg bg-green-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-green-600 active:scale-95 transition-all flex items-center gap-1">
-                                <i class="fa-solid fa-check"></i> Ricevi
-                            </button>
+                        <div class="truncate">
+                            <h4 class="font-bold text-slate-800 text-sm truncate">
+                                ${displayName}
+                            </h4>
+                            <p class="text-[10px] text-purple-600 font-bold uppercase flex items-center gap-2">
+                                Ordine Manuale
+                                <span class="px-1.5 py-0.5 rounded-md bg-white border border-purple-200 text-purple-600 text-[10px] font-black shadow-sm">
+                                    x${qty}
+                                </span>
+                            </p>
                         </div>
-                    `;
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <button onclick="app.cancelOTCOrder('${med.sharedId}')" class="w-8 h-8 rounded-lg bg-white border border-purple-200 text-slate-400 hover:text-red-500 flex items-center justify-center transition-colors" title="Annulla Ordine">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <button onclick="app.receiveMedication('${med.id}')" class="h-8 px-3 rounded-lg bg-green-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-green-600 active:scale-95 transition-all flex items-center gap-1">
+                            <i class="fa-solid fa-check"></i> Ricevi
+                        </button>
+                    </div>
+                `;
                         orderedContainer.appendChild(div);
 
                     } else {
-                        // --- SEZIONE: DISPONIBILI PER L'ORDINE ---
+                        // --- DISPONIBILI PER L'ORDINE (BIANCHI) ---
                         const div = document.createElement('div');
                         div.className = "otc-item bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors";
                         div.dataset.name = med.name;
                         div.onclick = () => this.openOTCPurchaseModal(med.id);
 
+                        // MODIFICA QUI: Mostriamo SOLO la categoria (med.type)
+                        // Rimosso med.category (forma) e med.dose
                         div.innerHTML = `
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                                <i class="fa-solid fa-pills"></i>
-                            </div>
-                            <div class="truncate">
-                                <h4 class="font-bold text-slate-700 text-sm truncate">${med.name}</h4>
-                                <p class="text-[10px] text-slate-400">${med.category || 'Generico'} ${med.dose ? '· ' + med.dose : ''}</p>
-                            </div>
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-pills"></i>
                         </div>
-                        <i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>
-                    `;
+                        <div class="truncate">
+                            <h4 class="font-bold text-slate-700 text-sm truncate">${med.name}</h4>
+                            
+                            <p class="text-[10px] text-slate-500 font-medium truncate">
+                                ${med.type || 'Categoria non specificata'}
+                            </p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>
+                `;
                         allContainer.appendChild(div);
                     }
                 });
 
-                // Toggle visibilità sezione ordinati
                 if (hasOrdered) {
                     orderedSection.classList.remove('hidden');
                 } else {
