@@ -385,6 +385,59 @@
             .freq-option.selected .check-icon {
                 display: inline-block;
             }
+
+        /* ============================
+           STILE DI STAMPA (REPORT PDF)
+           ============================ */
+        @media print {
+            /* Nascondi TUTTO l'interfaccia dell'app */
+            body * {
+                visibility: hidden;
+            }
+
+            /* Nascondi modali, sfondi, pulsanti fluttuanti */
+            #app-container, .modal-overlay, #install-banner, .floating-btn {
+                display: none !important;
+            }
+
+            /* Mostra solo l'area di stampa */
+            #printable-area, #printable-area * {
+                visibility: visible;
+            }
+
+            /* Posiziona l'area di stampa in alto a sinistra assoluto */
+            #printable-area {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                color: black;
+                font-family: 'Inter', sans-serif;
+            }
+
+            /* Forza i colori di sfondo per le barre di progresso */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Interruzioni di pagina pulite */
+            .page-break {
+                page-break-before: always;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Nascondi l'area di stampa durante l'uso normale */
+        #printable-area {
+            display: none;
+        }
+
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -441,13 +494,18 @@
                         </button>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="app.openStatsModal()" class="text-violet-600 text-xs px-3 py-1.5 border border-violet-200 rounded-lg hover:bg-violet-50 flex items-center gap-1 transition-all">
-                        <i class="fa-solid fa-chart-pie"></i> <span class="xs:inline">Statistiche</span>
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+
+                    <button onclick="app.openStatsModal()" class="text-violet-600 text-xs px-3 py-1.5 border border-violet-200 rounded-lg hover:bg-violet-50 flex items-center gap-1 transition-all shrink-0">
+                        <i class="fa-solid fa-chart-pie"></i> <span class="hidden xs:inline">Statistiche</span>
                     </button>
 
-                    <button onclick="app.exportProfileTxt()" class="text-blue-600 text-xs px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 flex items-center gap-1 transition-all">
-                        <i class="fa-solid fa-file-lines"></i> <span class="xs:inline">Report</span>
+                    <button onclick="app.exportProfileTxt()" class="text-blue-600 text-xs px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 flex items-center gap-1 transition-all shrink-0">
+                        <i class="fa-solid fa-file-lines"></i> <span class="hidden xs:inline">Report</span>
+                    </button>
+
+                    <button onclick="app.printReport()" class="text-rose-600 text-xs px-3 py-1.5 border border-rose-200 rounded-lg hover:bg-rose-50 flex items-center gap-1 transition-all shrink-0">
+                        <i class="fa-solid fa-file-pdf"></i> <span class="hidden xs:inline">Stampa PDF</span>
                     </button>
                 </div>
             </div>
@@ -1500,6 +1558,69 @@
                 <button onclick="app.closeModal('modal-new-day')" class="w-full py-3 bg-orange-500 text-white rounded-xl font-bold shadow-md hover:bg-orange-600 transition-transform active:scale-95">
                     Iniziamo
                 </button>
+            </div>
+        </div>
+
+        <div id="printable-area" class="p-8 max-w-[210mm] mx-auto">
+            <div class="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800 uppercase tracking-wider mb-1">Report Terapia</h1>
+                    <p class="text-sm text-slate-500">Generato da MedicinePro</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-bold text-slate-400 uppercase">Data Report</p>
+                    <p id="print-date" class="text-lg font-bold text-slate-800">--/--/----</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-8 flex gap-8">
+                <div class="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center text-4xl text-slate-400 overflow-hidden shrink-0">
+                    <i id="print-avatar-icon" class="fa-solid fa-user"></i>
+                </div>
+                <div class="flex-1">
+                    <h2 id="print-patient-name" class="text-2xl font-bold text-slate-800 mb-2">Nome Paziente</h2>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="block text-slate-400 font-bold uppercase text-[10px]">Codice Fiscale</span>
+                            <span id="print-cf" class="font-bold text-slate-700">-</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-400 font-bold uppercase text-[10px]">Età</span>
+                            <span id="print-age" class="font-bold text-slate-700">-</span>
+                        </div>
+                        <div class="col-span-2">
+                            <span class="block text-slate-400 font-bold uppercase text-[10px]">Medico Curante</span>
+                            <span id="print-doctor" class="font-bold text-slate-700">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-right flex flex-col justify-center px-6 border-l border-slate-200">
+                    <span class="block text-slate-400 font-bold uppercase text-[10px]">Aderenza Globale</span>
+                    <span id="print-adherence" class="text-3xl font-black text-slate-800">0%</span>
+                </div>
+            </div>
+
+            <h3 class="text-sm font-bold text-slate-800 uppercase border-l-4 border-blue-600 pl-3 mb-4">Piano Terapeutico & Storico (30gg)</h3>
+
+            <table class="w-full text-left border-collapse mb-8">
+                <thead>
+                    <tr class="border-b-2 border-slate-200">
+                        <th class="py-2 font-bold text-xs text-slate-500 uppercase w-1/3">Farmaco</th>
+                        <th class="py-2 font-bold text-xs text-slate-500 uppercase">Posologia</th>
+                        <th class="py-2 font-bold text-xs text-slate-500 uppercase">Orari</th>
+                        <th class="py-2 font-bold text-xs text-slate-500 uppercase text-right">Aderenza</th>
+                    </tr>
+                </thead>
+                <tbody id="print-meds-list" class="text-sm text-slate-700">
+                </tbody>
+            </table>
+
+            <div class="mt-12 p-4 border border-slate-200 rounded-lg h-32">
+                <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Note del Medico / Variazioni</p>
+            </div>
+
+            <div class="fixed bottom-0 left-0 w-full text-center py-4 border-t border-slate-100">
+                <p class="text-[10px] text-slate-400">Documento generato automaticamente. Consultare sempre il medico per variazioni della terapia.</p>
             </div>
         </div>
     </div>
@@ -5294,6 +5415,107 @@
                 }
             },
 
+            printReport() {
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                if (!profile) return;
+
+                // Calcola Statistiche aggiornate
+                const stats = this.calculateStats(profile); // Usa la funzione creata nello step precedente
+
+                // 1. Compila Intestazione
+                document.getElementById('print-date').textContent = new Date().toLocaleDateString('it-IT');
+                document.getElementById('print-patient-name').textContent = profile.name + " " + (profile.surname || "");
+                document.getElementById('print-cf').textContent = profile.cf || "Non specificato";
+                document.getElementById('print-age').textContent = profile.birthDate ? this.calculateAge(profile.birthDate) + " anni" : "-";
+
+                // Medico
+                let docText = "Non assegnato";
+                if (profile.doctor && profile.doctor.name) {
+                    docText = profile.doctor.name;
+                    if (profile.doctor.phoneMobile) docText += ` (${profile.doctor.phoneMobile})`;
+                }
+                document.getElementById('print-doctor').textContent = docText;
+
+                // Aderenza Globale
+                const adhEl = document.getElementById('print-adherence');
+                adhEl.textContent = (stats ? stats.adherencePct : 0) + '%';
+
+                // Icona Avatar
+                const iconMap = { 'man': 'fa-user', 'woman': 'fa-user-nurse', 'dog': 'fa-dog', 'cat': 'fa-cat' };
+                const avatarClass = iconMap[profile.avatar] || 'fa-user';
+                document.getElementById('print-avatar-icon').className = `fa-solid ${avatarClass}`;
+
+                // 2. Compila Tabella Farmaci
+                const tbody = document.getElementById('print-meds-list');
+                tbody.innerHTML = '';
+
+                // Ordina: prima i farmaci attivi, poi al bisogno
+                const sortedMeds = [...profile.meds].sort((a, b) => (a.usage === 'Al Bisogno' ? 1 : -1));
+
+                sortedMeds.forEach(med => {
+                    // Calcolo aderenza specifica per farmaco (semplificata)
+                    let medAdherence = 0;
+                    let takenCount = 0;
+                    let schedCount = 0;
+                    const today = new Date();
+                    // Calcola ultimi 30gg per questo farmaco
+                    for (let i = 0; i < 30; i++) {
+                        const d = new Date(); d.setDate(today.getDate() - i);
+                        const iso = d.toISOString().slice(0, 10);
+                        if (this.isMedicationDay(med, iso)) {
+                            schedCount++;
+                            if (med.history && med.history[iso]) takenCount++;
+                        }
+                    }
+                    if (schedCount > 0) medAdherence = Math.round((takenCount / schedCount) * 100);
+
+                    // Colore barra
+                    let barColor = 'bg-red-500';
+                    if (medAdherence >= 80) barColor = 'bg-emerald-500';
+                    else if (medAdherence >= 50) barColor = 'bg-orange-400';
+
+                    // Formattazione riga
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100";
+                    tr.innerHTML = `
+                        <td class="py-3 pr-2 align-top">
+                            <div class="font-bold text-slate-800">${med.name}</div>
+                            <div class="text-xs text-slate-500">${med.category || ''}</div>
+                        </td>
+                        <td class="py-3 pr-2 align-top">
+                            <div class="font-semibold text-slate-700">${med.dose || '-'}</div>
+                            <div class="text-xs text-slate-500 italic">${med.form || ''}</div>
+                        </td>
+                        <td class="py-3 pr-2 align-top">
+                            <div class="text-xs font-bold bg-slate-100 inline-block px-2 py-1 rounded text-slate-600">
+                                ${med.usage === 'Al Bisogno' ? 'Al Bisogno' : (med.specificTime || med.usage)}
+                            </div>
+                            <div class="text-[10px] text-slate-400 mt-1">
+                                ${med.frequency === 'everyday' ? 'Tutti i giorni' : 'Giorni specifici'}
+                            </div>
+                        </td>
+                        <td class="py-3 align-middle text-right w-32">
+                            ${med.usage === 'Al Bisogno'
+                            ? `<span class="text-xs text-slate-400">N.A. (Al bisogno)</span>`
+                            : `
+                                <div class="flex items-center justify-end gap-2">
+                                    <span class="text-xs font-bold text-slate-600">${medAdherence}%</span>
+                                    <div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                        <div class="${barColor} h-full" style="width: ${medAdherence}%"></div>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] text-slate-400 mt-0.5">${takenCount}/${schedCount} assunzioni</div>
+                                `
+                        }
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                // 3. Lancia Stampa
+                window.print();
+            },
+            
             setupManifest() {
                 const manifest = {
                     "name": "MedicinePro",
