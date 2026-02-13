@@ -441,11 +441,14 @@
                         </button>
                     </div>
                 </div>
-                <div class="flex flex-col gap-2 items-end">
+                <div class="flex items-center gap-2">
+                    <button onclick="app.openStatsModal()" class="text-violet-600 text-xs px-3 py-1.5 border border-violet-200 rounded-lg hover:bg-violet-50 flex items-center gap-1 transition-all">
+                        <i class="fa-solid fa-chart-pie"></i> <span class="xs:inline">Statistiche</span>
+                    </button>
+
                     <button onclick="app.exportProfileTxt()" class="text-blue-600 text-xs px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 flex items-center gap-1 transition-all">
                         <i class="fa-solid fa-file-lines"></i> <span class="xs:inline">Report</span>
                     </button>
-                    <!-- Tasto Elimina Rimosso da qui e spostato nel modale Modifica -->
                 </div>
             </div>
 
@@ -1103,6 +1106,73 @@
             <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
                 <button onclick="app.closeModal('modal-med')" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition-colors">Chiudi</button>
                 <button onclick="app.handleMedicationSubmit()" class="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-stats" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+
+            <div class="bg-blue-600 p-6 text-white text-center relative shrink-0">
+                <button onclick="app.closeModal('modal-stats')" class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+                <h3 class="text-xl font-bold mb-1">Aderenza Terapia</h3>
+                <p class="text-blue-100 text-xs opacity-90">I tuoi progressi in tempo reale</p>
+            </div>
+
+            <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 flex-1">
+
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-5 flex items-center justify-between relative overflow-hidden">
+                    <div class="z-10">
+                        <p class="text-xs text-slate-400 font-bold uppercase mb-1">Aderenza Mensile</p>
+                        <h2 id="stat-adherence-val" class="text-3xl font-bold text-slate-800">0%</h2>
+                        <p class="text-[10px] text-slate-400 mt-1">Assunzioni vs Programmate</p>
+                    </div>
+
+                    <div class="relative w-24 h-24 flex items-center justify-center">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="48" cy="48" r="45" stroke="#f1f5f9" stroke-width="8" fill="transparent" />
+                            <circle id="stat-progress-ring" cx="48" cy="48" r="45" stroke="#3b82f6" stroke-width="8" fill="transparent" stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-in-out;" />
+                        </svg>
+                        <i class="fa-solid fa-chart-pie absolute text-slate-200 text-2xl"></i>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center">
+                        <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center mb-2 text-xl">
+                            <i class="fa-solid fa-fire"></i>
+                        </div>
+                        <span id="stat-streak-val" class="text-xl font-bold text-slate-800">0 gg</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase">Streak Attuale</span>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mb-2 text-xl">
+                            <i class="fa-solid fa-calendar-week"></i>
+                        </div>
+                        <span class="text-[10px] text-slate-500 mt-1 leading-tight">
+                            Ultimi 7 giorni
+                        </span>
+                        <span class="text-[9px] text-slate-400">Trend Settimanale</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-5">
+                    <h4 class="text-xs font-bold text-slate-600 uppercase mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-blue-500"></i> Andamento Settimana
+                    </h4>
+                    <div id="stat-weekly-chart" class="flex items-end justify-between gap-2 h-32">
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 items-start">
+                    <i class="fa-solid fa-lightbulb text-blue-500 mt-0.5"></i>
+                    <p id="stat-insight" class="text-xs text-blue-800 leading-relaxed">
+                        Inizia a segnare i tuoi farmaci per vedere le statistiche.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -2394,14 +2464,14 @@
 
                 // 2. Prompt per Gemini
                 const prompt = `Analizza questa immagine di un farmaco.
-                                            Estrai i dati e rispondi ESCLUSIVAMENTE con un oggetto JSON valido (senza markdown o testo extra) con questi campi:
-                                            - "name": nome commerciale e dosaggio (es. 'Oki 80mg').
-                                            - "form": forma farmaceutica (es. 'Bustine', 'Pillole', 'Capsule', 'Compresse Effervescenti', 'Sciroppo', 'Gocce').
-                                            - "dose": dosaggio numerico (es. '80mg').
-                                            - "type": CATEGORIA TERAPEUTICA. Scegli SOLO tra: Antibiotico, Antimicrobico, Antidolorifico, Analgesico, Antinfiammatorio, Antiacido, Anticoagulante, Antidepressivo, Antistaminico, Anticonvulsivante, Cardiovascolare, Integratore, Vitamine, Gastroprotettore. Se incerto usa stringa vuota.
-                                            - "usage": breve descrizione a cosa serve.
-                                            - "blister_count": numero intero di blister visibili (o null).
-                                            - "pills_per_blister": numero intero di pillole per blister (o null).`;
+                                                Estrai i dati e rispondi ESCLUSIVAMENTE con un oggetto JSON valido (senza markdown o testo extra) con questi campi:
+                                                - "name": nome commerciale e dosaggio (es. 'Oki 80mg').
+                                                - "form": forma farmaceutica (es. 'Bustine', 'Pillole', 'Capsule', 'Compresse Effervescenti', 'Sciroppo', 'Gocce').
+                                                - "dose": dosaggio numerico (es. '80mg').
+                                                - "type": CATEGORIA TERAPEUTICA. Scegli SOLO tra: Antibiotico, Antimicrobico, Antidolorifico, Analgesico, Antinfiammatorio, Antiacido, Anticoagulante, Antidepressivo, Antistaminico, Anticonvulsivante, Cardiovascolare, Integratore, Vitamine, Gastroprotettore. Se incerto usa stringa vuota.
+                                                - "usage": breve descrizione a cosa serve.
+                                                - "blister_count": numero intero di blister visibili (o null).
+                                                - "pills_per_blister": numero intero di pillole per blister (o null).`;
 
                 const payload = {
                     contents: [{
@@ -2419,7 +2489,7 @@
                 try {
                     // --- MODIFICA FONDAMENTALE QUI SOTTO ---
                     // Usiamo 'gemini-1.5-flash' invece di '2.0'. Il 1.5 non dà errore 429 così facilmente.
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`;                           
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`;
 
                     const result = await this.fetchWithRetry(url, payload);
 
@@ -2965,35 +3035,35 @@
                     }
 
                     const doctorBadge = hasDoctor ? `
-                                    <div onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')"
-                                         class="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform z-10"
-                                         title="Modifica Dottore">
-                                        <i class="fa-solid fa-user-doctor text-[10px] text-blue-500"></i>
-                                    </div>
-                                ` : '';
+                                        <div onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')"
+                                             class="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform z-10"
+                                             title="Modifica Dottore">
+                                            <i class="fa-solid fa-user-doctor text-[10px] text-blue-500"></i>
+                                        </div>
+                                    ` : '';
 
                     const doctorBtn = !hasDoctor ? `
-                                    <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm ml-2">
-                                        <i class="fa-solid fa-user-doctor mr-1"></i> Medico
-                                    </button>
-                                ` : '';
+                                        <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm ml-2">
+                                            <i class="fa-solid fa-user-doctor mr-1"></i> Medico
+                                        </button>
+                                    ` : '';
 
                     div.innerHTML = `
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
-                                            ${iconContent}
-                                            ${doctorBadge}
-                                        </div>
-                                        <div>
-                                            <h3 class="font-bold text-slate-800 text-lg leading-tight">${displayName}</h3>
-                                            <div class="flex items-center mt-1">
-                                                <span class="text-xs text-slate-500">${total} farmaci</span>
-                                                ${doctorBtn}
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
+                                                ${iconContent}
+                                                ${doctorBadge}
+                                            </div>
+                                            <div>
+                                                <h3 class="font-bold text-slate-800 text-lg leading-tight">${displayName}</h3>
+                                                <div class="flex items-center mt-1">
+                                                    <span class="text-xs text-slate-500">${total} farmaci</span>
+                                                    ${doctorBtn}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <span class="text-sm font-bold ${percClass}">${perc}%</span>
-                                `;
+                                        <span class="text-sm font-bold ${percClass}">${perc}%</span>
+                                    `;
 
                     container.appendChild(div);
                 });
@@ -3291,9 +3361,9 @@
                         this.showAlert("Modificato", `Il farmaco ${name} è stato aggiornato correttamente.`);
                     }
 
-                // =========================
-                // ➕ NUOVO FARMACO
-                // =========================
+                    // =========================
+                    // ➕ NUOVO FARMACO
+                    // =========================
                 } else {
                     const sharedId = this.generateId();
 
@@ -3339,6 +3409,7 @@
                 });
             },
 
+            // SOSTITUISCI la vecchia toggleMedication con questa:
             toggleMedication(id) {
                 const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
                 if (!profile) return;
@@ -3346,10 +3417,210 @@
                 const med = profile.meds.find(m => m.id === id);
                 if (!med) return;
 
+                // 1. Inverti stato
                 med.taken = !med.taken;
+
+                // 2. GESTIONE STORICO (Nuovo)
+                // Se non esiste l'oggetto history, crealo
+                if (!med.history) med.history = {};
+
+                const todayISO = new Date().toISOString().slice(0, 10);
+
+                if (med.taken) {
+                    // Se preso, salva true nella data di oggi
+                    med.history[todayISO] = true;
+                } else {
+                    // Se deselezionato, rimuovi la voce dallo storico
+                    delete med.history[todayISO];
+                }
 
                 this.saveData();
                 this.renderMedications();
+            },
+
+            // --- NUOVE FUNZIONI STATISTICHE (Aggiungi queste all'oggetto app) ---
+
+            calculateStats(profile) {
+                if (!profile || !profile.meds.length) return null;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                let totalScheduled = 0;
+                let totalTaken = 0;
+                let currentStreak = 0;
+                let streakBroken = false;
+
+                // 1. Calcolo Aderenza Globale (ultimi 30 giorni o dall'inizio)
+                profile.meds.forEach(med => {
+                    if (!med.history) med.history = {};
+
+                    // Se il farmaco ha una data inizio, usala, altrimenti usa oggi
+                    // (Per semplificare, calcoliamo sugli ultimi 30gg per evitare calcoli infiniti)
+                    for (let i = 0; i < 30; i++) {
+                        const d = new Date(today);
+                        d.setDate(d.getDate() - i);
+                        const iso = d.toISOString().slice(0, 10);
+
+                        // Salta il futuro o oggi (se vogliamo statistiche consolidate, ma includiamo oggi per reattività)
+
+                        // Controlla se il farmaco era previsto per quel giorno
+                        const isScheduled = this.isMedicationDay(med, iso); // Usa la tua funzione esistente
+
+                        if (isScheduled) {
+                            totalScheduled++;
+                            if (med.history[iso]) {
+                                totalTaken++;
+                            }
+                        }
+                    }
+                });
+
+                const adherencePct = totalScheduled === 0 ? 0 : Math.round((totalTaken / totalScheduled) * 100);
+
+                // 2. Calcolo Streak (Giorni consecutivi perfetti)
+                // Conta quanti giorni consecutivi INDIETRO da IERI sono stati perfetti (tutto preso)
+                let dayOffset = 1; // Inizia da ieri
+                while (true) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - dayOffset);
+                    const iso = d.toISOString().slice(0, 10);
+
+                    let dayScheduled = 0;
+                    let dayTaken = 0;
+
+                    profile.meds.forEach(med => {
+                        if (this.isMedicationDay(med, iso)) {
+                            dayScheduled++;
+                            if (med.history && med.history[iso]) dayTaken++;
+                        }
+                    });
+
+                    // Se non c'era nulla di programmato, continua indietro (non rompe la streak)
+                    if (dayScheduled === 0) {
+                        dayOffset++;
+                        if (dayOffset > 365) break; // Safety break
+                        continue;
+                    }
+
+                    if (dayScheduled > 0 && dayTaken === dayScheduled) {
+                        currentStreak++;
+                        dayOffset++;
+                    } else {
+                        break; // Streak interrotta
+                    }
+                }
+
+                // Se OGGI ho preso tutto, aggiungi 1 alla streak (gratificazione immediata)
+                const todayISO = today.toISOString().slice(0, 10);
+                let todaySched = 0;
+                let todayT = 0;
+                profile.meds.forEach(med => {
+                    if (this.isMedicationDay(med, todayISO)) {
+                        todaySched++;
+                        if (med.taken) todayT++;
+                    }
+                });
+                if (todaySched > 0 && todaySched === todayT) currentStreak++;
+
+
+                // 3. Dati Grafico Settimanale (Ultimi 7 giorni)
+                const weeklyData = [];
+                const daysMap = ['D', 'L', 'M', 'M', 'G', 'V', 'S'];
+
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(d.getDate() - i);
+                    const iso = d.toISOString().slice(0, 10);
+                    const dayLabel = daysMap[d.getDay()];
+
+                    let dSched = 0;
+                    let dTaken = 0;
+
+                    profile.meds.forEach(med => {
+                        if (this.isMedicationDay(med, iso)) {
+                            dSched++;
+                            if (med.history && med.history[iso]) dTaken++; // Usa history anche per oggi per coerenza
+                            // Fix per oggi: usa med.taken se è oggi e history non è ancora salvato (anche se toggle salva subito)
+                            if (i === 0 && med.taken) dTaken = Math.max(dTaken, 1); // fallback
+                        }
+                    });
+
+                    let pct = dSched === 0 ? -1 : Math.round((dTaken / dSched) * 100); // -1 indica "riposo"
+                    weeklyData.push({ day: dayLabel, pct: pct, date: iso });
+                }
+
+                return { adherencePct, currentStreak, weeklyData, totalScheduled, totalTaken };
+            },
+
+            openStatsModal() {
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                if (!profile) return;
+
+                const stats = this.calculateStats(profile);
+                if (!stats) return;
+
+                // Popola UI
+                document.getElementById('stat-adherence-val').textContent = stats.adherencePct + '%';
+                document.getElementById('stat-streak-val').textContent = stats.currentStreak + ' gg';
+
+                // Colore cerchio aderenza
+                const ring = document.getElementById('stat-progress-ring');
+                const circumference = 2 * Math.PI * 45; // raggio 45
+                const offset = circumference - (stats.adherencePct / 100) * circumference;
+                ring.style.strokeDasharray = `${circumference} ${circumference}`;
+                ring.style.strokeDashoffset = offset;
+
+                // Colore testo
+                const textCol = stats.adherencePct >= 80 ? 'text-emerald-500' : (stats.adherencePct >= 50 ? 'text-orange-500' : 'text-red-500');
+                document.getElementById('stat-adherence-val').className = `text-3xl font-bold ${textCol}`;
+                ring.style.stroke = stats.adherencePct >= 80 ? '#10b981' : (stats.adherencePct >= 50 ? '#f97316' : '#ef4444');
+
+                // Popola Grafico
+                const chartContainer = document.getElementById('stat-weekly-chart');
+                chartContainer.innerHTML = '';
+
+                stats.weeklyData.forEach(d => {
+                    let barColor = 'bg-slate-200';
+                    let height = 'h-1';
+
+                    if (d.pct === -1) {
+                        height = 'h-full';
+                        barColor = 'bg-slate-100 pattern-diagonal'; // Giorno di riposo
+                    } else {
+                        height = `h-[${d.pct}%]`; // Tailwind arbitrario potrebbe non andare, usiamo style inline
+                        if (d.pct === 100) barColor = 'bg-emerald-500';
+                        else if (d.pct >= 50) barColor = 'bg-orange-400';
+                        else barColor = 'bg-red-400';
+                    }
+
+                    const barDiv = document.createElement('div');
+                    barDiv.className = "flex flex-col items-center gap-1 flex-1";
+                    // Style height dinamico
+                    const barH = d.pct === -1 ? '100%' : (d.pct || 5) + '%'; // Minimo 5% per visibilità
+
+                    barDiv.innerHTML = `
+                            <div class="w-full bg-slate-100 rounded-lg h-24 flex items-end overflow-hidden relative">
+                                 ${d.pct === -1 ? '<div class="absolute inset-0 bg-slate-100 opacity-50 flex items-center justify-center"><i class="fa-solid fa-minus text-slate-300"></i></div>' : ''}
+                                 <div style="height: ${barH}" class="w-full ${barColor} rounded-t-sm transition-all duration-500"></div>
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-500">${d.day}</span>
+                        `;
+                    chartContainer.appendChild(barDiv);
+                });
+
+                // Insight Testuale
+                const insight = document.getElementById('stat-insight');
+                const missed = stats.totalScheduled - stats.totalTaken;
+                if (stats.adherencePct === 100) {
+                    insight.innerHTML = `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-trophy"></i> Perfetto!</span> Stai seguendo la terapia alla lettera.`;
+                } else if (missed > 0) {
+                    insight.innerHTML = `<span class="text-orange-600 font-bold"><i class="fa-solid fa-triangle-exclamation"></i> Attenzione.</span> Hai saltato ${missed} assunzioni negli ultimi 30 giorni.`;
+                } else {
+                    insight.textContent = "Dati insufficienti per un'analisi dettagliata.";
+                }
+
+                this.showModal('modal-stats');
             },
 
             takePrnMed(id) {
@@ -3457,16 +3728,16 @@
                     const anyTakenGlobal = profile.meds.some(m => m.taken);
 
                     toolbarContainer.innerHTML = `
-                        <div class="flex items-center justify-end gap-2"> ${anyTakenGlobal ? `
-                            <button onclick="app.resetDailyIntake()" class="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg text-xs font-bold shadow-sm hover:bg-rose-100 active:scale-95 transition-all flex items-center gap-1.5">
-                                <i class="fa-regular fa-square-minus"></i> Deseleziona
-                            </button>` : ''}
+                            <div class="flex items-center justify-end gap-2"> ${anyTakenGlobal ? `
+                                <button onclick="app.resetDailyIntake()" class="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg text-xs font-bold shadow-sm hover:bg-rose-100 active:scale-95 transition-all flex items-center gap-1.5">
+                                    <i class="fa-regular fa-square-minus"></i> Deseleziona
+                                </button>` : ''}
 
-                            <button onclick="app.askMarkAllTaken()" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5">
-                                <i class="fa-solid fa-check-double"></i> Tutto Preso
-                            </button>
-                        </div>
-                    `;
+                                <button onclick="app.askMarkAllTaken()" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5">
+                                    <i class="fa-solid fa-check-double"></i> Tutto Preso
+                                </button>
+                            </div>
+                        `;
                 }
 
                 const times = ['Mattina', 'Pomeriggio', 'Sera', 'Al Bisogno'];
@@ -3506,17 +3777,17 @@
                         else if (time === 'Al Bisogno') icon = 'fa-kit-medical text-red-500';
 
                         header.innerHTML = `
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
-                                    <i class="fa-solid ${icon} text-lg"></i>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                                        <i class="fa-solid ${icon} text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
+                                        <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
-                                    <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
-                                </div>
-                            </div>
-                            <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
-                        `;
+                                <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
+                            `;
                         container.appendChild(header);
 
                         const listContainer = document.createElement('div');
@@ -3601,59 +3872,59 @@
                                 card.className = `p-4 rounded-xl card-shadow border ${activeBorder} mb-3 flex items-center justify-between transition-all`;
 
                                 card.innerHTML = `
-                                    <div class="flex items-center gap-4 flex-1 overflow-hidden">
-                                        <div class="w-10 h-10 rounded-full ${countToday > 0 ? 'bg-red-500 text-white shadow-md border-red-600' : 'bg-slate-50 text-slate-300 border-slate-200'} flex items-center justify-center font-bold text-lg border shrink-0 transition-colors">
-                                            ${countToday}
-                                        </div>
-                                        <div class="overflow-hidden">
-                                            <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                            <div class="flex flex-col">
-                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                                <p class="text-xs font-bold ${countToday > 0 ? 'text-red-600' : 'text-slate-400'} mt-0.5 mb-0.5 truncate">${totalDisplay}</p>
+                                        <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                                            <div class="w-10 h-10 rounded-full ${countToday > 0 ? 'bg-red-500 text-white shadow-md border-red-600' : 'bg-slate-50 text-slate-300 border-slate-200'} flex items-center justify-center font-bold text-lg border shrink-0 transition-colors">
+                                                ${countToday}
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
                                                 <div class="flex flex-col">
-                                                    ${med.dose ? `<p class="text-[10px] text-slate-400 opacity-80">Dose singola: ${med.dose}</p>` : ''}
-                                                    ${therapyBadge || ''}
+                                                    ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                    <p class="text-xs font-bold ${countToday > 0 ? 'text-red-600' : 'text-slate-400'} mt-0.5 mb-0.5 truncate">${totalDisplay}</p>
+                                                    <div class="flex flex-col">
+                                                        ${med.dose ? `<p class="text-[10px] text-slate-400 opacity-80">Dose singola: ${med.dose}</p>` : ''}
+                                                        ${therapyBadge || ''}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="flex items-center gap-1 pl-2">
-                                        ${noteBtn}
-                                        <button onclick="app.takePrnMed('${med.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 ml-1 mr-1">
-                                            <i class="fa-solid fa-plus"></i> Prendi
-                                        </button>
-                                        <div class="flex flex-col gap-1 ml-1 border-l pl-2 border-slate-100">
-                                            <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 text-xs p-1"><i class="fa-solid fa-pen"></i></button>
-                                            <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash"></i></button>
-                                        </div>
-                                    </div>`;
+                                        <div class="flex items-center gap-1 pl-2">
+                                            ${noteBtn}
+                                            <button onclick="app.takePrnMed('${med.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 ml-1 mr-1">
+                                                <i class="fa-solid fa-plus"></i> Prendi
+                                            </button>
+                                            <div class="flex flex-col gap-1 ml-1 border-l pl-2 border-slate-100">
+                                                <button onclick="app.openEditMedModal('${med.id}')" class="text-slate-300 hover:text-blue-500 text-xs p-1"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </div>`;
                             } else {
                                 card.innerHTML = `
-                                    <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
-                                        <input type="checkbox" class="med-checkbox"
-                                            ${med.taken ? 'checked' : ''}
-                                            ${isLocked || !isToday ? 'disabled' : ''}
-                                            onchange="app.toggleMedication('${med.id}')">
-                                        <div class="overflow-hidden ${med.taken ? 'opacity-40' : ''} ${!isLocked && isToday ? 'cursor-pointer' : ''}">
-                                            <div class="flex items-center">
-                                                ${timeDisplay}
-                                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                            </div>
-                                            <div class="flex flex-col">
-                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                                <div class="flex flex-col mt-0.5">
-                                                    ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                                    ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
-                                                    ${therapyBadge}
+                                        <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
+                                            <input type="checkbox" class="med-checkbox"
+                                                ${med.taken ? 'checked' : ''}
+                                                ${isLocked || !isToday ? 'disabled' : ''}
+                                                onchange="app.toggleMedication('${med.id}')">
+                                            <div class="overflow-hidden ${med.taken ? 'opacity-40' : ''} ${!isLocked && isToday ? 'cursor-pointer' : ''}">
+                                                <div class="flex items-center">
+                                                    ${timeDisplay}
+                                                    <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                    <div class="flex flex-col mt-0.5">
+                                                        ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                                        ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                                        ${therapyBadge}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="flex items-center card-actions">
-                                        ${cartBtn}  ${noteBtn}
-                                        <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2" title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2" title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
-                                    </div>`;
+                                        <div class="flex items-center card-actions">
+                                            ${cartBtn}  ${noteBtn}
+                                            <button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2" title="Modifica farmaco"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2" title="Elimina farmaco"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>`;
                             }
 
                             listContainer.appendChild(card);
@@ -3790,65 +4061,65 @@
                             defaultMsg += `\nGrazie mille.`;
 
                             waButtonHtml = `
-                                <div>
-                                    <button id="btn-prep-${profile.id}" onclick="app.toggleOrderEditor('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 active:scale-95 transition-all text-sm">
-                                        <i class="fa-brands fa-whatsapp text-lg"></i> Prepara Messaggio
-                                    </button>
-                                    <div id="editor-${profile.id}" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 fade-in mt-2">
-                                        <textarea id="msg-area-${profile.id}" rows="6" class="w-full p-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-none mb-2 font-mono text-slate-700 leading-snug">${defaultMsg}</textarea>
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <button onclick="app.toggleOrderEditor('${profile.id}')" class="py-2 bg-white text-slate-500 border border-slate-300 rounded-lg font-bold text-xs">Annulla</button>
-                                            <button onclick="app.sendCustomOrder('${profile.id}')" class="py-2 bg-green-600 text-white rounded-lg font-bold text-xs shadow flex items-center justify-center gap-2"><i class="fa-regular fa-paper-plane"></i> Invia</button>
+                                    <div>
+                                        <button id="btn-prep-${profile.id}" onclick="app.toggleOrderEditor('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 active:scale-95 transition-all text-sm">
+                                            <i class="fa-brands fa-whatsapp text-lg"></i> Prepara Messaggio
+                                        </button>
+                                        <div id="editor-${profile.id}" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 fade-in mt-2">
+                                            <textarea id="msg-area-${profile.id}" rows="6" class="w-full p-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-none mb-2 font-mono text-slate-700 leading-snug">${defaultMsg}</textarea>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <button onclick="app.toggleOrderEditor('${profile.id}')" class="py-2 bg-white text-slate-500 border border-slate-300 rounded-lg font-bold text-xs">Annulla</button>
+                                                <button onclick="app.sendCustomOrder('${profile.id}')" class="py-2 bg-green-600 text-white rounded-lg font-bold text-xs shadow flex items-center justify-center gap-2"><i class="fa-regular fa-paper-plane"></i> Invia</button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            `;
+                                `;
                         } else {
                             waButtonHtml = `
-                                <button onclick="app.showAlert('Dati mancanti', 'Aggiungi il numero WhatsApp per ordinare.')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-400 font-bold rounded-lg cursor-not-allowed text-xs">
-                                    <i class="fa-brands fa-whatsapp"></i> Numero mancante
-                                </button>
-                            `;
+                                    <button onclick="app.showAlert('Dati mancanti', 'Aggiungi il numero WhatsApp per ordinare.')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-400 font-bold rounded-lg cursor-not-allowed text-xs">
+                                        <i class="fa-brands fa-whatsapp"></i> Numero mancante
+                                    </button>
+                                `;
                         }
 
                         // 2. Logica Pulsante Acquisto da Banco (Sempre disponibile)
                         otcButtonHtml = `
-                            <button onclick="app.markAsOrderedDirectly('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-600 border border-blue-100 font-bold rounded-lg hover:bg-blue-100 active:scale-95 transition-all text-sm">
-                                <i class="fa-solid fa-basket-shopping"></i> Acquisto da banco
-                            </button>
-                        `;
+                                <button onclick="app.markAsOrderedDirectly('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-600 border border-blue-100 font-bold rounded-lg hover:bg-blue-100 active:scale-95 transition-all text-sm">
+                                    <i class="fa-solid fa-basket-shopping"></i> Acquisto da banco
+                                </button>
+                            `;
 
                         // Lista Farmaci
                         let listHtml = '';
                         uniqueMedsToOrder.forEach(med => {
                             listHtml += `
-                                <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
-                                    <i class="fa-solid fa-circle-exclamation text-orange-500 text-xs"></i>
-                                    <div class="flex-1">
-                                        <p class="font-bold text-slate-700 text-sm">${med.name}</p>
+                                    <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
+                                        <i class="fa-solid fa-circle-exclamation text-orange-500 text-xs"></i>
+                                        <div class="flex-1">
+                                            <p class="font-bold text-slate-700 text-sm">${med.name}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            `;
+                                `;
                         });
 
                         section.innerHTML = `
-                            <div class="p-4">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h4 class="font-bold text-slate-800 flex items-center text-sm uppercase tracking-wider">
-                                        <i class="fa-solid fa-user text-slate-400 mr-2"></i> ${profile.name}
-                                    </h4>
-                                    ${docInfo}
-                                </div>
-                                <div class="pl-2 border-l-2 border-orange-100 space-y-0 mb-3">
-                                    ${listHtml}
-                                </div>
+                                <div class="p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h4 class="font-bold text-slate-800 flex items-center text-sm uppercase tracking-wider">
+                                            <i class="fa-solid fa-user text-slate-400 mr-2"></i> ${profile.name}
+                                        </h4>
+                                        ${docInfo}
+                                    </div>
+                                    <div class="pl-2 border-l-2 border-orange-100 space-y-0 mb-3">
+                                        ${listHtml}
+                                    </div>
 
-                                <div class="space-y-2">
-                                    ${waButtonHtml}
-                                    ${otcButtonHtml}
+                                    <div class="space-y-2">
+                                        ${waButtonHtml}
+                                        ${otcButtonHtml}
+                                    </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
                         container.appendChild(section);
                     }
                 });
@@ -3883,18 +4154,18 @@
 
                             uniqueOrdered.forEach(m => {
                                 listHtml += `
-                                    <div class="flex items-center justify-between py-3 px-4 border-b border-slate-200/50 last:border-0 gap-2 bg-white">
-                                        <div class="flex-1 min-w-0 mr-2">
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-box-open"></i></div>
-                                                <div><p class="font-bold text-slate-700 text-sm truncate leading-tight">${m.name}</p><p class="text-[9px] text-slate-400 mt-0.5">In attesa di ritiro...</p></div>
+                                        <div class="flex items-center justify-between py-3 px-4 border-b border-slate-200/50 last:border-0 gap-2 bg-white">
+                                            <div class="flex-1 min-w-0 mr-2">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-box-open"></i></div>
+                                                    <div><p class="font-bold text-slate-700 text-sm truncate leading-tight">${m.name}</p><p class="text-[9px] text-slate-400 mt-0.5">In attesa di ritiro...</p></div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="flex items-center gap-2 shrink-0">
-                                            <button onclick="app.askConfirmRestore('${m.id}')" class="w-9 h-9 rounded-lg bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-50 hover:text-red-500 active:scale-95 transition-all shadow-sm" title="Annulla Ordine"><i class="fa-solid fa-rotate-left"></i></button>
-                                            <button onclick="app.receiveMedication('${m.id}')" class="h-9 px-3 rounded-lg bg-emerald-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-1"><i class="fa-solid fa-check"></i> Ricevi</button>
-                                        </div>
-                                    </div>`;
+                                            <div class="flex items-center gap-2 shrink-0">
+                                                <button onclick="app.askConfirmRestore('${m.id}')" class="w-9 h-9 rounded-lg bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:bg-slate-50 hover:text-red-500 active:scale-95 transition-all shadow-sm" title="Annulla Ordine"><i class="fa-solid fa-rotate-left"></i></button>
+                                                <button onclick="app.receiveMedication('${m.id}')" class="h-9 px-3 rounded-lg bg-emerald-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-1"><i class="fa-solid fa-check"></i> Ricevi</button>
+                                            </div>
+                                        </div>`;
                             });
                             groupDiv.innerHTML = listHtml;
                             container.appendChild(groupDiv);
@@ -3959,9 +4230,9 @@
                         const header = document.createElement('div');
                         header.className = "px-2 py-1.5 bg-slate-100 rounded-lg mb-2 mt-3 flex items-center gap-2 border border-slate-200";
                         header.innerHTML = `
-                            <i class="fa-solid fa-user text-slate-400 text-xs"></i>
-                            <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">${profile.name}</span>
-                        `;
+                                <i class="fa-solid fa-user text-slate-400 text-xs"></i>
+                                <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">${profile.name}</span>
+                            `;
                         orderedContainer.appendChild(header);
 
                         // Lista farmaci unici del profilo
@@ -3977,31 +4248,31 @@
 
                             // NOTA: Passiamo med.sharedId per cancellare TUTTE le istanze (mattina/pom/sera)
                             div.innerHTML = `
-                                <div class="flex items-center gap-3 overflow-hidden">
-                                    <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                                        <i class="fa-solid fa-basket-shopping"></i>
+                                    <div class="flex items-center gap-3 overflow-hidden">
+                                        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                                            <i class="fa-solid fa-basket-shopping"></i>
+                                        </div>
+                                        <div class="truncate">
+                                            <h4 class="font-bold text-slate-800 text-sm truncate">
+                                                ${displayName}
+                                            </h4>
+                                            <p class="text-[10px] text-purple-600 font-bold uppercase flex items-center gap-2">
+                                                <span class="px-1.5 py-0.5 rounded-md bg-white border border-purple-200 text-purple-600 text-[10px] font-black shadow-sm">
+                                                    x${qty}
+                                                </span>
+                                                ${med.type || ''}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div class="truncate">
-                                        <h4 class="font-bold text-slate-800 text-sm truncate">
-                                            ${displayName}
-                                        </h4>
-                                        <p class="text-[10px] text-purple-600 font-bold uppercase flex items-center gap-2">
-                                            <span class="px-1.5 py-0.5 rounded-md bg-white border border-purple-200 text-purple-600 text-[10px] font-black shadow-sm">
-                                                x${qty}
-                                            </span>
-                                            ${med.type || ''}
-                                        </p>
+                                    <div class="flex gap-2 shrink-0">
+                                        <button onclick="app.cancelOTCOrder('${med.sharedId}')" class="w-8 h-8 rounded-lg bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center" title="Rimuovi">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                        <button onclick="app.receiveMedication('${med.id}')" class="h-8 px-3 rounded-lg bg-green-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-green-600 active:scale-95 transition-all flex items-center gap-1">
+                                            <i class="fa-solid fa-check"></i> Ricevi
+                                        </button>
                                     </div>
-                                </div>
-                                <div class="flex gap-2 shrink-0">
-                                    <button onclick="app.cancelOTCOrder('${med.sharedId}')" class="w-8 h-8 rounded-lg bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center" title="Rimuovi">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
-                                    <button onclick="app.receiveMedication('${med.id}')" class="h-8 px-3 rounded-lg bg-green-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-green-600 active:scale-95 transition-all flex items-center gap-1">
-                                        <i class="fa-solid fa-check"></i> Ricevi
-                                    </button>
-                                </div>
-                            `;
+                                `;
                             orderedContainer.appendChild(div);
                         });
                     }
@@ -4035,19 +4306,19 @@
                     div.onclick = () => this.openOTCPurchaseModal(med.id);
 
                     div.innerHTML = `
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                                <i class="fa-solid fa-pills"></i>
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-pills"></i>
+                                </div>
+                                <div class="truncate">
+                                    <h4 class="font-bold text-slate-700 text-sm truncate">${med.name}</h4>
+                                    <p class="text-[10px] text-slate-500 font-medium truncate">
+                                        ${med.type || 'Generico'}
+                                    </p>
+                                </div>
                             </div>
-                            <div class="truncate">
-                                <h4 class="font-bold text-slate-700 text-sm truncate">${med.name}</h4>
-                                <p class="text-[10px] text-slate-500 font-medium truncate">
-                                    ${med.type || 'Generico'}
-                                </p>
-                            </div>
-                        </div>
-                        <i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>
-                    `;
+                            <i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>
+                        `;
                     allContainer.appendChild(div);
                 });
 
@@ -4971,17 +5242,17 @@
 
                     // MODIFICA QUI: Sostituito category/dose con med.type (Categoria Terapeutica)
                     div.innerHTML = `
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-800 leading-tight mb-1">${med.name}</h2>
-                    <p class="text-slate-500 font-medium text-sm uppercase tracking-wide">
-                        ${med.type || 'Categoria non specificata'}
-                    </p>
-                </div>
-                <div class="flex flex-col items-center justify-center bg-indigo-50 text-indigo-700 w-16 h-16 rounded-xl border border-indigo-100 shrink-0 ml-4">
-                    <span class="text-xs font-bold uppercase opacity-70">Qta</span>
-                    <span class="text-3xl font-black">${qty}</span>
-                </div>
-            `;
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800 leading-tight mb-1">${med.name}</h2>
+                        <p class="text-slate-500 font-medium text-sm uppercase tracking-wide">
+                            ${med.type || 'Categoria non specificata'}
+                        </p>
+                    </div>
+                    <div class="flex flex-col items-center justify-center bg-indigo-50 text-indigo-700 w-16 h-16 rounded-xl border border-indigo-100 shrink-0 ml-4">
+                        <span class="text-xs font-bold uppercase opacity-70">Qta</span>
+                        <span class="text-3xl font-black">${qty}</span>
+                    </div>
+                `;
                     container.appendChild(div);
                 });
 
