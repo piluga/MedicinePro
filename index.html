@@ -579,15 +579,20 @@
 
             <div class="bg-white p-5 rounded-2xl card-shadow space-y-4">
                 <div>
-                    <label class="block text-sm font-bold text-slate-600 mb-2">Google Gemini API Key</label>
+                    <label class="block text-sm font-bold text-slate-600 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> Google Gemini API Key
+                    </label>
+
                     <input type="password" id="input-settings-apikey" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Inserisci la tua API Key">
-                    <p class="text-[11px] text-slate-400 mt-2 italic">La chiave serve per abilitare il riconoscimento dei farmaci tramite fotocamera.</p>
+                    <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">La chiave serve per abilitare il riconoscimento dei farmaci tramite fotocamera.</p>
                 </div>
 
                 <div class="border-t border-slate-100 pt-4 mt-2">
-                    <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2 text-sm">
+                    <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2 text-sm">
                         <i class="fa-solid fa-sliders text-blue-500"></i> Personalizzazione Interfaccia
                     </h3>
+
+                    <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Configura l'aspetto della lista farmaci: scegli quali pulsanti di azione mostrare sulle schede.</p>
                     <div class="space-y-3">
                         <label class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
                             <span class="text-xs font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-cart-shopping text-emerald-500 w-4"></i> Carrello Spesa</span>
@@ -1370,15 +1375,6 @@
                 </div>
             </div>
 
-            <div class="p-3 bg-white border-t border-slate-200 grid grid-cols-2 gap-3 shrink-0">
-                <button onclick="app.shareOTCListWhatsApp()" class="flex items-center justify-center gap-2 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-all active:scale-95 shadow-md">
-                    <i class="fa-brands fa-whatsapp text-xl"></i> Invia Lista
-                </button>
-                <button onclick="app.openPharmacyMode()" class="flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all active:scale-95 shadow-md">
-                    <i class="fa-solid fa-expand text-xl"></i> Al Banco
-                </button>
-            </div>
-
         </div>
     </div>
 
@@ -1427,7 +1423,7 @@
                     <i class="fa-solid fa-prescription-bottle-medical text-xl"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-lg leading-tight">Lista per Farmacista</h3>
+                    <h3 class="font-bold text-lg leading-tight">Lista per la Farmacia</h3>
                     <p class="text-[10px] text-indigo-200 font-medium opacity-90 uppercase tracking-wide">Mostra questo schermo</p>
                 </div>
             </div>
@@ -4323,19 +4319,18 @@
                             defaultMsg += `\nGrazie mille.`;
 
                             waButtonHtml = `
-                                    <div>
-                                        <button id="btn-prep-${profile.id}" onclick="app.toggleOrderEditor('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 active:scale-95 transition-all text-sm">
-                                            <i class="fa-brands fa-whatsapp text-lg"></i> Prepara Messaggio
-                                        </button>
-                                        <div id="editor-${profile.id}" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 fade-in mt-2">
-                                            <textarea id="msg-area-${profile.id}" rows="6" class="w-full p-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-none mb-2 font-mono text-slate-700 leading-snug">${defaultMsg}</textarea>
-                                            <div class="grid grid-cols-2 gap-2">
-                                                <button onclick="app.toggleOrderEditor('${profile.id}')" class="py-2 bg-white text-slate-500 border border-slate-300 rounded-lg font-bold text-xs">Annulla</button>
-                                                <button onclick="app.sendCustomOrder('${profile.id}')" class="py-2 bg-green-600 text-white rounded-lg font-bold text-xs shadow flex items-center justify-center gap-2"><i class="fa-regular fa-paper-plane"></i> Invia</button>
-                                            </div>
+                                <div class="mt-3"> <button id="btn-prep-${profile.id}" onclick="app.toggleOrderEditor('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-1.5 bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 active:scale-95 transition-all text-xs">
+                                        <i class="fa-brands fa-whatsapp text-sm"></i> Prepara Messaggio
+                                    </button>
+                                    <div id="editor-${profile.id}" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 fade-in mt-2">
+                                        <textarea id="msg-area-${profile.id}" rows="6" class="w-full p-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-none mb-2 font-mono text-slate-700 leading-snug">${defaultMsg}</textarea>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <button onclick="app.toggleOrderEditor('${profile.id}')" class="py-1.5 bg-white text-slate-500 border border-slate-300 rounded-lg font-bold text-xs">Annulla</button>
+                                            <button onclick="app.sendCustomOrder('${profile.id}')" class="py-1.5 bg-green-600 text-white rounded-lg font-bold text-xs shadow flex items-center justify-center gap-2"><i class="fa-regular fa-paper-plane"></i> Invia</button>
                                         </div>
                                     </div>
-                                `;
+                                </div>
+                            `;
                         } else {
                             waButtonHtml = `
                                     <button onclick="app.showAlert('Dati mancanti', 'Aggiungi il numero WhatsApp per ordinare.')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-400 font-bold rounded-lg cursor-not-allowed text-xs">
@@ -4346,10 +4341,10 @@
 
                         // 2. Logica Pulsante Acquisto da Banco (Sempre disponibile)
                         otcButtonHtml = `
-                                <button onclick="app.markAsOrderedDirectly('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-50 text-blue-600 border border-blue-100 font-bold rounded-lg hover:bg-blue-100 active:scale-95 transition-all text-sm">
-                                    <i class="fa-solid fa-basket-shopping"></i> Acquisto da banco
-                                </button>
-                            `;
+                            <button onclick="app.markAsOrderedDirectly('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 font-bold rounded-lg hover:bg-blue-100 active:scale-95 transition-all text-xs">
+                                <i class="fa-solid fa-basket-shopping"></i> Acquisto da banco
+                            </button>
+                        `;
 
                         // Lista Farmaci
                         let listHtml = '';
@@ -4365,23 +4360,24 @@
                         });
 
                         section.innerHTML = `
-                                <div class="p-4">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <h4 class="font-bold text-slate-800 flex items-center text-sm uppercase tracking-wider">
-                                            <i class="fa-solid fa-user text-slate-400 mr-2"></i> ${profile.name}
-                                        </h4>
-                                        ${docInfo}
-                                    </div>
-                                    <div class="pl-2 border-l-2 border-orange-100 space-y-0 mb-3">
-                                        ${listHtml}
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        ${waButtonHtml}
-                                        ${otcButtonHtml}
-                                    </div>
+                            <div class="p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="font-bold text-slate-800 flex items-center text-sm uppercase tracking-wider">
+                                        <i class="fa-solid fa-user text-slate-400 mr-2"></i> ${profile.name}
+                                    </h4>
+                                    ${docInfo}
                                 </div>
-                            `;
+        
+                                <div class="pl-2 border-l-2 border-orange-100 space-y-0 mb-4">
+                                    ${listHtml}
+                                </div>
+
+                                <div class="space-y-2 border-t border-slate-100 pt-3">
+                                    ${waButtonHtml}
+                                    ${otcButtonHtml}
+                                </div>
+                            </div>
+                        `;
                         container.appendChild(section);
                     }
                 });
@@ -4540,12 +4536,43 @@
                     }
                 });
 
+                // Gestione visibilità sezione "Da Acquistare"
                 if (hasOrderedGlobal) {
+                    // 1. Crea il contenitore per i pulsanti
+                    const btnContainer = document.createElement('div');
+                    btnContainer.className = "grid grid-cols-2 gap-2 mt-4 mb-2"; // Margine sopra per staccare dalla lista
+
+                    // 2. Inserisci l'HTML dei pulsanti (stile ridotto: py-2, text-xs)
+                    btnContainer.innerHTML = `
+                        <button onclick="app.shareOTCListWhatsApp()" class="flex items-center justify-center gap-2 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-all active:scale-95 shadow-md text-xs">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> Prepara Messaggio
+                        </button>
+                        <button onclick="app.openPharmacyMode()" class="flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all active:scale-95 shadow-md text-xs">
+                            <i class="fa-solid fa-expand text-sm"></i> Al Banco
+                        </button>
+                    `;
+
+                    // 3. Aggiungi i pulsanti alla fine della lista "orderedContainer"
+                    orderedContainer.appendChild(btnContainer);
+
+                    // 4. Mostra la sezione
                     orderedSection.classList.remove('hidden');
                 } else {
+                    // Nascondi la sezione se non c'è nulla
                     orderedSection.classList.add('hidden');
                 }
 
+                // --- INIZIO MODIFICA: Gestione visibilità bottoni azioni ---
+                const actionBtns = document.getElementById('otc-action-buttons');
+                if (actionBtns) {
+                    if (hasOrderedGlobal) {
+                        actionBtns.classList.remove('hidden');
+                    } else {
+                        actionBtns.classList.add('hidden');
+                    }
+                }
+
+                // --- FINE MODIFICA ---
                 // --- 2. SEZIONE CERCA E AGGIUNGI (Invariata) ---
                 let seenAllIds = new Set();
                 let allUniqueMeds = [];
@@ -5658,4 +5685,3 @@
     </script>
 </body>
 </html>
-
