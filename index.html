@@ -605,6 +605,12 @@
                     <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Configura l'aspetto della lista farmaci: scegli quali pulsanti di azione mostrare sulle schede.</p>
                     <div class="space-y-3">
                         <label class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                            <span class="text-xs font-bold text-slate-600 flex items-center gap-2">
+                                <i class="fa-solid fa-image text-purple-500 w-4"></i> Foto Farmaco
+                            </span>
+                            <input type="checkbox" id="pref-show-image" class="accent-blue-600 w-5 h-5">
+                        </label>
+                        <label class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
                             <span class="text-xs font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-cart-shopping text-emerald-500 w-4"></i> Carrello Spesa</span>
                             <input type="checkbox" id="pref-show-cart" class="accent-blue-600 w-5 h-5">
                         </label>
@@ -3040,6 +3046,10 @@
                 document.getElementById('pref-show-edit').checked = prefs.showEdit;
                 document.getElementById('pref-show-delete').checked = prefs.showDelete;
 
+                // Nota: usiamo !== false così di default è ATTIVO per i nuovi utenti
+                document.getElementById('pref-show-image').checked = (prefs.showImage !== false);
+                // ----------------------------
+
                 window.scrollTo(0, 0);
             },
 
@@ -3078,7 +3088,8 @@
                     showCart: document.getElementById('pref-show-cart').checked,
                     showNotes: document.getElementById('pref-show-notes').checked,
                     showEdit: document.getElementById('pref-show-edit').checked,
-                    showDelete: document.getElementById('pref-show-delete').checked
+                    showDelete: document.getElementById('pref-show-delete').checked,
+                    showImage: document.getElementById('pref-show-image').checked
                 };
                 // -------------------------------
 
@@ -4562,7 +4573,7 @@
                                 }
                             }
 
-                            const photoBtn = med.image ?
+                            const photoBtn = (prefs.showImage !== false && med.image) ?
                                 `<button onclick="event.stopPropagation(); app.showMedImageFromList('${med.id}')" class="text-slate-400 hover:text-slate-600 p-2" title="Vedi Foto"><i class="fa-solid fa-image"></i></button>`
                                 : '';
 
