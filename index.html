@@ -641,7 +641,7 @@
 
                 <div class="bg-white p-5 rounded-2xl card-shadow mb-4">
                     <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-server text-indigo-500"></i> Archivio Farmaci
+                        <i class="fa-solid fa-pills text-indigo-500"></i> Archivio Farmaci
                     </h3>
                     <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
                         Gestisci il database globale dei tuoi farmaci per riutilizzarli velocemente in futuro.
@@ -669,18 +669,25 @@
 
                 <div class="bg-white p-5 rounded-2xl card-shadow mb-4">
                     <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-server text-indigo-500"></i> Archivio Dati
+                        <i class="fa-solid fa-server text-blue-500"></i> Archivio Dati
                     </h3>
                     <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                        Salva una copia di sicurezza di tutti i tuoi dati o ripristina un backup precedente.
                     </p>
+
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="app.triggerImport()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
-                            <i class="fa-solid fa-file-import text-blue-600 mb-2"></i>
-                            <span class="text-xs font-bold">Importa Backup</span>
+                        <button onclick="app.triggerImport()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                            <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-file-import"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600">Importa Backup</span>
                         </button>
-                        <button onclick="app.exportData()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
-                            <i class="fa-solid fa-download text-green-600 mb-2"></i>
-                            <span class="text-xs font-bold">Esporta Backup</span>
+
+                        <button onclick="app.exportData()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                            <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-file-export"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600">Esporta Backup</span>
                         </button>
                     </div>
                 </div>
