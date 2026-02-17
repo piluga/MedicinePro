@@ -441,17 +441,17 @@
             display: none;
         }
 
-    .health-type-btn.selected {
-    background-color: #fff1f2; /* Rose-50 */
-    border-color: #f43f5e;     /* Rose-500 */
-    color: #e11d48;            /* Rose-600 */
-    }
-    
-    .glucose-tag.selected {
-        background-color: #f3e8ff;
-        border-color: #a855f7;
-        color: #7e22ce;
-    }
+        .health-type-btn.selected {
+            background-color: #fff1f2; /* Rose-50 */
+            border-color: #f43f5e; /* Rose-500 */
+            color: #e11d48; /* Rose-600 */
+        }
+
+        .glucose-tag.selected {
+            background-color: #f3e8ff;
+            border-color: #a855f7;
+            color: #7e22ce;
+        }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -604,21 +604,51 @@
             </div>
 
             <div class="bg-white p-5 rounded-2xl card-shadow space-y-4">
-                <div>
-                    <label class="block text-sm font-bold text-slate-600 mb-2 flex items-center gap-2">
+                
+                <div class="bg-green-50 p-5 rounded-2xl card-shadow mb-4">
+                    <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> Google Gemini API Key
-                    </label>
-
+                    </h3>
+                    <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                        La chiave serve per abilitare il riconoscimento dei farmaci tramite fotocamera.
+                    </p>
                     <input type="password" id="input-settings-apikey" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Inserisci la tua API Key">
-                    <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">La chiave serve per abilitare il riconoscimento dei farmaci tramite fotocamera.</p>
                 </div>
 
-                <div class="border-t border-slate-100 pt-4 mt-2">
-                    <h3 class="font-bold text-slate-800 mb-2 flex items-center gap-2 text-sm">
+                <div class="bg-sky-50 p-5 rounded-2xl card-shadow mb-4">
+                    <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-regular fa-bell text-rose-500"></i> Promemoria & Sveglia
+                    </h3>
+                    <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                        Sincronizza la terapia con il calendario del tuo telefono (Google/iOS) per ricevere avvisi infallibili anche a telefono spento.
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="app.exportToCalendar('PUBLISH')" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                            <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                <i class="fa-regular fa-calendar-check"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600">Attiva Avvisi</span>
+                        </button>
+
+                        <button onclick="app.exportToCalendar('CANCEL')" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                            <div class="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                <i class="fa-regular fa-calendar-xmark"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600">Disattiva</span>
+                        </button>
+                    </div>
+                </div>
+
+
+                <div class="bg-green-50 p-5 rounded-2xl card-shadow mb-4">
+                    <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-sliders text-blue-500"></i> Personalizzazione Interfaccia
                     </h3>
+                    <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                        Configura l'aspetto della lista farmaci: scegli quali pulsanti di azione mostrare sulle schede.
+                    </p>
 
-                    <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">Configura l'aspetto della lista farmaci: scegli quali pulsanti di azione mostrare sulle schede.</p>
                     <div class="space-y-3">
                         <label class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
                             <span class="text-xs font-bold text-slate-600 flex items-center gap-2">
@@ -644,74 +674,73 @@
                         </label>
                     </div>
                 </div>
-
                 <button onclick="app.saveSettings()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-all">
                     Salva Impostazioni
                 </button>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl card-shadow">
-                <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-database text-blue-500"></i> Database
-                </h3>
-
-                <div class="bg-white p-5 rounded-2xl card-shadow mb-4">
+                <div class="bg-white p-5 rounded-2xl card-shadow">
                     <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-pills text-indigo-500"></i> Archivio Farmaci
+                        <i class="fa-solid fa-database text-blue-500"></i> Database
                     </h3>
-                    <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
-                        Gestisci il database globale dei tuoi farmaci per riutilizzarli velocemente in futuro.
-                    </p>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="app.openDatabaseManagement()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
-                            <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-list-ul"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600">Gestisci Lista</span>
-                        </button>
+                    <div class="bg-sky-50 p-5 rounded-2xl card-shadow mb-4">
+                        <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-pills text-indigo-500"></i> Archivio Farmaci
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                            Gestisci il database globale dei tuoi farmaci per riutilizzarli velocemente in futuro.
+                        </p>
 
-                        <button onclick="app.syncDrugsFromProfiles()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
-                            <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-rotate"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600">Sincronizza</span>
-                        </button>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="app.openDatabaseManagement()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-list-ul"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-600">Gestisci Lista</span>
+                            </button>
+
+                            <button onclick="app.syncDrugsFromProfiles()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                                <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-rotate"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-600">Sincronizza</span>
+                            </button>
+                        </div>
+                        <p class="text-[9px] text-slate-400 mt-2 text-center">
+                            "Sincronizza" copia nell'archivio tutti i farmaci attualmente presenti nei profili.
+                        </p>
                     </div>
-                    <p class="text-[9px] text-slate-400 mt-2 text-center">
-                        "Sincronizza" copia nell'archivio tutti i farmaci attualmente presenti nei profili.
-                    </p>
-                </div>
 
-                <div class="bg-white p-5 rounded-2xl card-shadow mb-4">
-                    <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-server text-blue-500"></i> Archivio Dati
-                    </h3>
-                    <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
-                        Salva una copia di sicurezza di tutti i tuoi dati o ripristina un backup precedente.
-                    </p>
+                    <div class="bg-green-50 p-5 rounded-2xl card-shadow mb-4">
+                        <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-server text-blue-500"></i> Archivio Dati
+                        </h3>
+                        <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                            Salva una copia di sicurezza di tutti i tuoi dati o ripristina un backup precedente.
+                        </p>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="app.triggerImport()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
-                            <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-file-import"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600">Importa Backup</span>
-                        </button>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="app.triggerImport()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-file-import"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-600">Importa Backup</span>
+                            </button>
 
-                        <button onclick="app.exportData()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
-                            <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                <i class="fa-solid fa-file-export"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600">Esporta Backup</span>
-                        </button>
+                            <button onclick="app.exportData()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                                <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-file-export"></i>
+                                </div>
+                                <span class="text-xs font-bold text-slate-600">Esporta Backup</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <button onclick="app.resetAllData()" class="w-full mt-6 bg-red-50 text-red-600 py-3 rounded-xl font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Resetta tutti i dati
-                </button>
-            </div>
+                    <button onclick="app.resetAllData()" class="w-full mt-6 bg-red-50 text-red-600 py-3 rounded-xl font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Resetta tutti i dati
+                    </button>
+                </div>
         </section>
     </main>
 
@@ -1866,7 +1895,7 @@
             </p>
         </div>
     </div>
-    
+
     <div id="modal-image-view" class="hidden fixed inset-0 modal-overlay z-[200] flex items-center justify-center p-4 fade-in bg-black/90" onclick="app.closeModal('modal-image-view')">
         <div class="relative max-w-full max-h-full">
             <img id="full-image-display" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl object-contain" src="">
@@ -1878,7 +1907,7 @@
 
     <div id="modal-health-diary" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            
+
             <div class="p-4 bg-rose-50 border-b border-rose-100 flex justify-between items-center shrink-0">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center border border-rose-200 shadow-sm">
@@ -1895,7 +1924,7 @@
             </div>
 
             <div id="health-diary-list" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 bg-slate-50">
-                </div>
+            </div>
 
             <div class="p-4 bg-white border-t border-slate-200 shrink-0 relative">
                 <p class="text-[10px] text-slate-400 text-center mb-2">Tocca un elemento per eliminarlo.</p>
@@ -1907,92 +1936,92 @@
     </div>
 
     <div id="modal-add-health" class="hidden fixed inset-0 modal-overlay z-[90] flex items-center justify-center p-4 fade-in">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
-        <h3 class="text-lg font-bold text-slate-800 mb-4">Nuova Misurazione</h3>
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">Nuova Misurazione</h3>
 
-        <div class="grid grid-cols-3 gap-2 mb-4">
-            <button onclick="app.setHealthType('pressure')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors selected" data-type="pressure">
-                <i class="fa-solid fa-heart-pulse text-rose-500"></i>
-                <span class="text-[9px] font-bold uppercase">Pressione</span>
-            </button>
-            <button onclick="app.setHealthType('weight')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="weight">
-                <i class="fa-solid fa-weight-scale text-blue-500"></i>
-                <span class="text-[9px] font-bold uppercase">Peso</span>
-            </button>
-            <button onclick="app.setHealthType('glucose')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="glucose">
-                <i class="fa-solid fa-droplet text-purple-500"></i>
-                <span class="text-[9px] font-bold uppercase">Glicemia</span>
-            </button>
-            <button onclick="app.setHealthType('temp')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="temp">
-                <i class="fa-solid fa-temperature-half text-orange-500"></i>
-                <span class="text-[9px] font-bold uppercase">Febbre</span>
-            </button>
-            <button onclick="app.setHealthType('spo2')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="spo2">
-                <i class="fa-solid fa-lungs text-cyan-500"></i>
-                <span class="text-[9px] font-bold uppercase">Ossigeno</span>
-            </button>
-        </div>
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <button onclick="app.setHealthType('pressure')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors selected" data-type="pressure">
+                    <i class="fa-solid fa-heart-pulse text-rose-500"></i>
+                    <span class="text-[9px] font-bold uppercase">Pressione</span>
+                </button>
+                <button onclick="app.setHealthType('weight')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="weight">
+                    <i class="fa-solid fa-weight-scale text-blue-500"></i>
+                    <span class="text-[9px] font-bold uppercase">Peso</span>
+                </button>
+                <button onclick="app.setHealthType('glucose')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="glucose">
+                    <i class="fa-solid fa-droplet text-purple-500"></i>
+                    <span class="text-[9px] font-bold uppercase">Glicemia</span>
+                </button>
+                <button onclick="app.setHealthType('temp')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="temp">
+                    <i class="fa-solid fa-temperature-half text-orange-500"></i>
+                    <span class="text-[9px] font-bold uppercase">Febbre</span>
+                </button>
+                <button onclick="app.setHealthType('spo2')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="spo2">
+                    <i class="fa-solid fa-lungs text-cyan-500"></i>
+                    <span class="text-[9px] font-bold uppercase">Ossigeno</span>
+                </button>
+            </div>
 
-        <div id="health-inputs-container" class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
-            <div id="input-group-pressure" class="health-input-group">
-                <div class="flex gap-3 mb-2">
-                    <div class="flex-1">
-                        <label class="text-[10px] font-bold text-slate-500 uppercase">Sistolica (Max)</label>
-                        <input type="number" id="health-sys" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold text-lg outline-none focus:border-rose-500" placeholder="120">
+            <div id="health-inputs-container" class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                <div id="input-group-pressure" class="health-input-group">
+                    <div class="flex gap-3 mb-2">
+                        <div class="flex-1">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">Sistolica (Max)</label>
+                            <input type="number" id="health-sys" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold text-lg outline-none focus:border-rose-500" placeholder="120">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">Diastolica (Min)</label>
+                            <input type="number" id="health-dia" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold text-lg outline-none focus:border-rose-500" placeholder="80">
+                        </div>
                     </div>
-                    <div class="flex-1">
-                        <label class="text-[10px] font-bold text-slate-500 uppercase">Diastolica (Min)</label>
-                        <input type="number" id="health-dia" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold text-lg outline-none focus:border-rose-500" placeholder="80">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Pulsazioni (BPM)</label>
+                        <input type="number" id="health-pulse" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold outline-none focus:border-rose-500" placeholder="Opzionale">
                     </div>
                 </div>
-                <div>
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Pulsazioni (BPM)</label>
-                    <input type="number" id="health-pulse" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold outline-none focus:border-rose-500" placeholder="Opzionale">
+
+                <div id="input-group-weight" class="health-input-group hidden">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Peso (Kg)</label>
+                    <div class="relative">
+                        <input type="number" id="health-weight" step="0.1" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-blue-500" placeholder="0.0">
+                        <span class="absolute right-4 top-4 text-slate-400 font-bold">Kg</span>
+                    </div>
+                </div>
+
+                <div id="input-group-glucose" class="health-input-group hidden">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Glicemia (mg/dL)</label>
+                    <input type="number" id="health-glucose" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-purple-500" placeholder="100">
+
+                    <div class="mt-2 flex gap-2 justify-center">
+                        <button onclick="app.setGlucoseTag('digiuno')" class="glucose-tag px-2 py-1 rounded border border-slate-200 text-[10px] bg-white hover:bg-slate-100">Digiuno</button>
+                        <button onclick="app.setGlucoseTag('post-pranzo')" class="glucose-tag px-2 py-1 rounded border border-slate-200 text-[10px] bg-white hover:bg-slate-100">Post-Pranzo</button>
+                    </div>
+                    <input type="hidden" id="health-glucose-tag">
+                </div>
+
+                <div id="input-group-temp" class="health-input-group hidden">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Temperatura (°C)</label>
+                    <div class="relative">
+                        <input type="number" id="health-temp" step="0.1" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-orange-500" placeholder="36.5">
+                        <span class="absolute right-4 top-4 text-slate-400 font-bold">°C</span>
+                    </div>
+                </div>
+
+                <div id="input-group-spo2" class="health-input-group hidden">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Saturazione (%)</label>
+                    <div class="relative">
+                        <input type="number" id="health-spo2" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-cyan-500" placeholder="98">
+                        <span class="absolute right-4 top-4 text-slate-400 font-bold">%</span>
+                    </div>
                 </div>
             </div>
 
-            <div id="input-group-weight" class="health-input-group hidden">
-                <label class="text-[10px] font-bold text-slate-500 uppercase">Peso (Kg)</label>
-                <div class="relative">
-                    <input type="number" id="health-weight" step="0.1" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-blue-500" placeholder="0.0">
-                    <span class="absolute right-4 top-4 text-slate-400 font-bold">Kg</span>
-                </div>
+            <div class="flex gap-3">
+                <button onclick="app.closeModal('modal-add-health')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+                <button onclick="app.saveHealthEntry()" class="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold shadow-md hover:bg-rose-700 active:scale-95 transition-all">Salva</button>
             </div>
-
-            <div id="input-group-glucose" class="health-input-group hidden">
-                <label class="text-[10px] font-bold text-slate-500 uppercase">Glicemia (mg/dL)</label>
-                <input type="number" id="health-glucose" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-purple-500" placeholder="100">
-                
-                <div class="mt-2 flex gap-2 justify-center">
-                    <button onclick="app.setGlucoseTag('digiuno')" class="glucose-tag px-2 py-1 rounded border border-slate-200 text-[10px] bg-white hover:bg-slate-100">Digiuno</button>
-                    <button onclick="app.setGlucoseTag('post-pranzo')" class="glucose-tag px-2 py-1 rounded border border-slate-200 text-[10px] bg-white hover:bg-slate-100">Post-Pranzo</button>
-                </div>
-                <input type="hidden" id="health-glucose-tag">
-            </div>
-
-            <div id="input-group-temp" class="health-input-group hidden">
-                <label class="text-[10px] font-bold text-slate-500 uppercase">Temperatura (°C)</label>
-                <div class="relative">
-                    <input type="number" id="health-temp" step="0.1" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-orange-500" placeholder="36.5">
-                    <span class="absolute right-4 top-4 text-slate-400 font-bold">°C</span>
-                </div>
-            </div>
-
-            <div id="input-group-spo2" class="health-input-group hidden">
-                <label class="text-[10px] font-bold text-slate-500 uppercase">Saturazione (%)</label>
-                <div class="relative">
-                    <input type="number" id="health-spo2" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-cyan-500" placeholder="98">
-                    <span class="absolute right-4 top-4 text-slate-400 font-bold">%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex gap-3">
-            <button onclick="app.closeModal('modal-add-health')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
-            <button onclick="app.saveHealthEntry()" class="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold shadow-md hover:bg-rose-700 active:scale-95 transition-all">Salva</button>
         </div>
     </div>
-</div>
     <script>
         const app = {
             data: { lastOpened: null, profiles: [], apiKey: "" },
@@ -3031,14 +3060,14 @@
 
                 // 2. Prompt per Gemini
                 const prompt = `Analizza questa immagine di un farmaco.
-                                                                        Estrai i dati e rispondi ESCLUSIVAMENTE con un oggetto JSON valido (senza markdown o testo extra) con questi campi:
-                                                                        - "name": nome commerciale e dosaggio (es. 'Oki 80mg').
-                                                                        - "form": forma farmaceutica (es. 'Bustine', 'Pillole', 'Capsule', 'Compresse Effervescenti', 'Sciroppo', 'Gocce').
-                                                                        - "dose": dosaggio numerico (es. '80mg').
-                                                                        - "type": CATEGORIA TERAPEUTICA. Scegli SOLO tra: Antibiotico, Antimicrobico, Antidolorifico, Analgesico, Antinfiammatorio, Antiacido, Anticoagulante, Antidepressivo, Antistaminico, Anticonvulsivante, Cardiovascolare, Integratore, Vitamine, Gastroprotettore. Se incerto usa stringa vuota.
-                                                                        - "usage": breve descrizione a cosa serve.
-                                                                        - "blister_count": numero intero di blister visibili (o null).
-                                                                        - "pills_per_blister": numero intero di pillole per blister (o null).`;
+                                                                            Estrai i dati e rispondi ESCLUSIVAMENTE con un oggetto JSON valido (senza markdown o testo extra) con questi campi:
+                                                                            - "name": nome commerciale e dosaggio (es. 'Oki 80mg').
+                                                                            - "form": forma farmaceutica (es. 'Bustine', 'Pillole', 'Capsule', 'Compresse Effervescenti', 'Sciroppo', 'Gocce').
+                                                                            - "dose": dosaggio numerico (es. '80mg').
+                                                                            - "type": CATEGORIA TERAPEUTICA. Scegli SOLO tra: Antibiotico, Antimicrobico, Antidolorifico, Analgesico, Antinfiammatorio, Antiacido, Anticoagulante, Antidepressivo, Antistaminico, Anticonvulsivante, Cardiovascolare, Integratore, Vitamine, Gastroprotettore. Se incerto usa stringa vuota.
+                                                                            - "usage": breve descrizione a cosa serve.
+                                                                            - "blister_count": numero intero di blister visibili (o null).
+                                                                            - "pills_per_blister": numero intero di pillole per blister (o null).`;
 
                 const payload = {
                     contents: [{
@@ -3686,35 +3715,35 @@
                     }
 
                     const doctorBadge = hasDoctor ? `
-                                                    <div onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')"
-                                                            class="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform z-10"
-                                                            title="Modifica Dottore">
-                                                        <i class="fa-solid fa-user-doctor text-[10px] text-blue-500"></i>
-                                                    </div>
-                                                ` : '';
+                                                        <div onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')"
+                                                                class="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform z-10"
+                                                                title="Modifica Dottore">
+                                                            <i class="fa-solid fa-user-doctor text-[10px] text-blue-500"></i>
+                                                        </div>
+                                                    ` : '';
 
                     const doctorBtn = !hasDoctor ? `
-                                                    <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm ml-2">
-                                                        <i class="fa-solid fa-user-doctor mr-1"></i> Medico
-                                                    </button>
-                                                ` : '';
+                                                        <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm ml-2">
+                                                            <i class="fa-solid fa-user-doctor mr-1"></i> Medico
+                                                        </button>
+                                                    ` : '';
 
                     div.innerHTML = `
-                                                    <div class="flex items-center gap-3">
-                                                        <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
-                                                            ${iconContent}
-                                                            ${doctorBadge}
-                                                        </div>
-                                                        <div>
-                                                            <h3 class="font-bold text-slate-800 text-lg leading-tight">${displayName}</h3>
-                                                            <div class="flex items-center mt-1">
-                                                                <span class="text-xs text-slate-500">${total} farmaci</span>
-                                                                ${doctorBtn}
+                                                        <div class="flex items-center gap-3">
+                                                            <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
+                                                                ${iconContent}
+                                                                ${doctorBadge}
+                                                            </div>
+                                                            <div>
+                                                                <h3 class="font-bold text-slate-800 text-lg leading-tight">${displayName}</h3>
+                                                                <div class="flex items-center mt-1">
+                                                                    <span class="text-xs text-slate-500">${total} farmaci</span>
+                                                                    ${doctorBtn}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <span class="text-sm font-bold ${percClass}">${perc}%</span>
-                                                `;
+                                                        <span class="text-sm font-bold ${percClass}">${perc}%</span>
+                                                    `;
 
                     container.appendChild(div);
                 });
@@ -3768,12 +3797,12 @@
                         el.onclick = () => this.fillMedFormFromDB(drug);
 
                         el.innerHTML = `
-                                <div>
-                                    <p class="font-bold text-slate-700">${drug.name}</p>
-                                    <p class="text-xs text-slate-500">${drug.dose || ''} ${drug.type ? '• ' + drug.type : ''}</p>
-                                </div>
-                                <i class="fa-solid fa-plus text-blue-500 bg-blue-50 p-2 rounded-lg"></i>
-                            `;
+                                    <div>
+                                        <p class="font-bold text-slate-700">${drug.name}</p>
+                                        <p class="text-xs text-slate-500">${drug.dose || ''} ${drug.type ? '• ' + drug.type : ''}</p>
+                                    </div>
+                                    <i class="fa-solid fa-plus text-blue-500 bg-blue-50 p-2 rounded-lg"></i>
+                                `;
                         list.appendChild(el);
                     });
                 }
@@ -4204,10 +4233,10 @@
 
                 if (filtered.length === 0) {
                     container.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-10 opacity-50">
-                    <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-300"></i>
-                    <p class="text-sm text-slate-400">Nessun farmaco trovato</p>
-                </div>`;
+                    <div class="flex flex-col items-center justify-center py-10 opacity-50">
+                        <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-300"></i>
+                        <p class="text-sm text-slate-400">Nessun farmaco trovato</p>
+                    </div>`;
                     return;
                 }
 
@@ -4219,18 +4248,18 @@
                     div.className = "p-4 border-b border-slate-100 last:border-0 flex justify-between items-center hover:bg-slate-50 transition-colors";
 
                     div.innerHTML = `
-                <div class="overflow-hidden mr-3">
-                    <h4 class="font-bold text-slate-700 text-sm truncate">${drug.name}</h4>
-                    <div class="flex items-center gap-2 mt-0.5">
-                         ${drug.type ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 uppercase font-bold tracking-wider">${drug.type}</span>` : ''}
-                         <span class="text-xs text-slate-500 truncate">${drug.dose || 'Dose non spec.'}</span>
+                    <div class="overflow-hidden mr-3">
+                        <h4 class="font-bold text-slate-700 text-sm truncate">${drug.name}</h4>
+                        <div class="flex items-center gap-2 mt-0.5">
+                             ${drug.type ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 uppercase font-bold tracking-wider">${drug.type}</span>` : ''}
+                             <span class="text-xs text-slate-500 truncate">${drug.dose || 'Dose non spec.'}</span>
+                        </div>
+                        ${drug.category ? `<p class="text-[10px] text-slate-400 mt-0.5 italic">${drug.category}</p>` : ''}
                     </div>
-                    ${drug.category ? `<p class="text-[10px] text-slate-400 mt-0.5 italic">${drug.category}</p>` : ''}
-                </div>
-                <button onclick="app.deleteFromDatabase(${realIndex})" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-trash-can text-sm"></i>
-                </button>
-            `;
+                    <button onclick="app.deleteFromDatabase(${realIndex})" class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                `;
                     container.appendChild(div);
                 });
             },
@@ -4470,12 +4499,12 @@
                     const barH = d.pct === -1 ? '100%' : (d.pct || 5) + '%'; // Minimo 5% per visibilità
 
                     barDiv.innerHTML = `
-                                                    <div class="w-full bg-slate-100 rounded-lg h-24 flex items-end overflow-hidden relative">
-                                                         ${d.pct === -1 ? '<div class="absolute inset-0 bg-slate-100 opacity-50 flex items-center justify-center"><i class="fa-solid fa-minus text-slate-300"></i></div>' : ''}
-                                                         <div style="height: ${barH}" class="w-full ${barColor} rounded-t-sm transition-all duration-500"></div>
-                                                    </div>
-                                                    <span class="text-[10px] font-bold text-slate-500">${d.day}</span>
-                                                `;
+                                                        <div class="w-full bg-slate-100 rounded-lg h-24 flex items-end overflow-hidden relative">
+                                                             ${d.pct === -1 ? '<div class="absolute inset-0 bg-slate-100 opacity-50 flex items-center justify-center"><i class="fa-solid fa-minus text-slate-300"></i></div>' : ''}
+                                                             <div style="height: ${barH}" class="w-full ${barColor} rounded-t-sm transition-all duration-500"></div>
+                                                        </div>
+                                                        <span class="text-[10px] font-bold text-slate-500">${d.day}</span>
+                                                    `;
                     chartContainer.appendChild(barDiv);
                 });
 
@@ -4626,16 +4655,16 @@
                     const anyTakenGlobal = profile.meds.some(m => m.taken);
 
                     toolbarContainer.innerHTML = `
-                                        <div class="flex items-center justify-end gap-2"> ${anyTakenGlobal ? `
-                                            <button onclick="app.resetDailyIntake()" class="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg text-xs font-bold shadow-sm hover:bg-rose-100 active:scale-95 transition-all flex items-center gap-1.5">
-                                                <i class="fa-regular fa-square-minus"></i> Deseleziona
-                                            </button>` : ''}
+                                            <div class="flex items-center justify-end gap-2"> ${anyTakenGlobal ? `
+                                                <button onclick="app.resetDailyIntake()" class="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg text-xs font-bold shadow-sm hover:bg-rose-100 active:scale-95 transition-all flex items-center gap-1.5">
+                                                    <i class="fa-regular fa-square-minus"></i> Deseleziona
+                                                </button>` : ''}
 
-                                            <button onclick="app.askMarkAllTaken()" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5">
-                                                <i class="fa-solid fa-check-double"></i> Tutto Preso
-                                            </button>
-                                        </div>
-                                    `;
+                                                <button onclick="app.askMarkAllTaken()" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5">
+                                                    <i class="fa-solid fa-check-double"></i> Tutto Preso
+                                                </button>
+                                            </div>
+                                        `;
                 }
 
                 const times = ['Mattina', 'Pomeriggio', 'Sera', 'Al Bisogno'];
@@ -4674,17 +4703,17 @@
                         else if (time === 'Al Bisogno') icon = 'fa-kit-medical text-red-500';
 
                         header.innerHTML = `
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
-                                                    <i class="fa-solid ${icon} text-lg"></i>
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center">
+                                                        <i class="fa-solid ${icon} text-lg"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
+                                                        <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 class="font-bold text-slate-700 text-sm">${time}</h4>
-                                                    <p class="text-[10px] text-slate-400 font-semibold">${takenCount} / ${totalCount} assunti</p>
-                                                </div>
-                                            </div>
-                                            <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
-                                        `;
+                                                <i id="chevron-${time}" class="fa-solid fa-chevron-down text-slate-300 transition-transform duration-300 ${rotateClass}"></i>
+                                            `;
                         container.appendChild(header);
 
                         const listContainer = document.createElement('div');
@@ -4793,62 +4822,62 @@
                                 const deleteBtnSmall = prefs.showDelete ? `<button onclick="app.deleteMedication('${med.id}')" class="text-slate-300 hover:text-red-500 text-xs p-1"><i class="fa-solid fa-trash"></i></button>` : '';
 
                                 card.innerHTML = `
-                                                    <div class="flex items-center gap-4 flex-1 overflow-hidden">
-                                                        <div class="w-10 h-10 rounded-full ${countToday > 0 ? 'bg-red-500 text-white shadow-md border-red-600' : 'bg-slate-50 text-slate-300 border-slate-200'} flex items-center justify-center font-bold text-lg border shrink-0 transition-colors">
-                                                            ${countToday}
-                                                        </div>
-                                                        <div class="overflow-hidden">
-                                                            <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                                            <div class="flex flex-col">
-                                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                                                <p class="text-xs font-bold ${countToday > 0 ? 'text-red-600' : 'text-slate-400'} mt-0.5 mb-0.5 truncate">${totalDisplay}</p>
+                                                        <div class="flex items-center gap-4 flex-1 overflow-hidden">
+                                                            <div class="w-10 h-10 rounded-full ${countToday > 0 ? 'bg-red-500 text-white shadow-md border-red-600' : 'bg-slate-50 text-slate-300 border-slate-200'} flex items-center justify-center font-bold text-lg border shrink-0 transition-colors">
+                                                                ${countToday}
+                                                            </div>
+                                                            <div class="overflow-hidden">
+                                                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
                                                                 <div class="flex flex-col">
-                                                                    ${med.dose ? `<p class="text-[10px] text-slate-400 opacity-80">Dose singola: ${med.dose}</p>` : ''}
-                                                                    ${therapyBadge || ''}
+                                                                    ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                                    <p class="text-xs font-bold ${countToday > 0 ? 'text-red-600' : 'text-slate-400'} mt-0.5 mb-0.5 truncate">${totalDisplay}</p>
+                                                                    <div class="flex flex-col">
+                                                                        ${med.dose ? `<p class="text-[10px] text-slate-400 opacity-80">Dose singola: ${med.dose}</p>` : ''}
+                                                                        ${therapyBadge || ''}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="flex items-center gap-1 pl-2">
-                                                        ${noteBtn}
-                                                        <button onclick="app.takePrnMed('${med.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 ml-1 mr-1">
-                                                            <i class="fa-solid fa-plus"></i> Prendi
-                                                        </button>
-                                                        <div class="flex flex-col gap-1 ml-1 border-l pl-2 border-slate-100">
-                                                            ${editBtnSmall}
-                                                            ${deleteBtnSmall}
-                                                        </div>
-                                                    </div>`;
+                                                        <div class="flex items-center gap-1 pl-2">
+                                                            ${noteBtn}
+                                                            <button onclick="app.takePrnMed('${med.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-md active:scale-95 transition-all flex items-center gap-1 ml-1 mr-1">
+                                                                <i class="fa-solid fa-plus"></i> Prendi
+                                                            </button>
+                                                            <div class="flex flex-col gap-1 ml-1 border-l pl-2 border-slate-100">
+                                                                ${editBtnSmall}
+                                                                ${deleteBtnSmall}
+                                                            </div>
+                                                        </div>`;
                             } else {
                                 // Scheda Standard (Mattina/Pom/Sera)
                                 card.innerHTML = `
-                                                    <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
-                                                        <input type="checkbox" class="med-checkbox"
-                                                            ${med.taken ? 'checked' : ''}
-                                                            ${isLocked || !isToday ? 'disabled' : ''}
-                                                            onchange="app.toggleMedication('${med.id}')">
-                                                        <div class="overflow-hidden ${med.taken ? 'opacity-40' : ''} ${!isLocked && isToday ? 'cursor-pointer' : ''}">
-                                                            <div class="flex items-center">
-                                                                ${timeDisplay}
-                                                                <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
-                                                            </div>
-                                                            <div class="flex flex-col">
-                                                                ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
-                                                                <div class="flex flex-col mt-0.5">
-                                                                    ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
-                                                                    ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
-                                                                    ${therapyBadge}
+                                                        <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
+                                                            <input type="checkbox" class="med-checkbox"
+                                                                ${med.taken ? 'checked' : ''}
+                                                                ${isLocked || !isToday ? 'disabled' : ''}
+                                                                onchange="app.toggleMedication('${med.id}')">
+                                                            <div class="overflow-hidden ${med.taken ? 'opacity-40' : ''} ${!isLocked && isToday ? 'cursor-pointer' : ''}">
+                                                                <div class="flex items-center">
+                                                                    ${timeDisplay}
+                                                                    <h4 class="font-bold text-slate-800 leading-tight truncate">${med.name}</h4>
+                                                                </div>
+                                                                <div class="flex flex-col">
+                                                                    ${med.category ? `<p class="text-[10px] font-semibold text-slate-500 uppercase tracking-tighter">${med.category}</p>` : ''}
+                                                                    <div class="flex flex-col mt-0.5">
+                                                                        ${med.dose ? `<p class="text-xs text-blue-700 font-bold mb-0.5">${med.dose}</p>` : ''}
+                                                                        ${med.usage ? `<p class="text-[10px] text-slate-400 italic truncate">${med.usage}</p>` : ''}
+                                                                        ${therapyBadge}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="flex items-center card-actions">
-                                                        ${photoBtn}
-                                                        ${cartBtn}
-                                                        ${noteBtn}
-                                                        ${editBtn}
-                                                        ${deleteBtn}
-                                                    </div>`;
+                                                        <div class="flex items-center card-actions">
+                                                            ${photoBtn}
+                                                            ${cartBtn}
+                                                            ${noteBtn}
+                                                            ${editBtn}
+                                                            ${deleteBtn}
+                                                        </div>`;
                             }
 
                             listContainer.appendChild(card);
@@ -4994,65 +5023,65 @@
                             defaultMsg += `\nGrazie mille.`;
 
                             waButtonHtml = `
-                                                        <div class="mt-3"> <button id="btn-prep-${profile.id}" onclick="app.toggleOrderEditor('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-1.5 bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 active:scale-95 transition-all text-xs">
-                                                                <i class="fa-brands fa-whatsapp text-sm"></i> Prepara Messaggio
-                                                            </button>
-                                                            <div id="editor-${profile.id}" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 fade-in mt-2">
-                                                                <textarea id="msg-area-${profile.id}" rows="6" class="w-full p-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-none mb-2 font-mono text-slate-700 leading-snug">${defaultMsg}</textarea>
-                                                                <div class="grid grid-cols-2 gap-2">
-                                                                    <button onclick="app.toggleOrderEditor('${profile.id}')" class="py-1.5 bg-white text-slate-500 border border-slate-300 rounded-lg font-bold text-xs">Annulla</button>
-                                                                    <button onclick="app.sendCustomOrder('${profile.id}')" class="py-1.5 bg-green-600 text-white rounded-lg font-bold text-xs shadow flex items-center justify-center gap-2"><i class="fa-regular fa-paper-plane"></i> Invia</button>
+                                                            <div class="mt-3"> <button id="btn-prep-${profile.id}" onclick="app.toggleOrderEditor('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-1.5 bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 active:scale-95 transition-all text-xs">
+                                                                    <i class="fa-brands fa-whatsapp text-sm"></i> Prepara Messaggio
+                                                                </button>
+                                                                <div id="editor-${profile.id}" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 fade-in mt-2">
+                                                                    <textarea id="msg-area-${profile.id}" rows="6" class="w-full p-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none resize-none mb-2 font-mono text-slate-700 leading-snug">${defaultMsg}</textarea>
+                                                                    <div class="grid grid-cols-2 gap-2">
+                                                                        <button onclick="app.toggleOrderEditor('${profile.id}')" class="py-1.5 bg-white text-slate-500 border border-slate-300 rounded-lg font-bold text-xs">Annulla</button>
+                                                                        <button onclick="app.sendCustomOrder('${profile.id}')" class="py-1.5 bg-green-600 text-white rounded-lg font-bold text-xs shadow flex items-center justify-center gap-2"><i class="fa-regular fa-paper-plane"></i> Invia</button>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    `;
+                                                        `;
                         } else {
                             waButtonHtml = `
-                                                            <button onclick="app.showAlert('Dati mancanti', 'Aggiungi il numero WhatsApp per ordinare.')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-400 font-bold rounded-lg cursor-not-allowed text-xs">
-                                                                <i class="fa-brands fa-whatsapp"></i> Numero mancante
-                                                            </button>
-                                                        `;
+                                                                <button onclick="app.showAlert('Dati mancanti', 'Aggiungi il numero WhatsApp per ordinare.')" class="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-100 text-slate-400 font-bold rounded-lg cursor-not-allowed text-xs">
+                                                                    <i class="fa-brands fa-whatsapp"></i> Numero mancante
+                                                                </button>
+                                                            `;
                         }
 
                         // 2. Logica Pulsante Acquisto da Banco (Sempre disponibile)
                         otcButtonHtml = `
-                                                    <button onclick="app.markAsOrderedDirectly('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 font-bold rounded-lg hover:bg-blue-100 active:scale-95 transition-all text-xs">
-                                                        <i class="fa-solid fa-basket-shopping"></i> Acquisto da banco
-                                                    </button>
-                                                `;
+                                                        <button onclick="app.markAsOrderedDirectly('${profile.id}')" class="w-full flex items-center justify-center gap-2 py-1.5 bg-blue-50 text-blue-600 border border-blue-100 font-bold rounded-lg hover:bg-blue-100 active:scale-95 transition-all text-xs">
+                                                            <i class="fa-solid fa-basket-shopping"></i> Acquisto da banco
+                                                        </button>
+                                                    `;
 
                         // Lista Farmaci
                         let listHtml = '';
                         uniqueMedsToOrder.forEach(med => {
                             listHtml += `
-                                                            <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
-                                                                <i class="fa-solid fa-circle-exclamation text-orange-500 text-xs"></i>
-                                                                <div class="flex-1">
-                                                                    <p class="font-bold text-slate-700 text-sm">${med.name}</p>
+                                                                <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
+                                                                    <i class="fa-solid fa-circle-exclamation text-orange-500 text-xs"></i>
+                                                                    <div class="flex-1">
+                                                                        <p class="font-bold text-slate-700 text-sm">${med.name}</p>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        `;
+                                                            `;
                         });
 
                         section.innerHTML = `
-                                                    <div class="p-4">
-                                                        <div class="flex items-center justify-between mb-2">
-                                                            <h4 class="font-bold text-slate-800 flex items-center text-sm uppercase tracking-wider">
-                                                                <i class="fa-solid fa-user text-slate-400 mr-2"></i> ${profile.name}
-                                                            </h4>
-                                                            ${docInfo}
-                                                        </div>
+                                                        <div class="p-4">
+                                                            <div class="flex items-center justify-between mb-2">
+                                                                <h4 class="font-bold text-slate-800 flex items-center text-sm uppercase tracking-wider">
+                                                                    <i class="fa-solid fa-user text-slate-400 mr-2"></i> ${profile.name}
+                                                                </h4>
+                                                                ${docInfo}
+                                                            </div>
 
-                                                        <div class="pl-2 border-l-2 border-orange-100 space-y-0 mb-4">
-                                                            ${listHtml}
-                                                        </div>
+                                                            <div class="pl-2 border-l-2 border-orange-100 space-y-0 mb-4">
+                                                                ${listHtml}
+                                                            </div>
 
-                                                        <div class="space-y-2 border-t border-slate-100 pt-3">
-                                                            ${waButtonHtml}
-                                                            ${otcButtonHtml}
+                                                            <div class="space-y-2 border-t border-slate-100 pt-3">
+                                                                ${waButtonHtml}
+                                                                ${otcButtonHtml}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                `;
+                                                    `;
                         container.appendChild(section);
                     }
                 });
@@ -5087,23 +5116,23 @@
 
                             uniqueOrdered.forEach(m => {
                                 listHtml += `
-                                                        <div class="flex items-center justify-between py-3 px-4 border-b border-slate-200/50 last:border-0 gap-2 bg-white">
-                                                            <div class="flex-1 min-w-0 mr-2">
-                                                                <div class="flex items-center gap-3">
-                                                                    <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-box-open"></i></div>
-                                                                    <div><p class="font-bold text-slate-700 text-sm truncate leading-tight">${m.name}</p><p class="text-[9px] text-slate-400 mt-0.5">In attesa di ritiro...</p></div>
+                                                            <div class="flex items-center justify-between py-3 px-4 border-b border-slate-200/50 last:border-0 gap-2 bg-white">
+                                                                <div class="flex-1 min-w-0 mr-2">
+                                                                    <div class="flex items-center gap-3">
+                                                                        <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-box-open"></i></div>
+                                                                        <div><p class="font-bold text-slate-700 text-sm truncate leading-tight">${m.name}</p><p class="text-[9px] text-slate-400 mt-0.5">In attesa di ritiro...</p></div>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <div class="flex items-center gap-2 shrink-0">
-                                                                <button onclick="app.askConfirmRestore('${m.id}')" class="w-9 h-9 rounded-lg bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center" title="Annulla Ordine">
-                                                                    <i class="fa-solid fa-trash-can"></i>
-                                                                </button>
+                                                                <div class="flex items-center gap-2 shrink-0">
+                                                                    <button onclick="app.askConfirmRestore('${m.id}')" class="w-9 h-9 rounded-lg bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center" title="Annulla Ordine">
+                                                                        <i class="fa-solid fa-trash-can"></i>
+                                                                    </button>
 
-                                                                <button onclick="app.receiveMedication('${m.id}')" class="h-9 px-3 rounded-lg bg-emerald-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-1">
-                                                                    <i class="fa-solid fa-check"></i> Ricevi
-                                                                </button>
-                                                            </div>
-                                                        </div>`;
+                                                                    <button onclick="app.receiveMedication('${m.id}')" class="h-9 px-3 rounded-lg bg-emerald-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-1">
+                                                                        <i class="fa-solid fa-check"></i> Ricevi
+                                                                    </button>
+                                                                </div>
+                                                            </div>`;
                             });
                             groupDiv.innerHTML = listHtml;
                             container.appendChild(groupDiv);
@@ -5168,9 +5197,9 @@
                         const header = document.createElement('div');
                         header.className = "px-2 py-1.5 bg-slate-100 rounded-lg mb-2 mt-3 flex items-center gap-2 border border-slate-200";
                         header.innerHTML = `
-                                                        <i class="fa-solid fa-user text-slate-400 text-xs"></i>
-                                                        <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">${profile.name}</span>
-                                                    `;
+                                                            <i class="fa-solid fa-user text-slate-400 text-xs"></i>
+                                                            <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">${profile.name}</span>
+                                                        `;
                         orderedContainer.appendChild(header);
 
                         // Lista farmaci unici del profilo
@@ -5186,31 +5215,31 @@
 
                             // NOTA: Passiamo med.sharedId per cancellare TUTTE le istanze (mattina/pom/sera)
                             div.innerHTML = `
-                                                            <div class="flex items-center gap-3 overflow-hidden">
-                                                                <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-                                                                    <i class="fa-solid fa-basket-shopping"></i>
+                                                                <div class="flex items-center gap-3 overflow-hidden">
+                                                                    <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                                                                        <i class="fa-solid fa-basket-shopping"></i>
+                                                                    </div>
+                                                                    <div class="truncate">
+                                                                        <h4 class="font-bold text-slate-800 text-sm truncate">
+                                                                            ${displayName}
+                                                                        </h4>
+                                                                        <p class="text-[10px] text-purple-600 font-bold uppercase flex items-center gap-2">
+                                                                            <span class="px-1.5 py-0.5 rounded-md bg-white border border-purple-200 text-purple-600 text-[10px] font-black shadow-sm">
+                                                                                x${qty}
+                                                                            </span>
+                                                                            ${med.type || ''}
+                                                                        </p>
+                                                                    </div>
                                                                 </div>
-                                                                <div class="truncate">
-                                                                    <h4 class="font-bold text-slate-800 text-sm truncate">
-                                                                        ${displayName}
-                                                                    </h4>
-                                                                    <p class="text-[10px] text-purple-600 font-bold uppercase flex items-center gap-2">
-                                                                        <span class="px-1.5 py-0.5 rounded-md bg-white border border-purple-200 text-purple-600 text-[10px] font-black shadow-sm">
-                                                                            x${qty}
-                                                                        </span>
-                                                                        ${med.type || ''}
-                                                                    </p>
+                                                                <div class="flex gap-2 shrink-0">
+                                                                    <button onclick="app.cancelOTCOrder('${med.sharedId}')" class="w-8 h-8 rounded-lg bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center" title="Rimuovi">
+                                                                        <i class="fa-solid fa-trash-can"></i>
+                                                                    </button>
+                                                                    <button onclick="app.receiveMedication('${med.id}')" class="h-8 px-3 rounded-lg bg-green-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-green-600 active:scale-95 transition-all flex items-center gap-1">
+                                                                        <i class="fa-solid fa-check"></i> Ricevi
+                                                                    </button>
                                                                 </div>
-                                                            </div>
-                                                            <div class="flex gap-2 shrink-0">
-                                                                <button onclick="app.cancelOTCOrder('${med.sharedId}')" class="w-8 h-8 rounded-lg bg-red-500 text-white shadow-md hover:bg-red-600 active:scale-95 transition-all flex items-center justify-center" title="Rimuovi">
-                                                                    <i class="fa-solid fa-trash-can"></i>
-                                                                </button>
-                                                                <button onclick="app.receiveMedication('${med.id}')" class="h-8 px-3 rounded-lg bg-green-500 text-white font-bold text-[10px] uppercase shadow-md hover:bg-green-600 active:scale-95 transition-all flex items-center gap-1">
-                                                                    <i class="fa-solid fa-check"></i> Ricevi
-                                                                </button>
-                                                            </div>
-                                                        `;
+                                                            `;
                             orderedContainer.appendChild(div);
                         });
                     }
@@ -5224,13 +5253,13 @@
 
                     // 2. Inserisci l'HTML dei pulsanti (stile ridotto: py-2, text-xs)
                     btnContainer.innerHTML = `
-                                                <button onclick="app.shareOTCListWhatsApp()" class="flex items-center justify-center gap-2 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-all active:scale-95 shadow-md text-xs">
-                                                    <i class="fa-brands fa-whatsapp text-sm"></i> Prepara Messaggio
-                                                </button>
-                                                <button onclick="app.openPharmacyMode()" class="flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all active:scale-95 shadow-md text-xs">
-                                                    <i class="fa-solid fa-expand text-sm"></i> Al Banco
-                                                </button>
-                                            `;
+                                                    <button onclick="app.shareOTCListWhatsApp()" class="flex items-center justify-center gap-2 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition-all active:scale-95 shadow-md text-xs">
+                                                        <i class="fa-brands fa-whatsapp text-sm"></i> Prepara Messaggio
+                                                    </button>
+                                                    <button onclick="app.openPharmacyMode()" class="flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-all active:scale-95 shadow-md text-xs">
+                                                        <i class="fa-solid fa-expand text-sm"></i> Al Banco
+                                                    </button>
+                                                `;
 
                     // 3. Aggiungi i pulsanti alla fine della lista "orderedContainer"
                     orderedContainer.appendChild(btnContainer);
@@ -5275,19 +5304,19 @@
                     div.onclick = () => this.openOTCPurchaseModal(med.id);
 
                     div.innerHTML = `
-                                                    <div class="flex items-center gap-3 overflow-hidden">
-                                                        <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-                                                            <i class="fa-solid fa-pills"></i>
+                                                        <div class="flex items-center gap-3 overflow-hidden">
+                                                            <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+                                                                <i class="fa-solid fa-pills"></i>
+                                                            </div>
+                                                            <div class="truncate">
+                                                                <h4 class="font-bold text-slate-700 text-sm truncate">${med.name}</h4>
+                                                                <p class="text-[10px] text-slate-500 font-medium truncate">
+                                                                    ${med.type || 'Generico'}
+                                                                </p>
+                                                            </div>
                                                         </div>
-                                                        <div class="truncate">
-                                                            <h4 class="font-bold text-slate-700 text-sm truncate">${med.name}</h4>
-                                                            <p class="text-[10px] text-slate-500 font-medium truncate">
-                                                                ${med.type || 'Generico'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>
-                                                `;
+                                                        <i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>
+                                                    `;
                     allContainer.appendChild(div);
                 });
 
@@ -6193,17 +6222,17 @@
 
                     // MODIFICA QUI: Sostituito category/dose con med.type (Categoria Terapeutica)
                     div.innerHTML = `
-                                            <div>
-                                                <h2 class="text-2xl font-bold text-slate-800 leading-tight mb-1">${med.name}</h2>
-                                                <p class="text-slate-500 font-medium text-sm uppercase tracking-wide">
-                                                    ${med.type || 'Categoria non specificata'}
-                                                </p>
-                                            </div>
-                                            <div class="flex flex-col items-center justify-center bg-indigo-50 text-indigo-700 w-16 h-16 rounded-xl border border-indigo-100 shrink-0 ml-4">
-                                                <span class="text-xs font-bold uppercase opacity-70">Qta</span>
-                                                <span class="text-3xl font-black">${qty}</span>
-                                            </div>
-                                        `;
+                                                <div>
+                                                    <h2 class="text-2xl font-bold text-slate-800 leading-tight mb-1">${med.name}</h2>
+                                                    <p class="text-slate-500 font-medium text-sm uppercase tracking-wide">
+                                                        ${med.type || 'Categoria non specificata'}
+                                                    </p>
+                                                </div>
+                                                <div class="flex flex-col items-center justify-center bg-indigo-50 text-indigo-700 w-16 h-16 rounded-xl border border-indigo-100 shrink-0 ml-4">
+                                                    <span class="text-xs font-bold uppercase opacity-70">Qta</span>
+                                                    <span class="text-3xl font-black">${qty}</span>
+                                                </div>
+                                            `;
                     container.appendChild(div);
                 });
 
@@ -6308,37 +6337,37 @@
                     const tr = document.createElement('tr');
                     tr.className = "border-b border-slate-100";
                     tr.innerHTML = `
-                                                <td class="py-3 pr-2 align-top">
-                                                    <div class="font-bold text-slate-800">${med.name}</div>
-                                                    <div class="text-xs text-slate-500">${med.category || ''}</div>
-                                                </td>
-                                                <td class="py-3 pr-2 align-top">
-                                                    <div class="font-semibold text-slate-700">${med.dose || '-'}</div>
-                                                    <div class="text-xs text-slate-500 italic">${med.form || ''}</div>
-                                                </td>
-                                                <td class="py-3 pr-2 align-top">
-                                                    <div class="text-xs font-bold bg-slate-100 inline-block px-2 py-1 rounded text-slate-600">
-                                                        ${med.usage === 'Al Bisogno' ? 'Al Bisogno' : (med.specificTime || med.usage)}
-                                                    </div>
-                                                    <div class="text-[10px] text-slate-400 mt-1">
-                                                        ${med.frequency === 'everyday' ? 'Tutti i giorni' : 'Giorni specifici'}
-                                                    </div>
-                                                </td>
-                                                <td class="py-3 align-middle text-right w-32">
-                                                    ${med.usage === 'Al Bisogno'
+                                                    <td class="py-3 pr-2 align-top">
+                                                        <div class="font-bold text-slate-800">${med.name}</div>
+                                                        <div class="text-xs text-slate-500">${med.category || ''}</div>
+                                                    </td>
+                                                    <td class="py-3 pr-2 align-top">
+                                                        <div class="font-semibold text-slate-700">${med.dose || '-'}</div>
+                                                        <div class="text-xs text-slate-500 italic">${med.form || ''}</div>
+                                                    </td>
+                                                    <td class="py-3 pr-2 align-top">
+                                                        <div class="text-xs font-bold bg-slate-100 inline-block px-2 py-1 rounded text-slate-600">
+                                                            ${med.usage === 'Al Bisogno' ? 'Al Bisogno' : (med.specificTime || med.usage)}
+                                                        </div>
+                                                        <div class="text-[10px] text-slate-400 mt-1">
+                                                            ${med.frequency === 'everyday' ? 'Tutti i giorni' : 'Giorni specifici'}
+                                                        </div>
+                                                    </td>
+                                                    <td class="py-3 align-middle text-right w-32">
+                                                        ${med.usage === 'Al Bisogno'
                             ? `<span class="text-xs text-slate-400">N.A. (Al bisogno)</span>`
                             : `
-                                                        <div class="flex items-center justify-end gap-2">
-                                                            <span class="text-xs font-bold text-slate-600">${medAdherence}%</span>
-                                                            <div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                                                <div class="${barColor} h-full" style="width: ${medAdherence}%"></div>
+                                                            <div class="flex items-center justify-end gap-2">
+                                                                <span class="text-xs font-bold text-slate-600">${medAdherence}%</span>
+                                                                <div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                                                    <div class="${barColor} h-full" style="width: ${medAdherence}%"></div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        <div class="text-[10px] text-slate-400 mt-0.5">${takenCount}/${schedCount} assunzioni</div>
-                                                        `
+                                                            <div class="text-[10px] text-slate-400 mt-0.5">${takenCount}/${schedCount} assunzioni</div>
+                                                            `
                         }
-                                                </td>
-                                            `;
+                                                    </td>
+                                                `;
                     tbody.appendChild(tr);
                 });
 
@@ -6351,10 +6380,10 @@
             openDoctorAI() {
                 document.getElementById('symptom-input').value = '';
                 document.getElementById('doctor-results').innerHTML = `
-                                            <div class="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
-                                                <i class="fa-solid fa-notes-medical text-3xl mb-2"></i>
-                                                <p class="text-xs">I risultati appariranno qui</p>
-                                            </div>`;
+                                                <div class="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
+                                                    <i class="fa-solid fa-notes-medical text-3xl mb-2"></i>
+                                                    <p class="text-xs">I risultati appariranno qui</p>
+                                                </div>`;
                 this.showModal('modal-doctor-ai');
                 setTimeout(() => document.getElementById('symptom-input').focus(), 100);
             },
@@ -6404,14 +6433,14 @@
                 container.innerHTML = '';
                 if (foundMeds.length === 0) {
                     container.innerHTML = `
-                                                <div class="text-center py-6">
-                                                    <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-400">
-                                                        <i class="fa-solid fa-face-frown-open"></i>
+                                                    <div class="text-center py-6">
+                                                        <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-2 text-slate-400">
+                                                            <i class="fa-solid fa-face-frown-open"></i>
+                                                        </div>
+                                                        <p class="text-sm font-bold text-slate-600">Nessun farmaco trovato</p>
+                                                        <p class="text-xs text-slate-400 mt-1">Prova a cercare una parola diversa (es. "dolore", "febbre") o controlla le note dei farmaci.</p>
                                                     </div>
-                                                    <p class="text-sm font-bold text-slate-600">Nessun farmaco trovato</p>
-                                                    <p class="text-xs text-slate-400 mt-1">Prova a cercare una parola diversa (es. "dolore", "febbre") o controlla le note dei farmaci.</p>
-                                                </div>
-                                            `;
+                                                `;
                     return;
                 }
 
@@ -6429,19 +6458,19 @@
                     };
 
                     div.innerHTML = `
-                                                <div class="flex justify-between items-start">
-                                                    <div>
-                                                        <span class="text-[10px] font-bold text-teal-600 uppercase tracking-wide flex items-center gap-1 mb-0.5">
-                                                            <i class="fa-solid fa-user"></i> ${item.profileName}
-                                                        </span>
-                                                        <h4 class="font-bold text-slate-800 text-sm">${m.name}</h4>
-                                                        <p class="text-xs text-slate-500 mt-1 line-clamp-2 italic">
-                                                            "${m.usage || m.type || 'Nessuna descrizione'}"
-                                                        </p>
+                                                    <div class="flex justify-between items-start">
+                                                        <div>
+                                                            <span class="text-[10px] font-bold text-teal-600 uppercase tracking-wide flex items-center gap-1 mb-0.5">
+                                                                <i class="fa-solid fa-user"></i> ${item.profileName}
+                                                            </span>
+                                                            <h4 class="font-bold text-slate-800 text-sm">${m.name}</h4>
+                                                            <p class="text-xs text-slate-500 mt-1 line-clamp-2 italic">
+                                                                "${m.usage || m.type || 'Nessuna descrizione'}"
+                                                            </p>
+                                                        </div>
+                                                        <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-teal-500 text-xs mt-4"></i>
                                                     </div>
-                                                    <i class="fa-solid fa-chevron-right text-slate-300 group-hover:text-teal-500 text-xs mt-4"></i>
-                                                </div>
-                                            `;
+                                                `;
                     container.appendChild(div);
                 });
             },
@@ -6456,20 +6485,20 @@
             renderHealthLog() {
                 const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
                 if (!profile) return;
-                
+
                 const container = document.getElementById('health-diary-list');
                 container.innerHTML = '';
 
                 if (!profile.healthLogs || profile.healthLogs.length === 0) {
                     container.innerHTML = `
-                        <div class="flex flex-col items-center justify-center py-10 opacity-50">
-                            <div class="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-3 text-slate-400 text-2xl">
-                                <i class="fa-solid fa-notes-medical"></i>
+                            <div class="flex flex-col items-center justify-center py-10 opacity-50">
+                                <div class="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-3 text-slate-400 text-2xl">
+                                    <i class="fa-solid fa-notes-medical"></i>
+                                </div>
+                                <p class="text-sm font-bold text-slate-500">Nessuna misurazione</p>
+                                <p class="text-xs text-slate-400">Inizia a registrare i tuoi parametri.</p>
                             </div>
-                            <p class="text-sm font-bold text-slate-500">Nessuna misurazione</p>
-                            <p class="text-xs text-slate-400">Inizia a registrare i tuoi parametri.</p>
-                        </div>
-                    `;
+                        `;
                     return;
                 }
 
@@ -6483,11 +6512,11 @@
 
                     let icon = '', colorClass = '', valDisplay = '';
 
-                    switch(log.type) {
+                    switch (log.type) {
                         case 'pressure':
                             icon = 'fa-heart-pulse'; colorClass = 'text-rose-500 bg-rose-50 border-rose-100';
                             valDisplay = `<span class="text-lg font-black text-rose-600">${log.values.sys}/${log.values.dia}</span> <span class="text-xs text-slate-400">mmHg</span>`;
-                            if(log.values.pulse) valDisplay += `<div class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-heart-crack mr-1"></i>${log.values.pulse} bpm</div>`;
+                            if (log.values.pulse) valDisplay += `<div class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-heart-crack mr-1"></i>${log.values.pulse} bpm</div>`;
                             break;
                         case 'weight':
                             icon = 'fa-weight-scale'; colorClass = 'text-blue-500 bg-blue-50 border-blue-100';
@@ -6496,7 +6525,7 @@
                         case 'glucose':
                             icon = 'fa-droplet'; colorClass = 'text-purple-500 bg-purple-50 border-purple-100';
                             valDisplay = `<span class="text-lg font-black text-purple-600">${log.values.glucose}</span> <span class="text-xs text-slate-400">mg/dL</span>`;
-                            if(log.values.tag) valDisplay += `<span class="ml-2 text-[9px] uppercase px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">${log.values.tag}</span>`;
+                            if (log.values.tag) valDisplay += `<span class="ml-2 text-[9px] uppercase px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">${log.values.tag}</span>`;
                             break;
                         case 'temp':
                             icon = 'fa-temperature-half'; colorClass = 'text-orange-500 bg-orange-50 border-orange-100';
@@ -6514,17 +6543,17 @@
                     div.onclick = () => this.deleteHealthEntry(log.id);
 
                     div.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg border ${colorClass}">
-                                <i class="fa-solid ${icon}"></i>
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg border ${colorClass}">
+                                    <i class="fa-solid ${icon}"></i>
+                                </div>
+                                <div>
+                                    <div class="leading-none mb-1">${valDisplay}</div>
+                                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${dateStr} • ${timeStr}</div>
+                                </div>
                             </div>
-                            <div>
-                                <div class="leading-none mb-1">${valDisplay}</div>
-                                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${dateStr} • ${timeStr}</div>
-                            </div>
-                        </div>
-                        <i class="fa-solid fa-trash-can text-slate-200 hover:text-red-400 transition-colors ml-2 p-2"></i>
-                    `;
+                            <i class="fa-solid fa-trash-can text-slate-200 hover:text-red-400 transition-colors ml-2 p-2"></i>
+                        `;
                     container.appendChild(div);
                 });
             },
@@ -6537,16 +6566,16 @@
                 document.querySelectorAll('#modal-add-health input').forEach(i => i.value = '');
                 document.getElementById('health-glucose-tag').value = '';
                 document.querySelectorAll('.glucose-tag').forEach(b => b.classList.remove('selected'));
-                
+
                 this.showModal('modal-add-health');
             },
 
             setHealthType(type) {
                 this.currentHealthType = type;
-                
+
                 // Aggiorna UI bottoni
                 document.querySelectorAll('.health-type-btn').forEach(btn => {
-                    if(btn.dataset.type === type) btn.classList.add('selected');
+                    if (btn.dataset.type === type) btn.classList.add('selected');
                     else btn.classList.remove('selected');
                 });
 
@@ -6560,7 +6589,7 @@
                 // UI bottoni tag
                 const btns = document.querySelectorAll('.glucose-tag'); // Assumendo che aggiungi questa classe ai bottoni glicemia
                 btns.forEach(b => {
-                    if(b.textContent.toLowerCase().includes(tag)) b.classList.add('selected');
+                    if (b.textContent.toLowerCase().includes(tag)) b.classList.add('selected');
                     else b.classList.remove('selected');
                 });
             },
@@ -6579,24 +6608,24 @@
                     const sys = document.getElementById('health-sys').value;
                     const dia = document.getElementById('health-dia').value;
                     const pulse = document.getElementById('health-pulse').value;
-                    if(sys && dia) { values = { sys, dia, pulse }; isValid = true; }
-                } 
+                    if (sys && dia) { values = { sys, dia, pulse }; isValid = true; }
+                }
                 else if (type === 'weight') {
                     const w = document.getElementById('health-weight').value;
-                    if(w) { values = { weight: w }; isValid = true; }
+                    if (w) { values = { weight: w }; isValid = true; }
                 }
                 else if (type === 'glucose') {
                     const g = document.getElementById('health-glucose').value;
                     const tag = document.getElementById('health-glucose-tag').value;
-                    if(g) { values = { glucose: g, tag }; isValid = true; }
+                    if (g) { values = { glucose: g, tag }; isValid = true; }
                 }
                 else if (type === 'temp') {
                     const t = document.getElementById('health-temp').value;
-                    if(t) { values = { temp: t }; isValid = true; }
+                    if (t) { values = { temp: t }; isValid = true; }
                 }
                 else if (type === 'spo2') {
                     const s = document.getElementById('health-spo2').value;
-                    if(s) { values = { spo2: s }; isValid = true; }
+                    if (s) { values = { spo2: s }; isValid = true; }
                 }
 
                 if (!isValid) {
@@ -6621,12 +6650,123 @@
             deleteHealthEntry(id) {
                 this.showConfirm("Elimina", "Vuoi cancellare questa misurazione?", () => {
                     const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
-                    if(profile) {
+                    if (profile) {
                         profile.healthLogs = profile.healthLogs.filter(x => x.id !== id);
                         this.saveData();
                         this.renderHealthLog();
                     }
                 });
+            },
+
+            // --- CALENDAR LOGIC (AGGIORNATA) ---
+
+            exportToCalendar(method = 'PUBLISH') {
+                const daysToExport = 30; // 30 giorni
+                let events = [];
+                const now = new Date();
+
+                // Orari Standard
+                const STANDARD_TIMES = {
+                    'Mattina': '08:00',
+                    'Pomeriggio': '13:00',
+                    'Sera': '20:00'
+                };
+
+                // 1. Calcola gli eventi (identico a prima, ma con UID)
+                for (let i = 0; i < daysToExport; i++) {
+                    const date = new Date(now);
+                    date.setDate(date.getDate() + i);
+                    const dateStr = date.toISOString().slice(0, 10);
+                    const dayName = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][date.getDay()];
+
+                    this.data.profiles.forEach(profile => {
+                        profile.meds.forEach(med => {
+                            // Filtri validità
+                            if (med.startDate && dateStr < med.startDate) return;
+                            if (med.endDate && dateStr > med.endDate) return;
+                            if (med.days && med.days.length > 0 && !med.days.includes(dayName)) return;
+
+                            let time = med.specificTime || STANDARD_TIMES[med.time];
+                            if (!time) return;
+
+                            // Formattazione Date per ICS
+                            const startDateTime = dateStr.replace(/-/g, '') + 'T' + time.replace(':', '') + '00';
+
+                            let endObj = new Date(dateStr + 'T' + time);
+                            endObj.setMinutes(endObj.getMinutes() + 15);
+                            const endDateTime = endObj.toISOString().slice(0, 19).replace(/-/g, '').replace(/:/g, '');
+
+                            // --- NOVITÀ: Creazione UID Stabile ---
+                            // Questo ID deve essere uguale sia quando crei che quando cancelli
+                            const uniqueID = `medpro-${profile.id}-${med.id}-${startDateTime}@medicinepro.app`;
+
+                            events.push({
+                                uid: uniqueID, // <--- FONDAMENTALE
+                                title: `💊 ${profile.name}: ${med.name}`,
+                                description: `Dose: ${med.dose || 'Standard'}.`,
+                                start: startDateTime,
+                                end: endDateTime,
+                                stamp: new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z'
+                            });
+                        });
+                    });
+                }
+
+                if (events.length === 0) {
+                    this.showAlert("Nessun Evento", "Non ci sono farmaci pianificati per i prossimi 30 giorni.");
+                    return;
+                }
+
+                this.generateICSFile(events, method);
+            },
+
+            generateICSFile(events, method) {
+                // Header diverso in base se stiamo Aggiungendo (PUBLISH) o Cancellando (CANCEL)
+                let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//MedicinePro//IT\nCALSCALE:GREGORIAN\n";
+
+                if (method === 'CANCEL') {
+                    icsContent += "METHOD:CANCEL\n"; // <--- Questo dice al calendario di cancellare
+                } else {
+                    icsContent += "METHOD:PUBLISH\n";
+                }
+
+                events.forEach(ev => {
+                    icsContent += "BEGIN:VEVENT\n";
+                    icsContent += `UID:${ev.uid}\n`; // L'ID deve coincidere
+                    icsContent += `DTSTAMP:${ev.stamp}\n`;
+                    icsContent += `DTSTART:${ev.start}\n`;
+                    icsContent += `DTEND:${ev.end}\n`;
+
+                    if (method === 'CANCEL') {
+                        icsContent += `STATUS:CANCELLED\n`; // <--- Segna come cancellato
+                        icsContent += `SUMMARY:CANCELLATO: ${ev.title}\n`;
+                    } else {
+                        icsContent += `SUMMARY:${ev.title}\n`;
+                        icsContent += `DESCRIPTION:${ev.description}\n`;
+                        icsContent += `STATUS:CONFIRMED\n`;
+                        icsContent += `BEGIN:VALARM\nTRIGGER:-PT5M\nACTION:DISPLAY\nDESCRIPTION:Reminder\nEND:VALARM\n`;
+                    }
+
+                    icsContent += "END:VEVENT\n";
+                });
+
+                icsContent += "END:VCALENDAR";
+
+                // Download
+                const fileName = method === 'CANCEL' ? 'Rimuovi_Terapia.ics' : 'Aggiungi_Terapia.ics';
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.setAttribute('download', fileName);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                if (method === 'CANCEL') {
+                    this.showAlert("File Rimozione", "Apri il file scaricato per confermare la cancellazione dal calendario.");
+                } else {
+                    this.showAlert("File Sincronizzazione", "Apri il file scaricato per aggiungere gli eventi.");
+                }
             },
 
             setupManifest() {
