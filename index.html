@@ -440,6 +440,18 @@
         #printable-area {
             display: none;
         }
+
+    .health-type-btn.selected {
+    background-color: #fff1f2; /* Rose-50 */
+    border-color: #f43f5e;     /* Rose-500 */
+    color: #e11d48;            /* Rose-600 */
+    }
+    
+    .glucose-tag.selected {
+        background-color: #f3e8ff;
+        border-color: #a855f7;
+        color: #7e22ce;
+    }
     </style>
 </head>
 <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
@@ -513,6 +525,10 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+
+                    <button onclick="app.openHealthDiary()" class="text-rose-600 text-xs px-3 py-1.5 border border-rose-200 rounded-lg hover:bg-rose-50 flex items-center gap-1 transition-all shrink-0">
+                        <i class="fa-solid fa-heart-pulse"></i> <span class="hidden xs:inline">Diario Salute</span>
+                    </button>
 
                     <button onclick="app.openStatsModal()" class="text-violet-600 text-xs px-3 py-1.5 border border-violet-200 rounded-lg hover:bg-violet-50 flex items-center gap-1 transition-all shrink-0">
                         <i class="fa-solid fa-chart-pie"></i> <span class="hidden xs:inline">Statistiche</span>
@@ -1859,6 +1875,124 @@
             </button>
         </div>
     </div>
+
+    <div id="modal-health-diary" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <div class="p-4 bg-rose-50 border-b border-rose-100 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center border border-rose-200 shadow-sm">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">Diario Salute</h3>
+                        <p class="text-xs text-slate-500">Monitoraggio parametri vitali</p>
+                    </div>
+                </div>
+                <button onclick="app.closeModal('modal-health-diary')" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div id="health-diary-list" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 bg-slate-50">
+                </div>
+
+            <div class="p-4 bg-white border-t border-slate-200 shrink-0 relative">
+                <p class="text-[10px] text-slate-400 text-center mb-2">Tocca un elemento per eliminarlo.</p>
+                <button onclick="app.openAddHealthEntry()" class="w-full py-3 bg-rose-600 text-white rounded-xl font-bold shadow-lg hover:bg-rose-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Nuova Misurazione
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-add-health" class="hidden fixed inset-0 modal-overlay z-[90] flex items-center justify-center p-4 fade-in">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">Nuova Misurazione</h3>
+
+        <div class="grid grid-cols-3 gap-2 mb-4">
+            <button onclick="app.setHealthType('pressure')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors selected" data-type="pressure">
+                <i class="fa-solid fa-heart-pulse text-rose-500"></i>
+                <span class="text-[9px] font-bold uppercase">Pressione</span>
+            </button>
+            <button onclick="app.setHealthType('weight')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="weight">
+                <i class="fa-solid fa-weight-scale text-blue-500"></i>
+                <span class="text-[9px] font-bold uppercase">Peso</span>
+            </button>
+            <button onclick="app.setHealthType('glucose')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="glucose">
+                <i class="fa-solid fa-droplet text-purple-500"></i>
+                <span class="text-[9px] font-bold uppercase">Glicemia</span>
+            </button>
+            <button onclick="app.setHealthType('temp')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="temp">
+                <i class="fa-solid fa-temperature-half text-orange-500"></i>
+                <span class="text-[9px] font-bold uppercase">Febbre</span>
+            </button>
+            <button onclick="app.setHealthType('spo2')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="spo2">
+                <i class="fa-solid fa-lungs text-cyan-500"></i>
+                <span class="text-[9px] font-bold uppercase">Ossigeno</span>
+            </button>
+        </div>
+
+        <div id="health-inputs-container" class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+            <div id="input-group-pressure" class="health-input-group">
+                <div class="flex gap-3 mb-2">
+                    <div class="flex-1">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Sistolica (Max)</label>
+                        <input type="number" id="health-sys" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold text-lg outline-none focus:border-rose-500" placeholder="120">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Diastolica (Min)</label>
+                        <input type="number" id="health-dia" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold text-lg outline-none focus:border-rose-500" placeholder="80">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Pulsazioni (BPM)</label>
+                    <input type="number" id="health-pulse" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold outline-none focus:border-rose-500" placeholder="Opzionale">
+                </div>
+            </div>
+
+            <div id="input-group-weight" class="health-input-group hidden">
+                <label class="text-[10px] font-bold text-slate-500 uppercase">Peso (Kg)</label>
+                <div class="relative">
+                    <input type="number" id="health-weight" step="0.1" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-blue-500" placeholder="0.0">
+                    <span class="absolute right-4 top-4 text-slate-400 font-bold">Kg</span>
+                </div>
+            </div>
+
+            <div id="input-group-glucose" class="health-input-group hidden">
+                <label class="text-[10px] font-bold text-slate-500 uppercase">Glicemia (mg/dL)</label>
+                <input type="number" id="health-glucose" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-purple-500" placeholder="100">
+                
+                <div class="mt-2 flex gap-2 justify-center">
+                    <button onclick="app.setGlucoseTag('digiuno')" class="glucose-tag px-2 py-1 rounded border border-slate-200 text-[10px] bg-white hover:bg-slate-100">Digiuno</button>
+                    <button onclick="app.setGlucoseTag('post-pranzo')" class="glucose-tag px-2 py-1 rounded border border-slate-200 text-[10px] bg-white hover:bg-slate-100">Post-Pranzo</button>
+                </div>
+                <input type="hidden" id="health-glucose-tag">
+            </div>
+
+            <div id="input-group-temp" class="health-input-group hidden">
+                <label class="text-[10px] font-bold text-slate-500 uppercase">Temperatura (°C)</label>
+                <div class="relative">
+                    <input type="number" id="health-temp" step="0.1" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-orange-500" placeholder="36.5">
+                    <span class="absolute right-4 top-4 text-slate-400 font-bold">°C</span>
+                </div>
+            </div>
+
+            <div id="input-group-spo2" class="health-input-group hidden">
+                <label class="text-[10px] font-bold text-slate-500 uppercase">Saturazione (%)</label>
+                <div class="relative">
+                    <input type="number" id="health-spo2" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-cyan-500" placeholder="98">
+                    <span class="absolute right-4 top-4 text-slate-400 font-bold">%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button onclick="app.closeModal('modal-add-health')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+            <button onclick="app.saveHealthEntry()" class="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold shadow-md hover:bg-rose-700 active:scale-95 transition-all">Salva</button>
+        </div>
+    </div>
+</div>
     <script>
         const app = {
             data: { lastOpened: null, profiles: [], apiKey: "" },
@@ -3159,6 +3293,7 @@
                             if (typeof med.therapyEndedAlertShown !== "boolean") { med.therapyEndedAlertShown = false; }
                             if (!med.frequency) med.frequency = "daily";
                             if (!med.specificDays) med.specificDays = {}; // Nuovo campo per le eccezioni
+                            if (!Array.isArray(profile.healthLogs)) profile.healthLogs = [];
                         });
                     });
 
@@ -3405,6 +3540,7 @@
                     id: this.generateId(),
                     name, nickname, dob, age, address, birthplace, cf,
                     meds: [],
+                    healthLogs: [],
                     themeIndex,
                     avatar: this.newProfileAvatar
                 });
@@ -6307,6 +6443,189 @@
                                                 </div>
                                             `;
                     container.appendChild(div);
+                });
+            },
+
+            // --- DIARIO SALUTE LOGIC ---
+
+            openHealthDiary() {
+                this.renderHealthLog();
+                this.showModal('modal-health-diary');
+            },
+
+            renderHealthLog() {
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                if (!profile) return;
+                
+                const container = document.getElementById('health-diary-list');
+                container.innerHTML = '';
+
+                if (!profile.healthLogs || profile.healthLogs.length === 0) {
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-10 opacity-50">
+                            <div class="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-3 text-slate-400 text-2xl">
+                                <i class="fa-solid fa-notes-medical"></i>
+                            </div>
+                            <p class="text-sm font-bold text-slate-500">Nessuna misurazione</p>
+                            <p class="text-xs text-slate-400">Inizia a registrare i tuoi parametri.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Ordina dal più recente
+                const sortedLogs = [...profile.healthLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                sortedLogs.forEach((log, index) => {
+                    const dateObj = new Date(log.date);
+                    const dateStr = dateObj.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+                    const timeStr = dateObj.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+                    let icon = '', colorClass = '', valDisplay = '';
+
+                    switch(log.type) {
+                        case 'pressure':
+                            icon = 'fa-heart-pulse'; colorClass = 'text-rose-500 bg-rose-50 border-rose-100';
+                            valDisplay = `<span class="text-lg font-black text-rose-600">${log.values.sys}/${log.values.dia}</span> <span class="text-xs text-slate-400">mmHg</span>`;
+                            if(log.values.pulse) valDisplay += `<div class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-heart-crack mr-1"></i>${log.values.pulse} bpm</div>`;
+                            break;
+                        case 'weight':
+                            icon = 'fa-weight-scale'; colorClass = 'text-blue-500 bg-blue-50 border-blue-100';
+                            valDisplay = `<span class="text-lg font-black text-blue-600">${log.values.weight}</span> <span class="text-xs text-slate-400">Kg</span>`;
+                            break;
+                        case 'glucose':
+                            icon = 'fa-droplet'; colorClass = 'text-purple-500 bg-purple-50 border-purple-100';
+                            valDisplay = `<span class="text-lg font-black text-purple-600">${log.values.glucose}</span> <span class="text-xs text-slate-400">mg/dL</span>`;
+                            if(log.values.tag) valDisplay += `<span class="ml-2 text-[9px] uppercase px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded">${log.values.tag}</span>`;
+                            break;
+                        case 'temp':
+                            icon = 'fa-temperature-half'; colorClass = 'text-orange-500 bg-orange-50 border-orange-100';
+                            valDisplay = `<span class="text-lg font-black text-orange-600">${log.values.temp}°</span> <span class="text-xs text-slate-400">C</span>`;
+                            break;
+                        case 'spo2':
+                            icon = 'fa-lungs'; colorClass = 'text-cyan-500 bg-cyan-50 border-cyan-100';
+                            valDisplay = `<span class="text-lg font-black text-cyan-600">${log.values.spo2}%</span>`;
+                            break;
+                    }
+
+                    const div = document.createElement('div');
+                    div.className = "bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between relative overflow-hidden";
+                    // Click per eliminare (con conferma)
+                    div.onclick = () => this.deleteHealthEntry(log.id);
+
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg border ${colorClass}">
+                                <i class="fa-solid ${icon}"></i>
+                            </div>
+                            <div>
+                                <div class="leading-none mb-1">${valDisplay}</div>
+                                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${dateStr} • ${timeStr}</div>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-trash-can text-slate-200 hover:text-red-400 transition-colors ml-2 p-2"></i>
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            currentHealthType: 'pressure',
+
+            openAddHealthEntry() {
+                this.setHealthType('pressure'); // Default
+                // Reset campi
+                document.querySelectorAll('#modal-add-health input').forEach(i => i.value = '');
+                document.getElementById('health-glucose-tag').value = '';
+                document.querySelectorAll('.glucose-tag').forEach(b => b.classList.remove('selected'));
+                
+                this.showModal('modal-add-health');
+            },
+
+            setHealthType(type) {
+                this.currentHealthType = type;
+                
+                // Aggiorna UI bottoni
+                document.querySelectorAll('.health-type-btn').forEach(btn => {
+                    if(btn.dataset.type === type) btn.classList.add('selected');
+                    else btn.classList.remove('selected');
+                });
+
+                // Mostra input corretti
+                document.querySelectorAll('.health-input-group').forEach(grp => grp.classList.add('hidden'));
+                document.getElementById(`input-group-${type}`).classList.remove('hidden');
+            },
+
+            setGlucoseTag(tag) {
+                document.getElementById('health-glucose-tag').value = tag;
+                // UI bottoni tag
+                const btns = document.querySelectorAll('.glucose-tag'); // Assumendo che aggiungi questa classe ai bottoni glicemia
+                btns.forEach(b => {
+                    if(b.textContent.toLowerCase().includes(tag)) b.classList.add('selected');
+                    else b.classList.remove('selected');
+                });
+            },
+
+            saveHealthEntry() {
+                const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                if (!profile) return;
+                if (!profile.healthLogs) profile.healthLogs = [];
+
+                const type = this.currentHealthType;
+                let values = {};
+                let isValid = false;
+
+                // Recupera valori in base al tipo
+                if (type === 'pressure') {
+                    const sys = document.getElementById('health-sys').value;
+                    const dia = document.getElementById('health-dia').value;
+                    const pulse = document.getElementById('health-pulse').value;
+                    if(sys && dia) { values = { sys, dia, pulse }; isValid = true; }
+                } 
+                else if (type === 'weight') {
+                    const w = document.getElementById('health-weight').value;
+                    if(w) { values = { weight: w }; isValid = true; }
+                }
+                else if (type === 'glucose') {
+                    const g = document.getElementById('health-glucose').value;
+                    const tag = document.getElementById('health-glucose-tag').value;
+                    if(g) { values = { glucose: g, tag }; isValid = true; }
+                }
+                else if (type === 'temp') {
+                    const t = document.getElementById('health-temp').value;
+                    if(t) { values = { temp: t }; isValid = true; }
+                }
+                else if (type === 'spo2') {
+                    const s = document.getElementById('health-spo2').value;
+                    if(s) { values = { spo2: s }; isValid = true; }
+                }
+
+                if (!isValid) {
+                    this.showAlert("Errore", "Inserisci i valori richiesti.");
+                    return;
+                }
+
+                // Salva
+                profile.healthLogs.push({
+                    id: Date.now().toString(),
+                    date: new Date().toISOString(),
+                    type: type,
+                    values: values
+                });
+
+                this.saveData();
+                this.closeModal('modal-add-health');
+                this.renderHealthLog(); // Aggiorna la lista
+                this.showAlert("Salvato", "Misurazione registrata.");
+            },
+
+            deleteHealthEntry(id) {
+                this.showConfirm("Elimina", "Vuoi cancellare questa misurazione?", () => {
+                    const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                    if(profile) {
+                        profile.healthLogs = profile.healthLogs.filter(x => x.id !== id);
+                        this.saveData();
+                        this.renderHealthLog();
+                    }
                 });
             },
 
