@@ -568,10 +568,6 @@
             </div>
 
             <div class="bg-white p-5 rounded-2xl card-shadow">
-                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-pills text-blue-500"></i> Farmacia & Spesa
-                </h3>
-
                 <div class="grid grid-cols-2 gap-3">
                     <button onclick="app.openShoppingListModal()" class="col-span-2 flex flex-col items-center justify-center gap-2 p-6 h-auto bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-colors group">
                         <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform text-xl mb-1 shadow-sm border border-emerald-200">
@@ -680,10 +676,6 @@
             </div>
 
             <div class="bg-white p-5 rounded-2xl card-shadow">
-                <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-database text-blue-500"></i> Database
-                </h3>
-
                 <div class="bg-sky-50 p-5 rounded-2xl card-shadow mb-4">
                     <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-pills text-indigo-500"></i> Archivio Farmaci
@@ -2090,17 +2082,59 @@
                 this.checkNewDay();
                 this.renderProfiles();
                 this.setupManifest();
+
                 const usage = document.getElementById('input-med-usage');
+
                 if (usage) {
                     usage.addEventListener('input', () => {
                         usage.style.height = 'auto';
                         usage.style.height = usage.scrollHeight + 'px';
                     });
                 }
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
 
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+
+                document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
                 document.getElementById('btn-back').addEventListener('click', () => this.goBack());
+
+                // --- MODIFICA SWIPE: Inizio ---
+                // Invece di 'document', prendiamo solo il contenitore dei giorni
+                const calendarEl = document.getElementById('calendar-days');
+
+                // Variabili locali per lo swipe
+                let tStartX = 0;
+                let tStartY = 0;
+
+                if (calendarEl) {
+                    calendarEl.addEventListener('touchstart', e => {
+                        tStartX = e.changedTouches[0].screenX;
+                        tStartY = e.changedTouches[0].screenY; // Salviamo la Y per capire se è scroll
+                    }, { passive: true });
+
+                    calendarEl.addEventListener('touchend', e => {
+                        const tEndX = e.changedTouches[0].screenX;
+                        const tEndY = e.changedTouches[0].screenY;
+
+                        const diffX = tEndX - tStartX;
+                        const diffY = tEndY - tStartY;
+
+                        // 1. FILTRO SCROLL VERTICALE
+                        // Se mi muovo più in verticale che in orizzontale, sto scorrendo la pagina -> Ignora
+                        if (Math.abs(diffY) > Math.abs(diffX)) return;
+
+                        // 2. SOGLIA SENSIBILITÀ (70px)
+                        // Se il movimento è troppo corto, è un tap o un errore -> Ignora
+                        if (Math.abs(diffX) < 70) return;
+
+                        // 3. ESECUZIONE
+                        if (diffX > 0) {
+                            this.changeWeek(-1); // Swipe Destra -> Indietro
+                        } else {
+                            this.changeWeek(1);  // Swipe Sinistra -> Avanti
+                        }
+                    }, { passive: true });
+                }
+                // --- MODIFICA SWIPE: Fine ---
 
                 document.addEventListener('touchstart', e => {
                     this.touchStartX = e.changedTouches[0].screenX;
@@ -4968,7 +5002,7 @@
                 if (Math.abs(diffY) > Math.abs(diffX)) return;
 
                 // Soglia minima movimento
-                if (Math.abs(diffX) < 100) return;
+                if (Math.abs(diffX) < 60) return;
 
                 const edgeThreshold = 40; // Pixel dal bordo per attivare la gesture "Indietro"
                 const isLeftEdge = this.touchStartX < edgeThreshold;
@@ -6867,7 +6901,7 @@
                     "display": "standalone",
                     "background_color": "#f3f4f6",
                     "theme_color": "#2563eb",
-                    "icons": [{ "src": "https://i.ibb.co/N6db36Sf/medicine.png", "sizes": "192x192", "type": "image/png" }]
+                    "icons": [{ "src": "https://img.icons8.com/color/192/pills-bottle.png", "sizes": "192x192", "type": "image/png" }]
                 };
                 const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
                 document.getElementById('my-manifest').setAttribute('href', URL.createObjectURL(blob));
@@ -6878,4 +6912,3 @@
     </script>
 </body>
 </html>
-
