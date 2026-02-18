@@ -6680,57 +6680,109 @@
                 });
             },
 
-            // --- CALENDAR LOGIC (AGGIORNATA) ---
+            // --- LOGICA CALENDARIO RAGGRUPPATA ---
 
             exportToCalendar(method = 'PUBLISH') {
                 const daysToExport = 30; // 30 giorni
                 let events = [];
                 const now = new Date();
 
-                // Orari Standard
+                // Mappa Orari Standard
                 const STANDARD_TIMES = {
                     'Mattina': '08:00',
+                    'Pranzo': '13:00', // Aggiunto per sicurezza
                     'Pomeriggio': '13:00',
+                    'Cena': '20:00',   // Aggiunto per sicurezza
                     'Sera': '20:00'
                 };
 
-                // 1. Calcola gli eventi (identico a prima, ma con UID)
+                // 1. Cicla per i prossimi X giorni
                 for (let i = 0; i < daysToExport; i++) {
                     const date = new Date(now);
                     date.setDate(date.getDate() + i);
-                    const dateStr = date.toISOString().slice(0, 10);
+                    const dateStr = date.toISOString().slice(0, 10); // YYYY-MM-DD
                     const dayName = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][date.getDay()];
 
+                    // Cicla per ogni profilo
                     this.data.profiles.forEach(profile => {
+
+                        // Bucket giornalieri per raggruppare i farmaci
+                        let dailyBuckets = {
+                            'Mattina': [],
+                            'Pomeriggio': [],
+                            'Sera': []
+                        };
+
+                        // Analizza i farmaci del profilo
                         profile.meds.forEach(med => {
-                            // Filtri validità
+                            // Filtri validità (Data inizio/fine/giorni)
                             if (med.startDate && dateStr < med.startDate) return;
                             if (med.endDate && dateStr > med.endDate) return;
                             if (med.days && med.days.length > 0 && !med.days.includes(dayName)) return;
 
-                            let time = med.specificTime || STANDARD_TIMES[med.time];
-                            if (!time) return;
+                            // LOGICA BIFORCAZIONE:
 
-                            // Formattazione Date per ICS
-                            const startDateTime = dateStr.replace(/-/g, '') + 'T' + time.replace(':', '') + '00';
+                            // CASO A: Orario Specifico (Mantiene evento singolo)
+                            if (med.specificTime) {
+                                const time = med.specificTime;
+                                const startDateTime = dateStr.replace(/-/g, '') + 'T' + time.replace(':', '') + '00';
 
-                            let endObj = new Date(dateStr + 'T' + time);
-                            endObj.setMinutes(endObj.getMinutes() + 15);
-                            const endDateTime = endObj.toISOString().slice(0, 19).replace(/-/g, '').replace(/:/g, '');
+                                let endObj = new Date(dateStr + 'T' + time);
+                                endObj.setMinutes(endObj.getMinutes() + 15);
+                                const endDateTime = endObj.toISOString().slice(0, 19).replace(/-/g, '').replace(/:/g, '');
 
-                            // --- NOVITÀ: Creazione UID Stabile ---
-                            // Questo ID deve essere uguale sia quando crei che quando cancelli
-                            const uniqueID = `medpro-${profile.id}-${med.id}-${startDateTime}@medicinepro.app`;
+                                events.push({
+                                    uid: `medpro-${profile.id}-${med.id}-${startDateTime}@medicinepro.app`, // ID Specifico Farmaco
+                                    title: `💊 ${profile.name}: ${med.name}`,
+                                    description: `Dose: ${med.dose || 'Standard'} (Orario Specifico)`,
+                                    start: startDateTime,
+                                    end: endDateTime,
+                                    stamp: new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z'
+                                });
+                            }
+                            // CASO B: Orario Standard (Metti nel bucket per raggruppare)
+                            else {
+                                // Normalizziamo le fasce (es. Pranzo -> Pomeriggio)
+                                let slot = med.time;
+                                if (slot === 'Pranzo') slot = 'Pomeriggio';
+                                if (slot === 'Cena') slot = 'Sera';
 
-                            events.push({
-                                uid: uniqueID, // <--- FONDAMENTALE
-                                title: `💊 ${profile.name}: ${med.name}`,
-                                description: `Dose: ${med.dose || 'Standard'}.`,
-                                start: startDateTime,
-                                end: endDateTime,
-                                stamp: new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z'
-                            });
+                                if (dailyBuckets[slot]) {
+                                    dailyBuckets[slot].push(med);
+                                }
+                            }
                         });
+
+                        // ORA CREIAMO GLI EVENTI RAGGRUPPATI PER QUESTO GIORNO/PROFILO
+                        Object.keys(dailyBuckets).forEach(slot => {
+                            const medsInSlot = dailyBuckets[slot];
+
+                            if (medsInSlot.length > 0) {
+                                const time = STANDARD_TIMES[slot] || '08:00';
+
+                                // Costruiamo date ICS
+                                const startDateTime = dateStr.replace(/-/g, '') + 'T' + time.replace(':', '') + '00';
+                                let endObj = new Date(dateStr + 'T' + time);
+                                endObj.setMinutes(endObj.getMinutes() + 15);
+                                const endDateTime = endObj.toISOString().slice(0, 19).replace(/-/g, '').replace(/:/g, '');
+
+                                // Costruiamo descrizione lista
+                                const medList = medsInSlot.map(m => `- ${m.name} (${m.dose || 'Dose std'})`).join('\\n');
+
+                                // UID Raggruppato: Basato su Profilo + Fascia + Data (così è cancellabile)
+                                const groupUID = `medpro-GROUP-${profile.id}-${slot}-${dateStr}@medicinepro.app`;
+
+                                events.push({
+                                    uid: groupUID,
+                                    title: `💊 ${profile.name}: Terapia ${slot}`, // Es: "Mario: Terapia Mattina"
+                                    description: `Farmaci da assumere:\\n${medList}`,
+                                    start: startDateTime,
+                                    end: endDateTime,
+                                    stamp: new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z'
+                                });
+                            }
+                        });
+
                     });
                 }
 
