@@ -4968,7 +4968,7 @@
                 if (Math.abs(diffY) > Math.abs(diffX)) return;
 
                 // Soglia minima movimento
-                if (Math.abs(diffX) < 60) return;
+                if (Math.abs(diffX) < 100) return;
 
                 const edgeThreshold = 40; // Pixel dal bordo per attivare la gesture "Indietro"
                 const isLeftEdge = this.touchStartX < edgeThreshold;
@@ -6878,3 +6878,4 @@
     </script>
 </body>
 </html>
+
