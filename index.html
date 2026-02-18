@@ -2128,7 +2128,7 @@
 
                         // 2. SOGLIA SENSIBILITÀ (70px)
                         // Se il movimento è troppo corto, è un tap o un errore -> Ignora
-                        if (Math.abs(diffX) < 150) return;
+                        if (Math.abs(diffX) < 1000) return;
 
                         // 3. ESECUZIONE
                         if (diffX > 0) {
