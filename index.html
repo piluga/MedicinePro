@@ -2128,7 +2128,7 @@
 
                         // 2. SOGLIA SENSIBILITÀ (70px)
                         // Se il movimento è troppo corto, è un tap o un errore -> Ignora
-                        if (Math.abs(diffX) < 100) return;
+                        if (Math.abs(diffX) < 150) return;
 
                         // 3. ESECUZIONE
                         if (diffX > 0) {
@@ -4994,7 +4994,7 @@
                 if (Math.abs(diffY) > Math.abs(diffX)) return;
 
                 // Soglia minima movimento
-                if (Math.abs(diffX) < 70) return;
+                if (Math.abs(diffX) < 60) return;
 
                 const edgeThreshold = 40; // Pixel dal bordo per attivare la gesture "Indietro"
                 const isLeftEdge = this.touchStartX < edgeThreshold;
