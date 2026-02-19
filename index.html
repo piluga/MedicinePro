@@ -973,12 +973,25 @@
         </div>
     </div>
 
-
     <!-- ALTRI MODALI -->
     <!-- MODALE AGGIUNGI PROFILO -->
     <div id="modal-add-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 class="text-xl font-bold mb-4">Nuovo Profilo</h3>
+
+            <div class="flex flex-col items-center mb-5">
+                <div class="relative group cursor-pointer" onclick="document.getElementById('input-profile-image').click()">
+                    <div class="w-28 h-28 rounded-full bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden text-slate-400 group-hover:border-blue-500 group-hover:text-blue-500 transition-colors shadow-sm">
+                        <img id="profile-img-preview" class="w-full h-full object-cover hidden" src="" alt="Foto Profilo">
+                        <i id="profile-img-icon" class="fa-solid fa-camera text-3xl"></i>
+                    </div>
+                    <div class="absolute bottom-0 right-1 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-3 font-semibold">Foto (Opzionale)</p>
+                <input type="file" id="input-profile-image" accept="image/*" class="hidden" onchange="app.handleProfileImageUpload(event)">
+            </div>
 
             <p class="text-xs text-slate-500 font-bold uppercase mb-2">Scegli Avatar (Definisce il Sesso)</p>
             <div class="grid grid-cols-4 gap-3 mb-4">
@@ -1037,6 +1050,22 @@
     <div id="modal-edit-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <h3 class="text-xl font-bold mb-4">Modifica Profilo</h3>
+
+            <div class="flex flex-col items-center mb-5">
+                <div class="relative group cursor-pointer" onclick="document.getElementById('input-edit-profile-image').click()">
+                    <div class="w-28 h-28 rounded-full bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden text-slate-400 group-hover:border-blue-500 group-hover:text-blue-500 transition-colors shadow-sm">
+                        <img id="edit-profile-img-preview" class="w-full h-full object-cover hidden" src="" alt="Foto Profilo">
+                        <i id="edit-profile-img-icon" class="fa-solid fa-camera text-3xl"></i>
+                    </div>
+                    <div class="absolute bottom-0 right-1 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                        <i class="fa-solid fa-pen text-xs"></i>
+                    </div>
+                </div>
+                <input type="file" id="input-edit-profile-image" accept="image/*" class="hidden" onchange="app.handleEditProfileImageUpload(event)">
+                <button id="btn-remove-edit-image" onclick="app.removeEditProfileImage()" class="hidden text-xs text-red-500 mt-3 font-bold hover:underline">
+                    <i class="fa-solid fa-trash-can mr-1"></i>Rimuovi foto
+                </button>
+            </div>
 
             <p class="text-xs text-slate-500 font-bold uppercase mb-2">Avatar (Definisce il Sesso)</p>
             <div class="grid grid-cols-4 gap-3 mb-4">
@@ -2061,7 +2090,8 @@
             expandedSections: [],
             confirmCallback: null,
             currentBackupContent: "",
-
+            tempProfileImage: null,
+            tempEditProfileImage: null,
             // Variabili per il modale dettagli giorno
             editingDayDate: null,
             editingDayTimes: [],
@@ -3594,7 +3624,8 @@
                     meds: [],
                     healthLogs: [],
                     themeIndex,
-                    avatar: this.newProfileAvatar
+                    avatar: this.newProfileAvatar,
+                    image: this.tempProfileImage || null
                 });
 
                 this.saveData();
@@ -3606,6 +3637,12 @@
                 document.getElementById('input-profile-address').value = '';
                 document.getElementById('input-profile-birthplace').value = '';
                 document.getElementById('input-profile-cf').value = '';
+
+                // <-- NUOVO RESET FOTO -->
+                this.tempProfileImage = null;
+                document.getElementById('input-profile-image').value = '';
+                document.getElementById('profile-img-preview').classList.add('hidden');
+                document.getElementById('profile-img-icon').classList.remove('hidden');
 
                 this.closeModal('modal-add-profile');
                 this.renderProfiles();
@@ -3621,6 +3658,26 @@
                     document.getElementById('input-edit-profile-address').value = p.address || '';
                     document.getElementById('input-edit-profile-birthplace').value = p.birthplace || '';
                     document.getElementById('input-edit-profile-cf').value = p.cf || '';
+
+                    // <-- NUOVA LOGICA CARICAMENTO FOTO -->
+                    this.tempEditProfileImage = p.image || null;
+
+                    const imgEl = document.getElementById('edit-profile-img-preview');
+                    const iconEl = document.getElementById('edit-profile-img-icon');
+                    const removeBtn = document.getElementById('btn-remove-edit-image');
+
+                    if (this.tempEditProfileImage) {
+                        imgEl.src = this.tempEditProfileImage;
+                        imgEl.classList.remove('hidden');
+                        iconEl.classList.add('hidden');
+                        removeBtn.classList.remove('hidden');
+                    } else {
+                        imgEl.src = '';
+                        imgEl.classList.add('hidden');
+                        iconEl.classList.remove('hidden');
+                        removeBtn.classList.add('hidden');
+                    }
+                    // <-- FINE NUOVA LOGICA -->
 
                     // Imposta visualmente l'avatar E aggiorna la variabile interna per il calcolo del sesso
                     this.selectAvatar(p.avatar || 'man');
@@ -3662,6 +3719,7 @@
                 p.birthplace = newBirthplace;
                 p.cf = newCf;
                 p.avatar = this.newProfileAvatar;
+                p.image = this.tempEditProfileImage;
 
                 this.saveData();
 
@@ -3730,43 +3788,47 @@
 
                     const percClass = perc === 100 ? 'text-green-600' : theme.progress;
 
+                    // 1. Aggiorniamo il contenuto per far scalare bene anche le icone/lettere se non c'è la foto
                     let iconContent;
-                    if (p.avatar && avatarIcons[p.avatar]) {
-                        iconContent = `<i class="fa-solid ${avatarIcons[p.avatar]} text-xl"></i>`;
+                    if (p.image) {
+                        iconContent = `<img src="${p.image}" class="w-full h-full object-cover rounded-full" alt="Foto">`;
+                    } else if (p.avatar && avatarIcons[p.avatar]) {
+                        iconContent = `<i class="fa-solid ${avatarIcons[p.avatar]} text-3xl"></i>`; // Icona ingrandita a text-3xl
                     } else {
-                        iconContent = displayName.charAt(0).toUpperCase();
+                        iconContent = `<span class="text-2xl">${displayName.charAt(0).toUpperCase()}</span>`; // Lettera ingrandita
                     }
 
                     const doctorBadge = hasDoctor ? `
-                                                            <div onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')"
-                                                                    class="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform z-10"
-                                                                    title="Modifica Dottore">
-                                                                <i class="fa-solid fa-user-doctor text-[10px] text-blue-500"></i>
-                                                            </div>
-                                                        ` : '';
+                        <div onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')"
+                                class="absolute -bottom-1 -right-1 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform z-10"
+                                title="Modifica Dottore">
+                            <i class="fa-solid fa-user-doctor text-[10px] text-blue-500"></i>
+                        </div>
+                    ` : '';
 
-                    const doctorBtn = !hasDoctor ? `
-                                                            <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm ml-2">
-                                                                <i class="fa-solid fa-user-doctor mr-1"></i> Medico
-                                                            </button>
-                                                        ` : '';
+                                        const doctorBtn = !hasDoctor ? `
+                        <button onclick="event.stopPropagation(); app.openDoctorModal('${p.id}')" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm ml-2 shrink-0">
+                            <i class="fa-solid fa-user-doctor mr-1"></i> Medico
+                        </button>
+                    ` : '';
 
-                    div.innerHTML = `
-                                                            <div class="flex items-center gap-3">
-                                                                <div class="w-12 h-12 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative">
-                                                                    ${iconContent}
-                                                                    ${doctorBadge}
-                                                                </div>
-                                                                <div>
-                                                                    <h3 class="font-bold text-slate-800 text-lg leading-tight">${displayName}</h3>
-                                                                    <div class="flex items-center mt-1">
-                                                                        <span class="text-xs text-slate-500">${total} farmaci</span>
-                                                                        ${doctorBtn}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <span class="text-sm font-bold ${percClass}">${perc}%</span>
-                                                        `;
+                                        // 2. Ingrandiamo il contenitore dell'immagine a w-16 h-16 (64px) e aggiungiamo shrink-0
+                                        div.innerHTML = `
+                        <div class="flex items-center gap-4 overflow-hidden">
+                            <div class="w-16 h-16 rounded-full ${theme.iconBg} ${theme.iconText} flex items-center justify-center font-bold shadow-sm border border-white/50 relative shrink-0">
+                                ${iconContent}
+                                ${doctorBadge}
+                            </div>
+                            <div class="overflow-hidden">
+                                <h3 class="font-bold text-slate-800 text-lg leading-tight truncate">${displayName}</h3>
+                                <div class="flex items-center mt-1">
+                                    <span class="text-xs text-slate-500 shrink-0">${total} farmaci</span>
+                                    ${doctorBtn}
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-sm font-bold ${percClass} shrink-0 ml-2">${perc}%</span>
+                    `;
 
                     container.appendChild(div);
                 });
@@ -3872,6 +3934,14 @@
                 if (id === 'modal-add-profile') {
                     this.selectAvatar(null);
                     this.newProfileAvatar = null;
+                    // Resetta la foto se il modale viene riaperto
+                    this.tempProfileImage = null;
+                    const imgEl = document.getElementById('profile-img-preview');
+                    const iconEl = document.getElementById('profile-img-icon');
+                    if (imgEl) imgEl.classList.add('hidden');
+                    if (iconEl) iconEl.classList.remove('hidden');
+                    const fileInput = document.getElementById('input-profile-image');
+                    if (fileInput) fileInput.value = '';
                 }
 
                 document.getElementById(id).classList.remove('hidden');
@@ -6874,6 +6944,63 @@
 
                 // Mostra il modale che spiega cosa fare
                 this.showModal('modal-ics-instruction');
+            },
+
+            // Nuova funzione per gestire il caricamento della foto profilo
+            async handleProfileImageUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const rawBase64 = e.target.result;
+
+                    // Usiamo la tua funzione di compressione (impostata a 400px per i profili)
+                    const compressedImage = await this.resizeImage(rawBase64, 400, 0.7);
+
+                    this.tempProfileImage = compressedImage;
+
+                    // Aggiorna l'interfaccia
+                    const imgEl = document.getElementById('profile-img-preview');
+                    const iconEl = document.getElementById('profile-img-icon');
+
+                    imgEl.src = compressedImage;
+                    imgEl.classList.remove('hidden');
+                    iconEl.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            },
+
+            async handleEditProfileImageUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const rawBase64 = e.target.result;
+                    // Comprimi l'immagine come fatto in precedenza
+                    const compressedImage = await this.resizeImage(rawBase64, 400, 0.7);
+
+                    this.tempEditProfileImage = compressedImage;
+
+                    // Aggiorna l'interfaccia del modale di Modifica
+                    document.getElementById('edit-profile-img-preview').src = compressedImage;
+                    document.getElementById('edit-profile-img-preview').classList.remove('hidden');
+                    document.getElementById('edit-profile-img-icon').classList.add('hidden');
+                    document.getElementById('btn-remove-edit-image').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            },
+
+            removeEditProfileImage() {
+                this.tempEditProfileImage = null; // Svuota la variabile
+
+                // Ripristina l'interfaccia all'icona della fotocamera
+                document.getElementById('edit-profile-img-preview').src = '';
+                document.getElementById('edit-profile-img-preview').classList.add('hidden');
+                document.getElementById('edit-profile-img-icon').classList.remove('hidden');
+                document.getElementById('input-edit-profile-image').value = ''; // Resetta l'input
+                document.getElementById('btn-remove-edit-image').classList.add('hidden');
             },
 
             setupManifest() {
