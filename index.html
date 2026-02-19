@@ -2160,6 +2160,20 @@
                         this.renderMedications();
                     }
                 }, 60 * 1000);
+
+                // --- NUOVO: Registrazione del Service Worker ---
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('./sw.js')
+                            .then(registration => {
+                                console.log('✅ ServiceWorker registrato con successo. Scope:', registration.scope);
+                            })
+                            .catch(error => {
+                                console.error('❌ Errore durante la registrazione del ServiceWorker:', error);
+                            });
+                    });
+                }
+                // ------------------------------------------------
             },
 
             // --- GESTIONE MODALI DI SISTEMA ---
@@ -3138,7 +3152,7 @@
                 try {
                     // --- MODIFICA FONDAMENTALE QUI SOTTO ---
                     // Usiamo 'gemini-1.5-flash' invece di '2.0'. Il 1.5 non dà errore 429 così facilmente.
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${this.data.apiKey}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.data.apiKey}`;
 
                     const result = await this.fetchWithRetry(url, payload);
 
@@ -6770,111 +6784,85 @@
             // --- LOGICA CALENDARIO RAGGRUPPATA ---
 
             exportToCalendar(method = 'PUBLISH') {
-                const daysToExport = 30; // 30 giorni
                 let events = [];
                 const now = new Date();
+                const todayStr = now.toISOString().slice(0, 10);
 
                 // Mappa Orari Standard
                 const STANDARD_TIMES = {
                     'Mattina': '08:00',
-                    'Pranzo': '13:00', // Aggiunto per sicurezza
-                    'Pomeriggio': '13:00',
-                    'Cena': '20:00',   // Aggiunto per sicurezza
+                    'Pomeriggio': '14:00', // Spostato alle 14:00 per differenziarlo dal pranzo
                     'Sera': '20:00'
                 };
 
-                // 1. Cicla per i prossimi X giorni
-                for (let i = 0; i < daysToExport; i++) {
-                    const date = new Date(now);
-                    date.setDate(date.getDate() + i);
-                    const dateStr = date.toISOString().slice(0, 10); // YYYY-MM-DD
-                    const dayName = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][date.getDay()];
+                // Mappa Giorni della settimana per formato ICS
+                const ICS_DAYS = {
+                    'Dom': 'SU', 'Lun': 'MO', 'Mar': 'TU', 'Mer': 'WE',
+                    'Gio': 'TH', 'Ven': 'FR', 'Sab': 'SA'
+                };
 
-                    // Cicla per ogni profilo
-                    this.data.profiles.forEach(profile => {
+                // Cicla per ogni profilo
+                this.data.profiles.forEach(profile => {
+                    profile.meds.forEach(med => {
+                        // 1. Escludi farmaci "Al Bisogno" o già terminati
+                        if (med.usage === 'Al Bisogno') return;
+                        if (med.endDate && med.endDate < todayStr) return;
 
-                        // Bucket giornalieri per raggruppare i farmaci
-                        let dailyBuckets = {
-                            'Mattina': [],
-                            'Pomeriggio': [],
-                            'Sera': []
-                        };
+                        // 2. Calcola Data di Inizio Evento
+                        // Se la terapia è iniziata nel passato, il calendario nativo 
+                        // la gestirà senza suonare per i giorni vecchi
+                        let startD = med.startDate ? new Date(med.startDate) : new Date();
 
-                        // Analizza i farmaci del profilo
-                        profile.meds.forEach(med => {
-                            // Filtri validità (Data inizio/fine/giorni)
-                            if (med.startDate && dateStr < med.startDate) return;
-                            if (med.endDate && dateStr > med.endDate) return;
-                            if (med.days && med.days.length > 0 && !med.days.includes(dayName)) return;
+                        // 3. Imposta l'orario (Specifico o Standard)
+                        const timeStr = med.specificTime || STANDARD_TIMES[med.time] || '08:00';
 
-                            // LOGICA BIFORCAZIONE:
+                        // Creazione stringhe data-ora in formato ICS (es: 20231012T080000)
+                        // Senza la "Z" finale: crea un orario "locale" (se viaggi, suona sempre alle 8 del mattino locali)
+                        const startDateTime = startD.toISOString().slice(0, 10).replace(/-/g, '') + 'T' + timeStr.replace(':', '') + '00';
 
-                            // CASO A: Orario Specifico (Mantiene evento singolo)
-                            if (med.specificTime) {
-                                const time = med.specificTime;
-                                const startDateTime = dateStr.replace(/-/g, '') + 'T' + time.replace(':', '') + '00';
+                        let endObj = new Date(startD.toISOString().slice(0, 10) + 'T' + timeStr);
+                        endObj.setMinutes(endObj.getMinutes() + 15); // Durata evento: 15 min
+                        const endDateTime = endObj.toISOString().slice(0, 19).replace(/-/g, '').replace(/:/g, '');
 
-                                let endObj = new Date(dateStr + 'T' + time);
-                                endObj.setMinutes(endObj.getMinutes() + 15);
-                                const endDateTime = endObj.toISOString().slice(0, 19).replace(/-/g, '').replace(/:/g, '');
+                        // 4. COSTRUZIONE REGOLA DI RIPETIZIONE (RRULE)
+                        let rrule = '';
+                        if (med.days && med.days.length > 0) {
+                            // Giorni specifici (es. solo Lun e Mer)
+                            const daysList = med.days.map(d => ICS_DAYS[d]).join(',');
+                            rrule = `FREQ=WEEKLY;BYDAY=${daysList}`;
+                        } else if (med.frequency === 'alternate') {
+                            // Giorni alterni
+                            rrule = `FREQ=DAILY;INTERVAL=2`;
+                        } else {
+                            // Tutti i giorni
+                            rrule = `FREQ=DAILY`;
+                        }
 
-                                events.push({
-                                    uid: `medpro-${profile.id}-${med.id}-${startDateTime}@medicinepro.app`, // ID Specifico Farmaco
-                                    title: `💊 ${profile.name}: ${med.name}`,
-                                    description: `Dose: ${med.dose || 'Standard'} (Orario Specifico)`,
-                                    start: startDateTime,
-                                    end: endDateTime,
-                                    stamp: new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z'
-                                });
-                            }
-                            // CASO B: Orario Standard (Metti nel bucket per raggruppare)
-                            else {
-                                // Normalizziamo le fasce (es. Pranzo -> Pomeriggio)
-                                let slot = med.time;
-                                if (slot === 'Pranzo') slot = 'Pomeriggio';
-                                if (slot === 'Cena') slot = 'Sera';
+                        // Se c'è una data di fine, aggiungi la clausola UNTIL
+                        if (med.endDate) {
+                            // UNTIL richiede formato UTC assoluto (Z)
+                            const untilD = new Date(med.endDate + 'T23:59:59Z');
+                            const untilStr = untilD.toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
+                            rrule += `;UNTIL=${untilStr}`;
+                        }
 
-                                if (dailyBuckets[slot]) {
-                                    dailyBuckets[slot].push(med);
-                                }
-                            }
+                        // ID univoco per il farmaco (Essenziale per poterlo cancellare in futuro)
+                        const uid = `medpro-${profile.id}-${med.sharedId || med.id}@medicinepro.app`;
+
+                        events.push({
+                            uid: uid,
+                            title: `💊 ${profile.name}: ${med.name}`,
+                            description: `Dose: ${med.dose || 'Standard'}\\nNote: ${med.usage || ''}\\nGenerato da MedicinePro`,
+                            start: startDateTime,
+                            end: endDateTime,
+                            rrule: rrule,
+                            stamp: now.toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z'
                         });
-
-                        // ORA CREIAMO GLI EVENTI RAGGRUPPATI PER QUESTO GIORNO/PROFILO
-                        Object.keys(dailyBuckets).forEach(slot => {
-                            const medsInSlot = dailyBuckets[slot];
-
-                            if (medsInSlot.length > 0) {
-                                const time = STANDARD_TIMES[slot] || '08:00';
-
-                                // Costruiamo date ICS
-                                const startDateTime = dateStr.replace(/-/g, '') + 'T' + time.replace(':', '') + '00';
-                                let endObj = new Date(dateStr + 'T' + time);
-                                endObj.setMinutes(endObj.getMinutes() + 15);
-                                const endDateTime = endObj.toISOString().slice(0, 19).replace(/-/g, '').replace(/:/g, '');
-
-                                // Costruiamo descrizione lista
-                                const medList = medsInSlot.map(m => `- ${m.name} (${m.dose || 'Dose std'})`).join('\\n');
-
-                                // UID Raggruppato: Basato su Profilo + Fascia + Data (così è cancellabile)
-                                const groupUID = `medpro-GROUP-${profile.id}-${slot}-${dateStr}@medicinepro.app`;
-
-                                events.push({
-                                    uid: groupUID,
-                                    title: `💊 ${profile.name}: Terapia ${slot}`, // Es: "Mario: Terapia Mattina"
-                                    description: `Farmaci da assumere:\\n${medList}`,
-                                    start: startDateTime,
-                                    end: endDateTime,
-                                    stamp: new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z'
-                                });
-                            }
-                        });
-
                     });
-                }
+                });
 
                 if (events.length === 0) {
-                    this.showAlert("Nessun Evento", "Non ci sono farmaci pianificati per i prossimi 30 giorni.");
+                    this.showAlert("Nessun Evento", "Non ci sono farmaci attivi e programmati da esportare.");
                     return;
                 }
 
@@ -6882,14 +6870,10 @@
             },
 
             async generateICSFile(events, method) {
-                // 1. Costruisci il contenuto del file (identico a prima)
                 let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//MedicinePro//IT\nCALSCALE:GREGORIAN\n";
 
-                if (method === 'CANCEL') {
-                    icsContent += "METHOD:CANCEL\n";
-                } else {
-                    icsContent += "METHOD:PUBLISH\n";
-                }
+                // Gestione Eliminazione/Aggiunta
+                icsContent += method === 'CANCEL' ? "METHOD:CANCEL\n" : "METHOD:PUBLISH\n";
 
                 events.forEach(ev => {
                     icsContent += "BEGIN:VEVENT\n";
@@ -6898,6 +6882,11 @@
                     icsContent += `DTSTART:${ev.start}\n`;
                     icsContent += `DTEND:${ev.end}\n`;
 
+                    // Inserisce la regola di ripetizione ottimizzata
+                    if (ev.rrule) {
+                        icsContent += `RRULE:${ev.rrule}\n`;
+                    }
+
                     if (method === 'CANCEL') {
                         icsContent += `STATUS:CANCELLED\n`;
                         icsContent += `SUMMARY:CANCELLATO: ${ev.title}\n`;
@@ -6905,7 +6894,12 @@
                         icsContent += `SUMMARY:${ev.title}\n`;
                         icsContent += `DESCRIPTION:${ev.description}\n`;
                         icsContent += `STATUS:CONFIRMED\n`;
-                        icsContent += `BEGIN:VALARM\nTRIGGER:-PT5M\nACTION:DISPLAY\nDESCRIPTION:Reminder\nEND:VALARM\n`;
+
+                        // DOPPIO ALLARME (Migliora l'aderenza)
+                        // 1. Suona 10 minuti prima per prepararsi
+                        icsContent += `BEGIN:VALARM\nTRIGGER:-PT10M\nACTION:DISPLAY\nDESCRIPTION:Tra poco: ${ev.title}\nEND:VALARM\n`;
+                        // 2. Suona all'orario esatto
+                        icsContent += `BEGIN:VALARM\nTRIGGER:PT0M\nACTION:DISPLAY\nDESCRIPTION:Assumi ora: ${ev.title}\nEND:VALARM\n`;
                     }
 
                     icsContent += "END:VEVENT\n";
@@ -6913,11 +6907,10 @@
 
                 icsContent += "END:VCALENDAR";
 
-                // 2. Prepara il File
                 const fileName = method === 'CANCEL' ? 'Rimuovi_Terapia.ics' : 'Terapia_MedPro.ics';
                 const file = new File([icsContent], fileName, { type: 'text/calendar' });
 
-                // 3. TENTA LA CONDIVISIONE NATIVA (Android/iOS)
+                // TENTA LA CONDIVISIONE NATIVA (Android/iOS)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
@@ -6925,15 +6918,13 @@
                             title: 'Terapia MedicinePro',
                             text: 'Aggiungi la terapia al calendario'
                         });
-                        // Se la condivisione ha successo, abbiamo finito.
                         return;
                     } catch (error) {
-                        console.log("Condivisione annullata o fallita, passo al download manuale.");
+                        console.log("Condivisione annullata, passo al download manuale.");
                     }
                 }
 
-                // 4. FALLBACK: DOWNLOAD MANUALE + MODALE ISTRUZIONI
-                // Se siamo su PC o se la condivisione fallisce, scarichiamo alla vecchia maniera
+                // FALLBACK: DOWNLOAD MANUALE + MODALE ISTRUZIONI
                 const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
                 const link = document.createElement('a');
                 link.href = window.URL.createObjectURL(blob);
@@ -6942,7 +6933,6 @@
                 link.click();
                 document.body.removeChild(link);
 
-                // Mostra il modale che spiega cosa fare
                 this.showModal('modal-ics-instruction');
             },
 
