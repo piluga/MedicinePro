@@ -568,10 +568,6 @@
             </div>
 
             <div class="bg-white p-5 rounded-2xl card-shadow">
-                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-pills text-blue-500"></i> Farmacia & Spesa
-                </h3>
-
                 <div class="grid grid-cols-2 gap-3">
                     <button onclick="app.openShoppingListModal()" class="col-span-2 flex flex-col items-center justify-center gap-2 p-6 h-auto bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-colors group">
                         <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform text-xl mb-1 shadow-sm border border-emerald-200">
@@ -680,10 +676,6 @@
             </div>
 
             <div class="bg-white p-5 rounded-2xl card-shadow">
-                <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-database text-blue-500"></i> Database
-                </h3>
-
                 <div class="bg-sky-50 p-5 rounded-2xl card-shadow mb-4">
                     <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-pills text-indigo-500"></i> Archivio Farmaci
@@ -1311,16 +1303,43 @@
                     <p class="text-xs font-bold text-blue-700 uppercase mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-calendar-days text-blue-600"></i> Periodo Terapia
                     </p>
-                    <div class="grid grid-cols-2 gap-3">
+
+                    <div class="grid grid-cols-2 gap-3 mb-3">
                         <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Inizio terapia</label>
-                            <input type="date" id="med-start-date" onchange="app.refreshTherapyUI()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white">
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Inizio</label>
+                            <input type="date" id="med-start-date" onchange="app.refreshTherapyUI()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white text-center shadow-sm placeholder:text-slate-400">
                         </div>
+
                         <div>
-                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Durata (giorni)</label>
-                            <input type="number" id="med-duration" min="1" oninput="app.refreshTherapyUI()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white" placeholder="0">
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Durata (gg)</label>
+                            <input type="number" id="med-duration" min="1" oninput="app.refreshTherapyUI()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white text-center" placeholder="0">
                         </div>
                     </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-1">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Orario</label>
+                            <input type="time" id="input-med-specific-time" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white text-center shadow-sm placeholder:text-slate-400 placeholder:font-normal">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-500 mb-1">Frequenza</label>
+                            <div onclick="app.openFrequencyModal()" class="w-full h-10 px-3 border border-slate-200 rounded-lg flex items-center justify-between bg-white cursor-pointer active:bg-slate-50 transition-colors shadow-sm hover:border-blue-300">
+                                <div class="flex items-center gap-2 overflow-hidden">
+                                    <i id="freq-icon-display" class="fa-solid fa-calendar-day text-slate-400 text-xs"></i>
+                                    <span id="freq-text-display" class="rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white text-center">Ogni giorno</span>
+                                </div>
+                                <i class="fa-solid fa-chevron-right text-slate-300 text-[10px] flex-shrink-0"></i>
+                            </div>
+                            <input type="hidden" id="med-frequency" value="daily">
+                        </div>
+                    </div>
+
+                    <p class="text-[10px] text-slate-400 mt-2 ml-1 flex items-center gap-1">
+                        <i class="fa-solid fa-lock text-[9px]"></i> Blocca il farmaco prima dell'orario
+                    </p>
+
+
                     <div class="flex justify-end mt-3 border-t border-blue-200/50 pt-2">
                         <button onclick="app.resetTherapyDates()" class="text-[10px] font-bold text-blue-400 hover:text-blue-600 flex items-center gap-1 transition-colors uppercase tracking-wider">
                             <i class="fa-solid fa-eraser"></i> Resetta date
@@ -1355,27 +1374,7 @@
                     <span id="therapy-countdown" class="text-slate-700"></span>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mb-1">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Orario</label>
-                        <input type="time" id="input-med-specific-time" class="w-full h-12 px-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-bold bg-slate-50 text-sm text-center shadow-sm placeholder:text-slate-400 placeholder:font-normal" onfocus="(this.type='time')" onblur="if(!this.value)this.type='text'">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Frequenza</label>
-                        <div onclick="app.openFrequencyModal()" class="w-full h-12 px-3 border border-slate-200 rounded-xl flex items-center justify-between bg-white cursor-pointer active:bg-slate-50 transition-colors shadow-sm">
-                            <div class="flex items-center gap-2 overflow-hidden">
-                                <i id="freq-icon-display" class="fa-solid fa-calendar-day text-slate-400 text-xs"></i>
-                                <span id="freq-text-display" class="text-sm font-semibold text-slate-700 truncate">Ogni giorno</span>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-slate-300 text-[10px] flex-shrink-0"></i>
-                        </div>
-                        <input type="hidden" id="med-frequency" value="daily">
-                    </div>
-                </div>
-
-                <p class="text-[10px] text-slate-400 mb-4 ml-1 flex items-center gap-1">
-                    <i class="fa-solid fa-lock text-[9px]"></i> Blocca il farmaco prima dell'orario
-                </p>
+                
 
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Fascia Oraria</label>
@@ -2090,16 +2089,19 @@
                 this.checkNewDay();
                 this.renderProfiles();
                 this.setupManifest();
+
                 const usage = document.getElementById('input-med-usage');
+
                 if (usage) {
                     usage.addEventListener('input', () => {
                         usage.style.height = 'auto';
                         usage.style.height = usage.scrollHeight + 'px';
                     });
                 }
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
 
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+
+                document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
                 document.getElementById('btn-back').addEventListener('click', () => this.goBack());
 
                 document.addEventListener('touchstart', e => {
@@ -2113,45 +2115,6 @@
                     const touchEndY = e.changedTouches[0].screenY;
                     this.handleSwipe(touchEndX, touchEndY);
                 }, { passive: true });
-
-                // --- MODIFICA SWIPE: Inizio ---
-                // Invece di 'document', prendiamo solo il contenitore dei giorni
-                const calendarEl = document.getElementById('calendar-days');
-
-                // Variabili locali per lo swipe
-                let tStartX = 0;
-                let tStartY = 0;
-
-                if (calendarEl) {
-                    calendarEl.addEventListener('touchstart', e => {
-                        tStartX = e.changedTouches[0].screenX;
-                        tStartY = e.changedTouches[0].screenY; // Salviamo la Y per capire se è scroll
-                    }, { passive: true });
-
-                    calendarEl.addEventListener('touchend', e => {
-                        const tEndX = e.changedTouches[0].screenX;
-                        const tEndY = e.changedTouches[0].screenY;
-
-                        const diffX = tEndX - tStartX;
-                        const diffY = tEndY - tStartY;
-
-                        // 1. FILTRO SCROLL VERTICALE
-                        // Se mi muovo più in verticale che in orizzontale, sto scorrendo la pagina -> Ignora
-                        if (Math.abs(diffY) > Math.abs(diffX)) return;
-
-                        // 2. SOGLIA SENSIBILITÀ (70px)
-                        // Se il movimento è troppo corto, è un tap o un errore -> Ignora
-                        if (Math.abs(diffX) < 70) return;
-
-                        // 3. ESECUZIONE
-                        if (diffX > 0) {
-                            this.changeWeek(-1); // Swipe Destra -> Indietro
-                        } else {
-                            this.changeWeek(1);  // Swipe Sinistra -> Avanti
-                        }
-                    }, { passive: true });
-                }
-                // --- MODIFICA SWIPE: Fine ---
 
                 // Bind confirm button only once
                 document.getElementById('confirm-btn-yes').addEventListener('click', () => {
@@ -3932,7 +3895,7 @@
                 document.getElementById('med-box-qty').value = '';
                 document.getElementById('med-min-qty').value = '';
 
-                // ... (resto della funzione invariato: date, freq, toggle giorni)
+                //
                 document.getElementById('med-start-date').value = '';
                 document.getElementById('med-duration').value = '';
                 this.selectFrequency('daily');
@@ -3940,6 +3903,7 @@
                 document.getElementById('therapy-status-box').classList.add('hidden');
                 document.getElementById('therapy-preview').classList.add('hidden');
                 document.getElementById('therapy-month-wrapper').classList.add('hidden');
+
                 this.selectedTimes = [];
                 this.updateTimeUI();
                 this.selectedDays = [];
@@ -3947,18 +3911,33 @@
             },
 
             resetTherapyDates() {
-                // Svuota i campi input
+                // 1. Svuota i campi input standard
                 document.getElementById('med-start-date').value = '';
                 document.getElementById('med-duration').value = '';
+                document.getElementById('input-med-specific-time').value = '';
 
-                // Nascondi tutte le sezioni di anteprima calendario e stato
+                // 2. Resetta il valore della Frequenza (Database)
+                document.getElementById('med-frequency').value = 'daily';
+
+                // 3. --- AGGIUNTA FONDAMENTALE: Resetta la grafica della Frequenza ---
+                // Devi dire all'interfaccia di scrivere "Ogni giorno" e rimettere l'icona base
+                const freqText = document.getElementById('freq-text-display');
+                const freqIcon = document.getElementById('freq-icon-display');
+
+                if (freqText) freqText.textContent = 'Ogni giorno';
+                if (freqIcon) freqIcon.className = 'fa-solid fa-calendar-day text-slate-400 text-xs';
+                // -------------------------------------------------------------------
+
+                // 4. Nascondi tutte le sezioni di anteprima calendario e stato
                 document.getElementById('therapy-preview').classList.add('hidden');
                 document.getElementById('therapy-month-wrapper').classList.add('hidden');
                 document.getElementById('therapy-status-box').classList.add('hidden');
                 document.getElementById('therapy-legend').classList.add('hidden');
 
-                // Resetta la variabile interna del mese visualizzato
+                // 5. Resetta la variabile interna del mese visualizzato
                 this.currentTherapyMonth = null;
+
+                this.showAlert("Reset", "Date, orari e frequenza reimpostati.");
             },
 
             resetStocks() {
