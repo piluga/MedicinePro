@@ -3,7 +3,8 @@ const CACHE_NAME = 'medicinepro-v1';
 
 // Risorse essenziali da salvare sul dispositivo per l'uso offline
 const urlsToCache = [
-    './index.html',
+    './', 
+    'index.html', // Assicurati che su GitHub si chiami esattamente così, con la S maiuscola
     'https://cdn.tailwindcss.com',
     'https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
@@ -76,4 +77,5 @@ self.addEventListener('fetch', event => {
                 console.log('[Service Worker] Risorsa non trovata in cache e rete assente.');
             })
     );
+
 });
