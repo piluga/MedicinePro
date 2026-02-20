@@ -2161,19 +2161,22 @@
                     }
                 }, 60 * 1000);
 
-                // --- NUOVO: Registrazione del Service Worker ---
-                if ('serviceWorker' in navigator) {
-                    window.addEventListener('load', () => {
-                        navigator.serviceWorker.register('./sw.js')
-                            .then(registration => {
-                                console.log('✅ ServiceWorker registrato con successo. Scope:', registration.scope);
-                            })
-                            .catch(error => {
-                                console.error('❌ Errore durante la registrazione del ServiceWorker:', error);
-                            });
-                    });
-                }
-                // ------------------------------------------------
+                // ==========================================
+		        // SERVICE WORKER REGISTRATION
+		        // ==========================================
+		        if ('serviceWorker' in navigator) {
+		            // Aspettiamo che la pagina sia caricata prima di registrare il SW
+		            window.addEventListener('load', () => {
+		                // Registriamo il file sw.js che si trova nella stessa cartella
+		                navigator.serviceWorker.register('sw.js')
+		                    .then(registration => {
+		                        console.log('✅ ServiceWorker registrato con successo! Scope:', registration.scope);
+		                    })
+		                    .catch(error => {
+		                        console.log('❌ Registrazione ServiceWorker fallita:', error);
+		                    });
+		            });
+		        }
             },
 
             // --- GESTIONE MODALI DI SISTEMA ---
@@ -7012,3 +7015,4 @@
     </script>
 </body>
 </html>
+
