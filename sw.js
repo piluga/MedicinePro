@@ -55,8 +55,12 @@ self.addEventListener('activate', event => {
 
 // FASE DI FETCH (Intercetta il traffico)
 self.addEventListener('fetch', event => {
-    // IGNORA le chiamate all'Intelligenza Artificiale (Google Gemini)
+    // 1. IGNORA le chiamate all'Intelligenza Artificiale (Google Gemini)
     if (event.request.url.includes('generativelanguage.googleapis.com')) return;
+
+    // 2. NUOVO: IGNORA le estensioni di Chrome e protocolli non web
+    // Se l'URL non inizia con "http" o "https", ignoralo completamente
+    if (!event.request.url.startsWith('http')) return;
 
     event.respondWith(
         caches.match(event.request).then(response => {
@@ -70,11 +74,13 @@ self.addEventListener('fetch', event => {
                     return networkResponse;
                 }
 
-                // Salva una copia in cache per la prossima volta
-                let responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then(cache => {
-                    cache.put(event.request, responseToCache);
-                });
+                // Salva una copia in cache per la prossima volta (solo per richieste sicure HTTP/HTTPS)
+                if (event.request.url.startsWith('http')) {
+                    let responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseToCache);
+                    });
+                }
 
                 return networkResponse;
             }).catch(() => {
@@ -83,4 +89,5 @@ self.addEventListener('fetch', event => {
         })
     );
 });
+
 
