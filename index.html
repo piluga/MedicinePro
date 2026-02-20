@@ -2112,72 +2112,69 @@
             ],
 
             // Modifica 1: Init diventa async
-            async init() {
-                await this.loadData(); // Aspetta il caricamento
-                this.checkDailyReset();
-                this.checkNewDay();
-                this.renderProfiles();
-                this.setupManifest();
-
-                const usage = document.getElementById('input-med-usage');
-
-                if (usage) {
-                    usage.addEventListener('input', () => {
-                        usage.style.height = 'auto';
-                        usage.style.height = usage.scrollHeight + 'px';
-                    });
-                }
-
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-
-                document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
-                document.getElementById('btn-back').addEventListener('click', () => this.goBack());
-
-                document.addEventListener('touchstart', e => {
-                    this.touchStartX = e.changedTouches[0].screenX;
-                    this.touchStartY = e.changedTouches[0].screenY;
-                    this.isSwiping = false;
-                }, { passive: true });
-
-                document.addEventListener('touchend', e => {
-                    const touchEndX = e.changedTouches[0].screenX;
-                    const touchEndY = e.changedTouches[0].screenY;
-                    this.handleSwipe(touchEndX, touchEndY);
-                }, { passive: true });
-
-                // Bind confirm button only once
-                document.getElementById('confirm-btn-yes').addEventListener('click', () => {
-                    if (this.confirmCallback) {
-                        this.confirmCallback();
-                    }
-                    this.closeModal('modal-confirm');
-                });
-
-                // ⏱️ Controllo automatico cambio giorno
-                setInterval(() => {
-                    // Controlla se siamo in una vista profilo prima di renderizzare
-                    if (this.currentProfileId) {
-                        this.renderMedications();
-                    }
-                }, 60 * 1000);
-
-                // ==========================================
-		        // SERVICE WORKER REGISTRATION
-		        // ==========================================
-		        if ('serviceWorker' in navigator) {
-		            // Aspettiamo che la pagina sia caricata prima di registrare il SW
-		            window.addEventListener('load', () => {
-		                // Registriamo il file sw.js che si trova nella stessa cartella
-		                navigator.serviceWorker.register('sw.js')
-		                    .then(registration => {
-		                        console.log('✅ ServiceWorker registrato con successo! Scope:', registration.scope);
-		                    })
-		                    .catch(error => {
-		                        console.log('❌ Registrazione ServiceWorker fallita:', error);
-		                    });
-		            });
-		        }
-            },
+	        async init() {
+	            await this.loadData();
+	            this.checkDailyReset();
+	            this.checkNewDay();
+	            this.renderProfiles();
+	            this.setupManifest();
+	
+	            const usage = document.getElementById('input-med-usage');
+	
+	            if (usage) {
+	                usage.addEventListener('input', () => {
+	                    usage.style.height = 'auto';
+	                    usage.style.height = usage.scrollHeight + 'px';
+	                });
+	            }
+	
+	            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+	
+	            document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
+	            document.getElementById('btn-back').addEventListener('click', () => this.goBack());
+	
+	            document.addEventListener('touchstart', e => {
+	                this.touchStartX = e.changedTouches[0].screenX;
+	                this.touchStartY = e.changedTouches[0].screenY;
+	                this.isSwiping = false;
+	            }, { passive: true });
+	
+	            document.addEventListener('touchend', e => {
+	                const touchEndX = e.changedTouches[0].screenX;
+	                const touchEndY = e.changedTouches[0].screenY;
+	                this.handleSwipe(touchEndX, touchEndY);
+	            }, { passive: true });
+	
+	            // Bind confirm button only once
+	            document.getElementById('confirm-btn-yes').addEventListener('click', () => {
+	                if (this.confirmCallback) {
+	                    this.confirmCallback();
+	                }
+	                this.closeModal('modal-confirm');
+	            });
+	
+	            // ⏱️ Controllo automatico cambio giorno
+	            setInterval(() => {
+	                // Controlla se siamo in una vista profilo prima di renderizzare
+	                if (this.currentProfileId) {
+	                    this.renderMedications();
+	                }
+	            }, 60 * 1000);
+	
+	            // ==========================================
+	            // SERVICE WORKER REGISTRATION (CORRETTO)
+	            // ==========================================
+	            if ('serviceWorker' in navigator) {
+	                // Eseguiamo la registrazione direttamente, senza aspettare un 'load' già passato
+	                navigator.serviceWorker.register('sw.js')
+	                    .then(registration => {
+	                        console.log('✅ ServiceWorker registrato con successo! Scope:', registration.scope);
+	                    })
+	                    .catch(error => {
+	                        console.error('❌ Registrazione ServiceWorker fallita:', error);
+	                    });
+	            }
+	        },
 
             // --- GESTIONE MODALI DI SISTEMA ---
             showAlert(title, message) {
@@ -7015,4 +7012,3 @@
     </script>
 </body>
 </html>
-
