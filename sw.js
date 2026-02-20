@@ -1,8 +1,8 @@
-const CACHE_NAME = 'medicinepro-v5';
+const CACHE_NAME = 'medicinepro-v10';
 
 // Risorse essenziali da salvare sul dispositivo per l'uso offline
 const urlsToCache = [
-    './MedicinePro.html',
+    './index.html',
     'https://cdn.tailwindcss.com',
     'https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
