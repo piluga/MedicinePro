@@ -1821,6 +1821,19 @@
             </div>
         </div>
 
+        <div id="modal-app-updated" class="hidden fixed inset-0 modal-overlay z-[200] flex items-center justify-center p-4 fade-in">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                <div class="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm animate-bounce">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">App Aggiornata! 🎉</h3>
+                <p class="text-slate-500 mb-6 text-sm">Abbiamo appena scaricato una nuova versione di MedicinePro. Ricarica per applicare i miglioramenti.</p>
+                <button onclick="window.location.reload()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Ricarica ora
+                </button>
+            </div>
+        </div>
+
         <div id="printable-area" class="p-8 max-w-[210mm] mx-auto">
             <div class="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
                 <div>
@@ -2112,69 +2125,92 @@
             ],
 
             // Modifica 1: Init diventa async
-	        async init() {
-	            await this.loadData();
-	            this.checkDailyReset();
-	            this.checkNewDay();
-	            this.renderProfiles();
-	            this.setupManifest();
-	
-	            const usage = document.getElementById('input-med-usage');
-	
-	            if (usage) {
-	                usage.addEventListener('input', () => {
-	                    usage.style.height = 'auto';
-	                    usage.style.height = usage.scrollHeight + 'px';
-	                });
-	            }
-	
-	            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-	
-	            document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
-	            document.getElementById('btn-back').addEventListener('click', () => this.goBack());
-	
-	            document.addEventListener('touchstart', e => {
-	                this.touchStartX = e.changedTouches[0].screenX;
-	                this.touchStartY = e.changedTouches[0].screenY;
-	                this.isSwiping = false;
-	            }, { passive: true });
-	
-	            document.addEventListener('touchend', e => {
-	                const touchEndX = e.changedTouches[0].screenX;
-	                const touchEndY = e.changedTouches[0].screenY;
-	                this.handleSwipe(touchEndX, touchEndY);
-	            }, { passive: true });
-	
-	            // Bind confirm button only once
-	            document.getElementById('confirm-btn-yes').addEventListener('click', () => {
-	                if (this.confirmCallback) {
-	                    this.confirmCallback();
-	                }
-	                this.closeModal('modal-confirm');
-	            });
-	
-	            // ⏱️ Controllo automatico cambio giorno
-	            setInterval(() => {
-	                // Controlla se siamo in una vista profilo prima di renderizzare
-	                if (this.currentProfileId) {
-	                    this.renderMedications();
-	                }
-	            }, 60 * 1000);
-	
-	            // ==========================================
-	            // SERVICE WORKER REGISTRATION (CORRETTO)
-	            // ==========================================
-	            if ('serviceWorker' in navigator) {
-	                // Eseguiamo la registrazione direttamente, senza aspettare un 'load' già passato
-	                navigator.serviceWorker.register('sw.js')
-	                    .then(registration => {
-	                        console.log('✅ ServiceWorker registrato con successo! Scope:', registration.scope);
-	                    })
-	                    .catch(error => {
-	                        console.error('❌ Registrazione ServiceWorker fallita:', error);
-	                    });
-	            }
-	        },
+            async init() {
+                await this.loadData();
+                this.checkDailyReset();
+                this.checkNewDay();
+                this.renderProfiles();
+                this.setupManifest();
+
+                const usage = document.getElementById('input-med-usage');
+
+                if (usage) {
+                    usage.addEventListener('input', () => {
+                        usage.style.height = 'auto';
+                        usage.style.height = usage.scrollHeight + 'px';
+                    });
+                }
+
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+
+                document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
+                document.getElementById('btn-back').addEventListener('click', () => this.goBack());
+
+                document.addEventListener('touchstart', e => {
+                    this.touchStartX = e.changedTouches[0].screenX;
+                    this.touchStartY = e.changedTouches[0].screenY;
+                    this.isSwiping = false;
+                }, { passive: true });
+
+                document.addEventListener('touchend', e => {
+                    const touchEndX = e.changedTouches[0].screenX;
+                    const touchEndY = e.changedTouches[0].screenY;
+                    this.handleSwipe(touchEndX, touchEndY);
+                }, { passive: true });
+
+                // Bind confirm button only once
+                document.getElementById('confirm-btn-yes').addEventListener('click', () => {
+                    if (this.confirmCallback) {
+                        this.confirmCallback();
+                    }
+                    this.closeModal('modal-confirm');
+                });
+
+                // --- 1. NUOVO: CONTROLLO QUANDO L'APP TORNA IN PRIMO PIANO ---
+                document.addEventListener('visibilitychange', () => {
+                    // Se l'utente ha appena riaperto l'app dal background
+                    if (document.visibilityState === 'visible') {
+                        this.checkDailyReset();
+                        this.checkNewDay();
+                    }
+                });
+
+                // --- 2. MODIFICA: AGGIORNA IL TIMER ESISTENTE ---
+                // Fa scattare il controllo della mezzanotte in tempo reale anche 
+                // se l'utente lascia l'app accesa con lo schermo acceso sul comodino.
+                setInterval(() => {
+                    this.checkDailyReset();
+                    this.checkNewDay(); // Controlla se è passata la mezzanotte
+
+                    if (this.currentProfileId) {
+                        this.renderMedications(); // Ricarica la grafica se serve
+                    }
+                }, 60 * 1000);
+
+                // ==========================================
+                // SERVICE WORKER REGISTRATION CON CONTROLLO UPDATE
+                // ==========================================
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('sw.js')
+                        .then(registration => {
+                            console.log('✅ ServiceWorker registrato con successo! Scope:', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('❌ Registrazione ServiceWorker fallita:', error);
+                        });
+
+                    // Ascolta l'evento in cui un NUOVO service worker prende il controllo
+                    let refreshing = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        // Evita che il modale venga chiamato più volte di fila o ricarichi all'infinito
+                        if (!refreshing) {
+                            refreshing = true;
+                            // Mostra il modale per avvisare l'utente
+                            app.showModal('modal-app-updated');
+                        }
+                    });
+                }
+            },
 
             // --- GESTIONE MODALI DI SISTEMA ---
             showAlert(title, message) {
