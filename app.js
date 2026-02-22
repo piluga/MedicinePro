@@ -1310,25 +1310,38 @@ const app = {
             // MODIFICA: app.loadData (Assicurati che drugDb esista)
             async loadData() {
                 try {
-                    const stored = await idbKeyval.get('MedicineProData');
+                    let stored = null;
+
+                    // 1. Prova a leggere dal database avanzato se la libreria è presente
+                    if (typeof idbKeyval !== 'undefined') {
+                        stored = await idbKeyval.get('MedicineProData');
+                    }
+
+                    // 2. Se il nuovo DB è vuoto (o la libreria non c'è), cerca nel vecchio localStorage
+                    if (!stored) {
+                        const localStored = localStorage.getItem('MedicineProData');
+                        if (localStored) {
+                            stored = JSON.parse(localStored);
+                            console.log("Dati recuperati da localStorage (Migrazione in corso...)");
+                        }
+                    }
+
+                    // 3. Se non c'è traccia di dati da nessuna parte, inizializza un'app pulita
                     if (!stored) {
                         this.resetData();
                         return;
                     }
+
+                    // Assegna i dati recuperati
                     this.data = stored;
 
-                    // Normalizzazioni esistenti...
+                    // --- NORMALIZZAZIONI DI SICUREZZA ---
                     if (!this.data.apiKey) this.data.apiKey = "";
                     if (!this.data.preferences) this.data.preferences = { showCart: true, showNotes: true, showEdit: true, showDelete: true };
+                    if (!Array.isArray(this.data.drugDb)) this.data.drugDb = [];
 
-                    // NUOVO: Inizializza drugDb se manca (per chi aggiorna l'app)
-                    if (!Array.isArray(this.data.drugDb)) {
-                        this.data.drugDb = [];
-                    }
-
-                    // 🔹 RETROCOMPATIBILITÀ FARMACI
+                    // Retrocompatibilità farmaci e profili
                     this.data.profiles.forEach((profile, index) => {
-
                         if (typeof profile.themeIndex === 'undefined') {
                             profile.themeIndex = index % this.profileThemes.length;
                         }
@@ -1336,7 +1349,6 @@ const app = {
                         this.normalizeMedications(profile);
 
                         profile.meds.forEach(med => {
-
                             if (!Array.isArray(med.days)) med.days = [];
                             if (typeof med.boxQty !== "number") med.boxQty = 0;
                             if (typeof med.minQty !== "number") med.minQty = 0;
@@ -1345,24 +1357,20 @@ const app = {
                             if (med.startDate === undefined) med.startDate = null;
                             if (med.durationDays === undefined) med.durationDays = null;
                             if (med.endDate === undefined) med.endDate = null;
-                            if (typeof med.therapyEndedAlertShown !== "boolean") { med.therapyEndedAlertShown = false; }
+                            if (typeof med.therapyEndedAlertShown !== "boolean") med.therapyEndedAlertShown = false;
                             if (!med.frequency) med.frequency = "daily";
-                            if (!med.specificDays) med.specificDays = {}; // Nuovo campo per le eccezioni
-                            if (!Array.isArray(profile.healthLogs)) profile.healthLogs = [];
+                            if (!med.specificDays) med.specificDays = {};
                         });
+                        if (!Array.isArray(profile.healthLogs)) profile.healthLogs = [];
                     });
 
+                    // 4. Salva tutto nel nuovo database per completare la migrazione
+                    this.saveData();
+
                 } catch (e) {
-                    console.error("Errore caricamento dati DB", e);
-                    // Fallback: prova a leggere da localStorage se la migrazione fallisce
-                    const localStored = localStorage.getItem('MedicineProData');
-                    if (localStored) {
-                        this.data = JSON.parse(localStored);
-                        // Migra subito al nuovo DB
-                        this.saveData();
-                    } else {
-                        this.resetData();
-                    }
+                    console.error("Errore fatale nel caricamento dati DB", e);
+                    // Ultimissimo fallback in caso di dati corrotti
+                    this.resetData();
                 }
             },
 
