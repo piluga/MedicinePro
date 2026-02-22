@@ -1312,27 +1312,34 @@ const app = {
                 try {
                     let stored = null;
 
-                    // 1. Prova a leggere dal database avanzato se la libreria è presente
-                    if (typeof idbKeyval !== 'undefined') {
-                        stored = await idbKeyval.get('MedicineProData');
-                    }
-
-                    // 2. Se il nuovo DB è vuoto (o la libreria non c'è), cerca nel vecchio localStorage
-                    if (!stored) {
-                        const localStored = localStorage.getItem('MedicineProData');
-                        if (localStored) {
-                            stored = JSON.parse(localStored);
-                            console.log("Dati recuperati da localStorage (Migrazione in corso...)");
+                    // 1. Prova a leggere dal database avanzato
+                    if (window.idbKeyval) {
+                        try {
+                            stored = await window.idbKeyval.get('MedicineProData');
+                        } catch (dbErr) {
+                            console.warn("Lettura IDB fallita.", dbErr);
                         }
                     }
 
-                    // 3. Se non c'è traccia di dati da nessuna parte, inizializza un'app pulita
+                    // 2. Se è vuoto o la libreria manca, cerca nel vecchio localStorage
+                    if (!stored) {
+                        try {
+                            const localStored = localStorage.getItem('MedicineProData');
+                            if (localStored) {
+                                stored = JSON.parse(localStored);
+                                console.log("Dati recuperati da localStorage (Migrazione...)");
+                            }
+                        } catch (e) {
+                            console.warn("Lettura localStorage fallita.", e);
+                        }
+                    }
+
+                    // 3. Se non c'è proprio nulla, partiamo da zero
                     if (!stored) {
                         this.resetData();
                         return;
                     }
 
-                    // Assegna i dati recuperati
                     this.data = stored;
 
                     // --- NORMALIZZAZIONI DI SICUREZZA ---
@@ -1340,12 +1347,8 @@ const app = {
                     if (!this.data.preferences) this.data.preferences = { showCart: true, showNotes: true, showEdit: true, showDelete: true };
                     if (!Array.isArray(this.data.drugDb)) this.data.drugDb = [];
 
-                    // Retrocompatibilità farmaci e profili
                     this.data.profiles.forEach((profile, index) => {
-                        if (typeof profile.themeIndex === 'undefined') {
-                            profile.themeIndex = index % this.profileThemes.length;
-                        }
-
+                        if (typeof profile.themeIndex === 'undefined') profile.themeIndex = index % this.profileThemes.length;
                         this.normalizeMedications(profile);
 
                         profile.meds.forEach(med => {
@@ -1364,12 +1367,11 @@ const app = {
                         if (!Array.isArray(profile.healthLogs)) profile.healthLogs = [];
                     });
 
-                    // 4. Salva tutto nel nuovo database per completare la migrazione
-                    this.saveData();
+                    // 4. Risalviamo tutto subito per assicurare la persistenza
+                    await this.saveData();
 
                 } catch (e) {
                     console.error("Errore fatale nel caricamento dati DB", e);
-                    // Ultimissimo fallback in caso di dati corrotti
                     this.resetData();
                 }
             },
@@ -1394,18 +1396,21 @@ const app = {
             // Modifica 3: saveData con idbKeyval
             async saveData() {
                 try {
-                    // Controlla se la libreria avanzata è disponibile
-                    if (typeof idbKeyval !== 'undefined') {
-                        await idbKeyval.set('MedicineProData', this.data);
+                    // Controllo ultra-sicuro con 'window.' per evitare ReferenceError
+                    if (window.idbKeyval) {
+                        try {
+                            await window.idbKeyval.set('MedicineProData', this.data);
+                        } catch (dbErr) {
+                            console.warn("IDB fallito, provo col localStorage...", dbErr);
+                            localStorage.setItem('MedicineProData', JSON.stringify(this.data));
+                        }
                     } else {
-                        // PIANO B: Usa il localStorage classico se la libreria fallisce
+                        // Piano B se la libreria non è stata caricata
                         localStorage.setItem('MedicineProData', JSON.stringify(this.data));
-                        console.warn("Salvato in localStorage (libreria IDB non trovata).");
                     }
                     this.updateShoppingBtnState();
                 } catch (err) {
-                    console.error("Errore salvataggio", err);
-                    this.showAlert("Errore Salvataggio", "Spazio sul dispositivo esaurito.");
+                    console.error("Errore critico di salvataggio", err);
                 }
             },
 
@@ -1528,11 +1533,12 @@ const app = {
             },
 
             triggerImport() { document.getElementById('import-file').click(); },
-            handleImport(input) {
+            
+            async handleImport(input) {
                 const file = input.files[0];
                 if (!file) return;
                 const reader = new FileReader();
-                reader.onload = (e) => {
+                reader.onload = async (e) => {
                     try {
                         const json = JSON.parse(e.target.result);
                         if (json && Array.isArray(json.profiles)) {
@@ -1540,7 +1546,7 @@ const app = {
                             document.getElementById('input-med-edit-id').value = '';
 
                             this.data = json;
-                            this.saveData();
+                            await this.saveData(); // <-- FONDAMENTALE: aspetta che abbia finito!
                             this.goHome();
                         }
                     } catch (err) {
