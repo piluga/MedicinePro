@@ -1386,12 +1386,18 @@ const app = {
             // Modifica 3: saveData con idbKeyval
             async saveData() {
                 try {
-                    // Non serve JSON.stringify
-                    await idbKeyval.set('MedicineProData', this.data);
+                    // Controlla se la libreria avanzata è disponibile
+                    if (typeof idbKeyval !== 'undefined') {
+                        await idbKeyval.set('MedicineProData', this.data);
+                    } else {
+                        // PIANO B: Usa il localStorage classico se la libreria fallisce
+                        localStorage.setItem('MedicineProData', JSON.stringify(this.data));
+                        console.warn("Salvato in localStorage (libreria IDB non trovata).");
+                    }
                     this.updateShoppingBtnState();
                 } catch (err) {
                     console.error("Errore salvataggio", err);
-                    this.showAlert("Errore Salvataggio", "Spazio dispositivo pieno?");
+                    this.showAlert("Errore Salvataggio", "Spazio sul dispositivo esaurito.");
                 }
             },
 
