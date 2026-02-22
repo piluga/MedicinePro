@@ -1,0 +1,424 @@
+        /* Dimensione uniforme per orari e giorni */
+        .time-btn,
+        .day-btn,
+        .detail-time-btn {
+            height: 40px;
+            min-height: 40px;
+            font-size: 11px;
+            padding: 0 10px !important;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+
+        .time-btn.selected,
+        .day-btn.selected,
+        .detail-time-btn.selected {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .avatar-btn {
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            opacity: 0.6;
+        }
+
+            .avatar-btn.selected {
+                border-color: #2563eb;
+                background-color: #eff6ff;
+                color: #2563eb;
+                opacity: 1;
+                transform: scale(1.05);
+            }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .med-checkbox {
+            appearance: none;
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 3px solid #cbd5e1;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: white;
+            flex-shrink: 0;
+        }
+
+            .med-checkbox:checked {
+                background-color: #22c55e;
+                border-color: #22c55e;
+            }
+
+                .med-checkbox:checked::after {
+                    content: '\f00c';
+                    font-family: 'Font Awesome 6 Free';
+                    font-weight: 900;
+                    color: white;
+                    font-size: 1.2rem;
+                }
+
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+        }
+
+        /* Stili specifici per le categorie temporali */
+        .med-card-mattina {
+            background-color: #fff7ed;
+            border-color: #ffedd5;
+        }
+
+        .med-card-pomeriggio {
+            background-color: #fefce8;
+            border-color: #fef9c3;
+        }
+
+        .med-card-sera {
+            background-color: #f5f3ff;
+            border-color: #ede9fe;
+        }
+
+        .med-card-taken {
+            background-color: #f0fdf4 !important;
+            border-color: #dcfce7 !important;
+        }
+
+        .xs\:inline {
+            display: none;
+        }
+
+        @media (min-width: 400px) {
+            .xs\:inline {
+                display: inline;
+            }
+        }
+
+        /* Camera Scanner UI */
+        #camera-container {
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+        }
+
+        #camera-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            inset: 0;
+            border: 2px solid rgba(255,255,255,0.3);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scanner-frame {
+            width: 80%;
+            height: 40%;
+            border: 2px solid #3b82f6;
+            border-radius: 1rem;
+            box-shadow: 0 0 0 4000px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #3b82f6;
+            top: 0;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            from {
+                top: 0%;
+            }
+
+            to {
+                top: 100%;
+            }
+        }
+
+        /* Loading overlay */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .therapy-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+
+        .therapy-badge {
+            margin-left: -6px;
+        }
+
+            .therapy-badge .label {
+                font-weight: 700;
+            }
+
+            .therapy-badge .sub {
+                font-size: 11px;
+                opacity: 0.9;
+            }
+
+            .therapy-badge .dot {
+                opacity: 0.5;
+            }
+
+            /* COLORI BADGE */
+            .therapy-badge.green {
+                background: #ecfdf5;
+                color: #047857;
+            }
+
+            .therapy-badge.orange {
+                background: #fff7ed;
+                color: #c2410c;
+            }
+
+            .therapy-badge.red {
+                background: #fef2f2;
+                color: #b91c1c;
+            }
+
+        .therapy-badge {
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+        }
+
+        /* COLORE CARD */
+        .med-card.therapy-green {
+            border-left: 4px solid #10b981;
+        }
+
+        .med-card.therapy-orange {
+            border-left: 4px solid #f97316;
+        }
+
+        .med-card.therapy-red {
+            border-left: 4px solid #dc2626;
+        }
+
+        /* CARD INATTIVA: Disabilita il corpo principale MA lascia i bottoni attivi */
+        .med-card-inactive {
+            opacity: 0.55;
+            background-color: #f3f4f6 !important; /* Grigio chiaro per indicare disabilitato */
+            border-color: #e5e7eb !important;
+        }
+
+            .med-card-inactive .card-main-content {
+                pointer-events: none; /* Disabilita click su checkbox e testo */
+                opacity: 0.5;
+            }
+
+            .med-card-inactive .card-actions {
+                pointer-events: auto; /* Riabilita click sui bottoni azione */
+                opacity: 1;
+            }
+
+        .therapy-badge.gray {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .therapy-day {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 6px;
+            font-weight: 700;
+            display: flex;
+            flex-direction: column; /* Cambiato per allineare numero e icone */
+            align-items: center;
+            justify-content: flex-start; /* Allinea in alto */
+            padding-top: 2px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            position: relative;
+        }
+
+            .therapy-day:active {
+                transform: scale(0.9);
+            }
+
+        .therapy-out {
+            background: #f1f5f9;
+            color: #94a3b8;
+            cursor: default;
+            justify-content: center; /* Centra solo se non attivo */
+            padding-top: 0;
+        }
+
+        /* Colori TENUI (Pastello) */
+        .therapy-mid {
+            background: #fef08a; /* Yellow-200 */
+            color: #854d0e; /* Yellow-900 */
+        }
+
+        .therapy-start {
+            background: #86efac; /* Green-300 */
+            color: #14532d; /* Green-900 */
+        }
+
+        .therapy-end {
+            background: #fca5a5; /* Red-300 */
+            color: #7f1d1d; /* Red-900 */
+        }
+
+        .therapy-skip {
+            background: #e5e7eb;
+            color: #9ca3af;
+        }
+
+        .clickable-day:hover {
+            filter: brightness(0.95);
+        }
+
+        /* Stile icone nel calendario */
+        .cal-icon-wrapper {
+            display: flex;
+            gap: 3px;
+            margin-top: 0px;
+            justify-content: center;
+            position: absolute;
+            bottom: 4px;
+            width: 100%;
+        }
+
+        /* FREQUENCY OPTION SELECTED */
+        .freq-option.selected {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+            color: #2563eb;
+        }
+
+            .freq-option.selected .check-icon {
+                display: inline-block;
+            }
+
+        /* ============================
+           STILE DI STAMPA (REPORT PDF)
+           ============================ */
+        @media print {
+            /* Nascondi TUTTO l'interfaccia dell'app */
+            body * {
+                visibility: hidden;
+            }
+
+            /* Nascondi modali, sfondi, pulsanti fluttuanti */
+            #app-container, .modal-overlay, #install-banner, .floating-btn {
+                display: none !important;
+            }
+
+            /* Mostra solo l'area di stampa */
+            #printable-area, #printable-area * {
+                visibility: visible;
+            }
+
+            /* Posiziona l'area di stampa in alto a sinistra assoluto */
+            #printable-area {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                color: black;
+                font-family: 'Inter', sans-serif;
+            }
+
+            /* Forza i colori di sfondo per le barre di progresso */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Interruzioni di pagina pulite */
+            .page-break {
+                page-break-before: always;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Nascondi l'area di stampa durante l'uso normale */
+        #printable-area {
+            display: none;
+        }
+
+        .health-type-btn.selected {
+            background-color: #fff1f2; /* Rose-50 */
+            border-color: #f43f5e; /* Rose-500 */
+            color: #e11d48; /* Rose-600 */
+        }
+
+        .glucose-tag.selected {
+            background-color: #f3e8ff;
+            border-color: #a855f7;
+            color: #7e22ce;
+        }
