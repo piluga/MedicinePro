@@ -1,8 +1,11 @@
-const CACHE_NAME = 'medicinepro-cache-v4';
+const CACHE_NAME = 'medicinepro-cache-v5';
 
-// 1. Risorse Locali (Devono essere esatte e accessibili senza restrizioni)
+// 1. Risorse Locali
 const localUrls = [
-    './index.html' 
+    './index.html',
+    './manifest.json',
+    './style.css',
+    './app.js'
 ];
 
 // 2. Risorse Esterne (CDN) che richiedono la modalità 'no-cors' per evitare blocchi
@@ -89,6 +92,3 @@ self.addEventListener('fetch', event => {
         })
     );
 });
-
-
-
