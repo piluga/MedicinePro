@@ -1396,21 +1396,20 @@ const app = {
             // Modifica 3: saveData con idbKeyval
             async saveData() {
                 try {
-                    // Controllo ultra-sicuro con 'window.' per evitare ReferenceError
-                    if (window.idbKeyval) {
-                        try {
-                            await window.idbKeyval.set('MedicineProData', this.data);
-                        } catch (dbErr) {
-                            console.warn("IDB fallito, provo col localStorage...", dbErr);
-                            localStorage.setItem('MedicineProData', JSON.stringify(this.data));
-                        }
+                    // 1. Prova a salvare nel Database Avanzato
+                    if (typeof idbKeyval !== 'undefined') {
+                        await idbKeyval.set('MedicineProData', this.data);
+                        console.log("✅ Salvataggio su IndexedDB completato.");
                     } else {
-                        // Piano B se la libreria non è stata caricata
+                        // 2. Piano B
                         localStorage.setItem('MedicineProData', JSON.stringify(this.data));
+                        console.warn("⚠️ Salvataggio su localStorage completato (IDB non disponibile).");
                     }
                     this.updateShoppingBtnState();
                 } catch (err) {
-                    console.error("Errore critico di salvataggio", err);
+                    console.error("Errore critico di salvataggio:", err);
+                    // 3. SE FALLISCE, ORA CE LO DICE CHIARAMENTE!
+                    alert("❌ IMPOSSIBILE SALVARE I DATI!\nMotivo: " + err.message + "\n\nSe il backup contiene foto, il file è troppo grande per la memoria base. Assicurati di aprire l'app tramite Live Server.");
                 }
             },
 
@@ -1537,6 +1536,9 @@ const app = {
             async handleImport(input) {
                 const file = input.files[0];
                 if (!file) return;
+                
+                this.toggleLoading(true, "Lettura file in corso...");
+                
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     try {
@@ -1546,11 +1548,24 @@ const app = {
                             document.getElementById('input-med-edit-id').value = '';
 
                             this.data = json;
-                            await this.saveData(); // <-- FONDAMENTALE: aspetta che abbia finito!
-                            this.goHome();
+                            
+                            this.toggleLoading(true, "Scrittura nel database...");
+                            
+                            // Aspetta rigorosamente che il salvataggio sia finito
+                            await this.saveData(); 
+                            
+                            this.toggleLoading(false);
+                            alert("✅ Backup ripristinato con successo! L'app si riavvierà per applicare i dati.");
+                            
+                            // FORZA IL RIAVVIO DELLA PAGINA PER CARICARE I DATI NUOVI
+                            window.location.reload(); 
+                        } else {
+                            this.toggleLoading(false);
+                            alert("❌ Formato del file non valido per MedicinePro.");
                         }
                     } catch (err) {
-                        this.showAlert("Errore", "File non valido.");
+                        this.toggleLoading(false);
+                        alert("❌ Errore durante l'importazione: " + err.message);
                     }
                 };
                 reader.readAsText(file);
