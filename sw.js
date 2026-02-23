@@ -1,4 +1,4 @@
-const CACHE_NAME = 'medicinepro-cache-v9';
+const CACHE_NAME = 'medicinepro-cache-v4';
 
 // 1. Risorse Locali
 const localUrls = [
@@ -34,9 +34,6 @@ self.addEventListener('install', event => {
                         .catch(err => console.log('[Service Worker] Errore salvataggio CDN:', url, err));
                 })
             );
-        }).then(() => {
-            // PRENDE IL CONTROLLO DELLA PAGINA E FA SCATTARE IL MODALE IN APP.JS
-            return self.clients.claim();
         })
     );
     self.skipWaiting();
