@@ -20,6 +20,10 @@
             <!-- Tailwind CSS-->
             <script src="https://cdn.tailwindcss.com"></script>
 
+            <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+            <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+            <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
             <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js"></script>
 
             <!-- FontAwesome -->
@@ -282,27 +286,39 @@
                             </p>
                         </div>
 
-                        <div class="bg-green-50 p-5 rounded-2xl card-shadow mb-4">
-                            <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                                <i class="fa-solid fa-server text-blue-500"></i> Archivio Dati
-                            </h3>
-                            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
-                                Salva una copia di sicurezza di tutti i tuoi dati o ripristina un backup precedente.
-                            </p>
+                        <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 mb-6">
+                            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"><i class="fa-brands fa-google text-slate-400"></i> Account Cloud</h3>
 
-                            <div class="grid grid-cols-2 gap-3">
-                                <button onclick="app.triggerImport()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
-                                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                        <i class="fa-solid fa-file-import"></i>
-                                    </div>
-                                    <span class="text-xs font-bold text-slate-600">Importa Backup</span>
+                            <div id="cloud-login-section">
+                                <p class="text-xs text-slate-500 mb-3">Accedi per salvare le tue terapie nel Cloud e non perderle mai.</p>
+                                <button onclick="app.loginWithGoogle()" class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold border border-blue-200 active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
+                                    <i class="fa-brands fa-google"></i> Accedi con Google
                                 </button>
+                            </div>
 
-                                <button onclick="app.exportData()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
-                                    <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                                        <i class="fa-solid fa-file-export"></i>
+                            <div id="cloud-user-section" class="hidden">
+                                <div class="flex items-center justify-between bg-emerald-50 border border-emerald-100 p-3 rounded-xl mb-3">
+                                    <div class="flex items-center gap-3">
+                                        <img id="cloud-user-pic" src="" class="w-8 h-8 rounded-full border border-emerald-200" alt="User">
+                                        <div>
+                                            <p id="cloud-user-name" class="text-xs font-bold text-emerald-800">Nome</p>
+                                            <p class="text-[10px] text-emerald-600">Connesso</p>
+                                        </div>
                                     </div>
-                                    <span class="text-xs font-bold text-slate-600">Esporta Backup</span>
+                                    <button onclick="app.logout()" class="text-xs font-bold text-rose-500 px-3 py-1.5 bg-white border border-rose-100 rounded-lg shadow-sm hover:bg-rose-50 active:scale-95">Esci</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 mb-6">
+                            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up text-slate-400"></i> Cloud Backup</h3>
+                            <p class="text-xs text-slate-500 mb-4">Salva i tuoi dati in una cassaforte sicura su internet, o ripristinali su un nuovo telefono.</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="app.backupToCloud()" class="py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 active:scale-95 transition-all text-xs flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-cloud-arrow-up text-lg"></i> Salva Backup
+                                </button>
+                                <button onclick="app.restoreFromCloud()" class="py-3 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold shadow-sm hover:bg-indigo-50 active:scale-95 transition-all text-xs flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-cloud-arrow-down text-lg"></i> Ripristina
                                 </button>
                             </div>
                         </div>
@@ -1664,22 +1680,21 @@
             </div>
 
             <div id="modal-app-updated" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4 fade-in">
-            <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden card-shadow text-center p-6 border-t-4 border-blue-500">
-                <div class="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">
-                    <i class="fa-solid fa-cloud-arrow-down animate-bounce"></i>
+                <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden card-shadow text-center p-6 border-t-4 border-blue-500">
+                    <div class="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">
+                        <i class="fa-solid fa-cloud-arrow-down animate-bounce"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Aggiornamento Disponibile!</h3>
+                    <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+                        Una nuova versione di MedicinePro è pronta. Clicca sul pulsante qui sotto per applicare le ultime novità e miglioramenti.
+                    </p>
+                    <button onclick="window.location.reload()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> Aggiorna Ora
+                    </button>
                 </div>
-                <h3 class="text-xl font-bold text-slate-800 mb-2">Aggiornamento Disponibile!</h3>
-                <p class="text-slate-500 text-sm mb-6 leading-relaxed">
-                    Una nuova versione di MedicinePro è pronta. Clicca sul pulsante qui sotto per applicare le ultime novità e miglioramenti.
-                </p>
-                <button onclick="window.location.reload()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-rotate-right"></i> Aggiorna Ora
-                </button>
             </div>
-        </div>    
-                
+
             <!-- JS ESTERNO -->
             <script src="app.js"></script>
         </body>
         </html>
-
