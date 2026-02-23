@@ -17,26 +17,24 @@ const externalUrls = [
     'https://i.ibb.co/N6db36Sf/medicine.png'
 ];
 
-// FASE DI INSTALLAZIONE
-self.addEventListener('install', event => {
+// FASE DI ATTIVAZIONE (CANCELLA LA VECCHIA CACHE)
+self.addEventListener('activate', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            console.log('[Service Worker] Salvataggio cache in corso...');
-            
-            // Salva il file locale in modo rigoroso
-            cache.addAll(localUrls);
-
-            // Salva i file esterni "forzando" il download senza controlli CORS
+        caches.keys().then(cacheNames => {
             return Promise.all(
-                externalUrls.map(url => {
-                    return fetch(new Request(url, { mode: 'no-cors' }))
-                        .then(response => cache.put(url, response))
-                        .catch(err => console.log('[Service Worker] Errore salvataggio CDN:', url, err));
+                cacheNames.map(cacheName => {
+                    // Se il nome della cache è diverso da v6, cancellala!
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('[Service Worker] Elimino vecchia cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
                 })
             );
+        }).then(() => {
+            // PRENDE IL CONTROLLO DELLA PAGINA E FA SCATTARE IL MODALE IN APP.JS
+            return self.clients.claim(); 
         })
     );
-    self.skipWaiting();
 });
 
 // FASE DI ATTIVAZIONE (Pulizia vecchie cache)
@@ -92,3 +90,4 @@ self.addEventListener('fetch', event => {
         })
     );
 });
+
