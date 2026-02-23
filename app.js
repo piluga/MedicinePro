@@ -109,30 +109,6 @@ const app = {
                         this.renderMedications(); // Ricarica la grafica se serve
                     }
                 }, 60 * 1000);
-
-                // ==========================================
-                // SERVICE WORKER REGISTRATION CON CONTROLLO UPDATE
-                // ==========================================
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('sw.js')
-                        .then(registration => {
-                            console.log('✅ ServiceWorker registrato con successo! Scope:', registration.scope);
-                        })
-                        .catch(error => {
-                            console.error('❌ Registrazione ServiceWorker fallita:', error);
-                        });
-
-                    // Ascolta l'evento in cui un NUOVO service worker prende il controllo
-                    let refreshing = false;
-                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    // Evita che il modale venga chiamato più volte di fila o ricarichi all'infinito
-                    if (!refreshing) {
-                        refreshing = true;
-                        // Mostra il modale per avvisare l'utente
-                        app.showModal('modal-app-updated');
-                        }
-                    });
-                }
             },
 
             // --- GESTIONE MODALI DI SISTEMA ---
@@ -4942,3 +4918,34 @@ const app = {
             },
 
         };
+
+        // 1. Avvio dell'Applicazione
+        window.onload = () => {
+            app.init();
+        };
+
+        // 2. Registrazione Indipendente del Service Worker
+        if ('serviceWorker' in navigator) {
+            // Usiamo il protocollo di caricamento per essere sicuri che la pagina sia pronta
+            window.addEventListener('load', () => {
+                // Aggiunto './' per garantire che cerchi nella cartella corretta
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('✅ ServiceWorker registrato con successo! Scope:', registration.scope);
+
+                        // Ascolta l'evento di aggiornamento per mostrare il modale
+                        let refreshing = false;
+                        navigator.serviceWorker.addEventListener('controllerchange', () => {
+                            if (!refreshing) {
+                                refreshing = true;
+                                app.showModal('modal-app-updated');
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        console.error('❌ Registrazione ServiceWorker fallita. Motivo:', error);
+                    });
+            });
+        } else {
+            console.warn('⚠️ ServiceWorker non supportato da questo browser o protocollo errato (usa Live Server).');
+        }
