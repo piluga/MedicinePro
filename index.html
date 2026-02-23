@@ -1663,7 +1663,23 @@
                 </div>
             </div>
 
+            <div id="modal-app-updated" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4 fade-in">
+            <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden card-shadow text-center p-6 border-t-4 border-blue-500">
+                <div class="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">
+                    <i class="fa-solid fa-cloud-arrow-down animate-bounce"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">Aggiornamento Disponibile!</h3>
+                <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+                    Una nuova versione di MedicinePro è pronta. Clicca sul pulsante qui sotto per applicare le ultime novità e miglioramenti.
+                </p>
+                <button onclick="window.location.reload()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Aggiorna Ora
+                </button>
+            </div>
+        </div>    
+                
             <!-- JS ESTERNO -->
             <script src="app.js"></script>
         </body>
         </html>
+
