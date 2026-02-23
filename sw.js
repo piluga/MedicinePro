@@ -1,10 +1,11 @@
 const CACHE_NAME = 'medicinepro-cache-v7';
 
 // 1. Risorse Locali
-const urlsToCache = [
-    './',
+const localUrls = [
     './index.html',
-    './manifest.json'
+    './manifest.json',
+    './style.css',
+    './app.js
 ];
 
 // 2. Risorse Esterne (CDN) che richiedono la modalità 'no-cors' per evitare blocchi
@@ -91,6 +92,7 @@ self.addEventListener('fetch', event => {
         })
     );
 });
+
 
 
 
