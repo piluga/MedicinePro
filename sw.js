@@ -1,4 +1,4 @@
-const CACHE_NAME = 'medicinepro-cache-v9';
+const CACHE_NAME = 'medicinepro-cache-v10';
 
 // 1. Risorse Locali
 const localUrls = [
@@ -8,14 +8,38 @@ const localUrls = [
     './app.js'
 ];
 
-// 2. Risorse Esterne (CDN) che richiedono la modalità 'no-cors' per evitare blocchi
+// 2. Risorse Esterne (CDN e Font)
 const externalUrls = [
-    'https://cdn.tailwindcss.com', // Rimosso lo slash finale per coincidere con l'HTML
+    'https://cdn.tailwindcss.com',
     'https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap',
     'https://i.ibb.co/N6db36Sf/medicine.png'
 ];
+
+// FASE DI INSTALLAZIONE
+self.addEventListener('install', event => {
+    // Forza l'installazione immediata senza aspettare
+    self.skipWaiting(); 
+    
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(cache => {
+            console.log('[Service Worker] Salvataggio risorse locali...');
+            // Salva file locali
+            cache.addAll(localUrls);
+            
+            console.log('[Service Worker] Salvataggio risorse esterne...');
+            // Salva file esterni (modalità no-cors per evitare blocchi di sicurezza)
+            return Promise.all(
+                externalUrls.map(url => {
+                    return fetch(url, { mode: 'no-cors' }).then(response => {
+                        return cache.put(url, response);
+                    }).catch(err => console.log('Impossibile mettere in cache:', url, err));
+                })
+            );
+        })
+    );
+});
 
 // FASE DI ATTIVAZIONE (CANCELLA LA VECCHIA CACHE)
 self.addEventListener('activate', event => {
@@ -37,45 +61,27 @@ self.addEventListener('activate', event => {
     );
 });
 
-// FASE DI ATTIVAZIONE (Pulizia vecchie cache)
-self.addEventListener('activate', event => {
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.map(cacheName => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('[Service Worker] Rimuovo vecchia cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
-    );
-    self.clients.claim();
-});
-
-// FASE DI FETCH (Intercetta il traffico)
+// FASE DI RECUPERO (Fetch)
 self.addEventListener('fetch', event => {
-    // 1. IGNORA le chiamate all'Intelligenza Artificiale (Google Gemini)
+    // Ignora le richieste alle API di Gemini (devono sempre essere live)
     if (event.request.url.includes('generativelanguage.googleapis.com')) return;
 
-    // 2. NUOVO: IGNORA le estensioni di Chrome e protocolli non web
-    // Se l'URL non inizia con "http" o "https", ignoralo completamente
+    // Ignora estensioni di Chrome o protocolli strani (file://)
     if (!event.request.url.startsWith('http')) return;
 
     event.respondWith(
         caches.match(event.request).then(response => {
-            // Se c'è in cache (anche in no-cors), restituiscilo
+            // Se c'è in cache, restituiscilo subito
             if (response) return response;
             
-            // Altrimenti scarica dalla rete
+            // Altrimenti scaricalo da internet
             return fetch(event.request).then(networkResponse => {
-                // Accettiamo status 200 (File normali) e status 0 (File esterni senza CORS)
+                // Controllo di validità
                 if (!networkResponse || (networkResponse.status !== 200 && networkResponse.status !== 0)) {
                     return networkResponse;
                 }
 
-                // Salva una copia in cache per la prossima volta (solo per richieste sicure HTTP/HTTPS)
+                // Salva una copia in cache per la volta successiva
                 if (event.request.url.startsWith('http')) {
                     let responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then(cache => {
@@ -85,10 +91,8 @@ self.addEventListener('fetch', event => {
 
                 return networkResponse;
             }).catch(() => {
-                console.log('[Service Worker] Sei offline e la risorsa non è in cache:', event.request.url);
+                console.log('[Service Worker] Modalità offline - Risorsa non trovata:', event.request.url);
             });
         })
     );
 });
-
-
