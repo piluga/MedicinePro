@@ -2926,7 +2926,9 @@
                                     const safeDose = this.escapeHTML(med.dose);
                                     const safeUsage = this.escapeHTML(med.usage);
 
-                                    // UX: Tolti gli attributi title
+                                    // ==========================================
+                                    // PULSANTI AZIONE (Con tasto Smemorato)
+                                    // ==========================================
                                     const photoBtn = (prefs.showImage !== false && med.image) ?
                                         `<button onclick="event.stopPropagation(); app.showMedImageFromList('${med.id}')" class="text-slate-400 hover:text-slate-600 p-2"><i class="fa-solid fa-image"></i></button>` : '';
                                     const noteBtn = (prefs.showNotes && med.usage) ?
@@ -2937,6 +2939,10 @@
                                         `<button onclick="app.openEditMedModal('${med.id}')" class="text-blue-400 hover:text-blue-600 p-2"><i class="fa-solid fa-pen"></i></button>` : '';
                                     const deleteBtn = prefs.showDelete ?
                                         `<button onclick="app.deleteMedication('${med.id}')" class="text-red-400 hover:text-red-600 p-2"><i class="fa-solid fa-trash-can"></i></button>` : '';
+
+                                    const smemoratoBtn = (med.frequency === 'alternate' && med.startDate) ?
+                                        `<button onclick="app.askShiftTherapy('${med.sharedId}')" class="text-fuchsia-400 hover:text-fuchsia-600 p-2 transition-colors" title="Sposta avanti di 1 giorno"><i class="fa-solid fa-forward-step"></i></button>` : '';
+                                    // ==========================================
 
                                     const card = document.createElement('div');
                                     const categoryClass = `med-card-${time.toLowerCase()}`;
@@ -2960,8 +2966,7 @@
                                         ? `<span class="text-xs font-bold ${isLocked ? 'text-orange-500' : 'text-slate-600'} bg-white px-1.5 py-0.5 rounded border mr-2 flex-shrink-0">${isLocked ? '<i class="fa-solid fa-lock mr-1"></i>' : ''}${effectiveTime}</span>`
                                         : '';
 
-                                    card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${visualClass}`;
-
+                                    // DIFFERENZIAZIONE SCHEDA NORMALE / AL BISOGNO
                                     if (time === 'Al Bisogno') {
                                         const countToday = (med.prnHistory || []).filter(ts => ts.slice(0, 10) === todayISO).length;
 
@@ -3010,6 +3015,8 @@
                                                 </div>
                                             </div>`;
                                     } else {
+                                        card.className = `p-4 rounded-xl card-shadow border mb-3 flex items-center justify-between transition-all ${categoryClass} ${takenClass} ${visualClass}`;
+
                                         card.innerHTML = `
                                             <div class="flex items-center gap-4 flex-1 overflow-hidden card-main-content">
                                                 <input type="checkbox" class="med-checkbox" ${med.taken ? 'checked' : ''} ${isLocked || !isToday ? 'disabled' : ''} onchange="app.toggleMedication('${med.id}')">
@@ -3029,6 +3036,7 @@
                                                 </div>
                                             </div>
                                             <div class="flex items-center card-actions">
+                                                ${smemoratoBtn}
                                                 ${photoBtn}
                                                 ${cartBtn}
                                                 ${noteBtn}
@@ -4149,6 +4157,75 @@
                             // ma è utile per sicurezza.
                             this.showAlert("Info", "Nessun farmaco da deselezionare.");
                         }
+                    },
+
+                    // --- FUNZIONE SMEMORATO ---
+                    askShiftTherapy(sharedId) {
+                        this.showConfirm(
+                            "Funzione Smemorato",
+                            "Hai dimenticato di prendere il farmaco? <br><br>Spostando in avanti di <b>1 giorno</b> l'inizio della terapia, ricalcoleremo automaticamente tutti i prossimi turni a giorni alterni.",
+                            () => {
+                                this.confirmShiftTherapy(sharedId);
+                            }
+                        );
+                    },
+
+                    confirmShiftTherapy(sharedId) {
+                        const profile = this.data.profiles.find(p => p.id === this.currentProfileId);
+                        if (!profile) return;
+
+                        let medName = "";
+                        let shifted = false;
+
+                        profile.meds.forEach(m => {
+                            if (m.sharedId === sharedId && m.startDate && m.frequency === 'alternate') {
+                                // 1. Parse sicuro della data per evitare problemi di fuso orario
+                                const parts = m.startDate.split('-');
+                                const startObj = new Date(parts[0], parts[1] - 1, parts[2]);
+
+                                // 2. Sposta in avanti di 1 giorno
+                                startObj.setDate(startObj.getDate() + 1);
+                                m.startDate = startObj.getFullYear() + '-' + String(startObj.getMonth() + 1).padStart(2, '0') + '-' + String(startObj.getDate()).padStart(2, '0');
+
+                                // 3. Ricalcola automaticamente la Data di Fine in base alla durata
+                                m.endDate = this.calculateEndDate(m.startDate, m.durationDays, m.frequency);
+
+                                // 4. Se per caso lo avevi segnato come preso per errore, resettalo
+                                if (m.taken) {
+                                    m.taken = false;
+                                    const todayISO = new Date().toISOString().slice(0, 10);
+                                    if (m.history && m.history[todayISO]) {
+                                        delete m.history[todayISO];
+                                    }
+                                }
+
+                                medName = m.name;
+                                shifted = true;
+                            }
+                        });
+
+                        if (shifted) {
+                            this.saveData();
+                            this.renderMedications(); // Ricarica la grafica in tempo reale
+
+                            // 1. Inseriamo il nome del farmaco nel modale
+                            document.getElementById('reminder-med-name').textContent = medName;
+
+                            // 2. Apriamo il nuovo modale specifico INVECE del generico showAlert
+                            this.showModal('modal-reminder-update');
+                        }
+                    },
+
+                    // NUOVA FUNZIONE: Chiude l'avviso e porta l'utente a rifare il calendario
+                    goToSettingsFromReminder() {
+                        this.closeModal('modal-reminder-update');
+                        this.showSettings();
+                    },
+
+                    // NUOVA FUNZIONE: Chiude l'avviso e porta l'utente a rifare il calendario
+                    goToSettingsFromReminder() {
+                        this.closeModal('modal-reminder-update');
+                        this.showSettings();
                     },
 
                     // --- GENERATORE CODICE FISCALE ---
