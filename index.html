@@ -1694,6 +1694,28 @@
                 </div>
             </div>
 
+            <div id="modal-reminder-update" class="hidden fixed inset-0 modal-overlay z-[200] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center border-t-4 border-orange-500">
+                    <div class="w-16 h-16 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm animate-pulse">
+                        <i class="fa-regular fa-calendar-xmark"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Attenzione ai Promemoria!</h3>
+                    <p class="text-slate-500 mb-4 text-sm leading-relaxed">
+                        La terapia per <b id="reminder-med-name" class="text-orange-600"></b> è stata slittata in avanti di un giorno.<br><br>
+                        Se avevi esportato gli avvisi sul calendario del telefono, ricordati di <b>Disattivarli</b> e <b>Attivarli di nuovo</b> per ricevere le notifiche nei giorni corretti.
+                    </p>
+
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="app.closeModal('modal-reminder-update')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors text-sm">
+                            Ho Capito
+                        </button>
+                        <button onclick="app.goToSettingsFromReminder()" class="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-md hover:bg-orange-600 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-cog"></i> Vai a Impostazioni
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- JS ESTERNO -->
             <script src="app.js"></script>
         </body>
