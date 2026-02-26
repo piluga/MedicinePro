@@ -5112,58 +5112,58 @@
                 };
 
                 // ==========================================
-                // SERVICE WORKER & FIX MODALI ALL'AVVIO
+                // SERVICE WORKER E AVVIO SICURO (ANTI-BLOCCO)
                 // ==========================================
-                if ('serviceWorker' in navigator) {
-                    window.addEventListener('load', () => {
-                        navigator.serviceWorker.register('./sw.js')
-                            .then(registration => {
-                                console.log('✅ ServiceWorker registrato con successo!');
 
-                                let refreshing = false;
-                                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                                    if (!refreshing) {
-                                        refreshing = true;
-                                        // FORZATURA DOM: bypassiamo il rendering dell'app e accendiamo il modale forzatamente
-                                        setTimeout(() => {
-                                            const updateModal = document.getElementById('modal-app-updated');
-                                            if (updateModal) {
-                                                updateModal.classList.remove('hidden');
-                                                updateModal.style.display = 'flex'; // Sicurezza extra per forzare la visibilità
-                                            }
-                                        }, 1000);
-                                    }
-                                });
-                            })
-                            .catch(err => console.error('❌ Registrazione SW fallita:', err));
-                    });
+                // 1. Service Worker: Rileva l'aggiornamento SENZA aspettare il click dell'utente
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('./sw.js').then(reg => {
+                        console.log('✅ SW Registrato');
+
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                // Se c'è un nuovo worker installato ed esiste già uno vecchio, è un aggiornamento!
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    setTimeout(() => {
+                                        const updateModal = document.getElementById('modal-app-updated');
+                                        if (updateModal) {
+                                            updateModal.classList.remove('hidden');
+                                            updateModal.style.display = 'flex';
+                                        }
+                                    }, 500);
+                                }
+                            });
+                        });
+                    }).catch(err => console.error('❌ Errore SW:', err));
                 }
 
-                // 1. FIX AVVIO: Forza il controllo del nuovo giorno in modo indipendente
-                window.addEventListener('load', () => {
-                    setTimeout(() => {
+                // 2. Controllo Nuovo Giorno: Usa un Loop per aggirare il blocco iniziale
+                const securityBoot = setInterval(() => {
+                    // Controlla se l'oggetto 'app' è stato caricato completamente nella memoria
+                    if (typeof app !== 'undefined' && app.data) {
+                        clearInterval(securityBoot); // App pronta! Ferma il loop.
+
+                        // Aspetta un istante e poi lancia il modale del nuovo giorno forzatamente
+                        setTimeout(() => {
+                            if (typeof app.checkNewDay === 'function') {
+                                app.checkNewDay();
+                            }
+                        }, 800);
+                    }
+                }, 250); // Bussa al sistema ogni quarto di secondo finché non risponde
+
+                // 3. Risveglio dal background (quando riapri l'app ridotta a icona)
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible' && typeof app !== 'undefined') {
                         if (typeof app.checkNewDay === 'function') {
                             app.checkNewDay();
-
-                            // Forza l'aggiornamento visivo (sveglia l'interfaccia senza dover cliccare nulla)
+                        }
+                        // Forza l'aggiornamento della grafica al rientro
+                        setTimeout(() => {
                             if (typeof app.renderMedications === 'function') {
                                 app.renderMedications();
                             }
-                        }
-                    }, 1500); // 1.5 secondi per far caricare tutta l'interfaccia prima
-                });
-
-                // 2. FIX MEZZANOTTE: Risveglio dal background
-                document.addEventListener('visibilitychange', () => {
-                    if (document.visibilityState === 'visible') {
-                        if (typeof app.checkNewDay === 'function') {
-                            app.checkNewDay();
-                            // Risveglia l'interfaccia al ritorno
-                            setTimeout(() => {
-                                if (typeof app.renderMedications === 'function') {
-                                    app.renderMedications();
-                                }
-                            }, 300);
-                        }
+                        }, 200);
                     }
                 });
