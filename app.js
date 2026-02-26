@@ -5106,26 +5106,27 @@
 
                 };
 
-                // 1. Avvio dell'Applicazione
+                // Avvio dell'Applicazione
                 window.onload = () => {
                     app.init();
                 };
 
-                // 2. Registrazione Indipendente del Service Worker
+                // ==========================================
+                // SERVICE WORKER & FIX MODALI ALL'AVVIO
+                // ==========================================
                 if ('serviceWorker' in navigator) {
-                    // Usiamo il protocollo di caricamento per essere sicuri che la pagina sia pronta
                     window.addEventListener('load', () => {
-                        // Aggiunto './' per garantire che cerchi nella cartella corretta
                         navigator.serviceWorker.register('./sw.js')
                             .then(registration => {
                                 console.log('✅ ServiceWorker registrato con successo! Scope:', registration.scope);
 
-                                // Ascolta l'evento di aggiornamento per mostrare il modale
+                                // Ascolta l'evento di aggiornamento
                                 let refreshing = false;
                                 navigator.serviceWorker.addEventListener('controllerchange', () => {
                                     if (!refreshing) {
                                         refreshing = true;
-                                        app.showModal('modal-app-updated');
+                                        // FIX: Ritardiamo di 1 secondo per non farlo "schiacciare" dal caricamento iniziale
+                                        setTimeout(() => app.showModal('modal-app-updated'), 1000);
                                     }
                                 });
                             })
@@ -5133,6 +5134,25 @@
                                 console.error('❌ Registrazione ServiceWorker fallita. Motivo:', error);
                             });
                     });
-                } else {
-                    console.warn('⚠️ ServiceWorker non supportato da questo browser o protocollo errato (usa Live Server).');
                 }
+
+                // 1. FIX AVVIO: Ritardiamo il controllo del nuovo giorno all'apertura dell'app
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        if (typeof app.checkNewDay === 'function') {
+                            app.checkNewDay();
+                        }
+                    }, 1200); // Aspetta 1.2 secondi prima di lanciare il modale "Nuovo Giorno"
+                });
+
+                // 2. FIX MEZZANOTTE: Controlla la data ogni volta che l'app torna in primo piano
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        // Se l'app si "sveglia" dal background, controlla sùbito se è cambiato giorno
+                        if (typeof app.checkNewDay === 'function') {
+                            app.checkNewDay();
+                        } else if (typeof app.renderMedications === 'function') {
+                            app.renderMedications(); // Ricalcola la grafica
+                        }
+                    }
+                });
