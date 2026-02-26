@@ -5118,41 +5118,52 @@
                     window.addEventListener('load', () => {
                         navigator.serviceWorker.register('./sw.js')
                             .then(registration => {
-                                console.log('✅ ServiceWorker registrato con successo! Scope:', registration.scope);
+                                console.log('✅ ServiceWorker registrato con successo!');
 
-                                // Ascolta l'evento di aggiornamento
                                 let refreshing = false;
                                 navigator.serviceWorker.addEventListener('controllerchange', () => {
                                     if (!refreshing) {
                                         refreshing = true;
-                                        // FIX: Ritardiamo di 1 secondo per non farlo "schiacciare" dal caricamento iniziale
-                                        setTimeout(() => app.showModal('modal-app-updated'), 1000);
+                                        // FORZATURA DOM: bypassiamo il rendering dell'app e accendiamo il modale forzatamente
+                                        setTimeout(() => {
+                                            const updateModal = document.getElementById('modal-app-updated');
+                                            if (updateModal) {
+                                                updateModal.classList.remove('hidden');
+                                                updateModal.style.display = 'flex'; // Sicurezza extra per forzare la visibilità
+                                            }
+                                        }, 1000);
                                     }
                                 });
                             })
-                            .catch(error => {
-                                console.error('❌ Registrazione ServiceWorker fallita. Motivo:', error);
-                            });
+                            .catch(err => console.error('❌ Registrazione SW fallita:', err));
                     });
                 }
 
-                // 1. FIX AVVIO: Ritardiamo il controllo del nuovo giorno all'apertura dell'app
+                // 1. FIX AVVIO: Forza il controllo del nuovo giorno in modo indipendente
                 window.addEventListener('load', () => {
                     setTimeout(() => {
                         if (typeof app.checkNewDay === 'function') {
                             app.checkNewDay();
+
+                            // Forza l'aggiornamento visivo (sveglia l'interfaccia senza dover cliccare nulla)
+                            if (typeof app.renderMedications === 'function') {
+                                app.renderMedications();
+                            }
                         }
-                    }, 1200); // Aspetta 1.2 secondi prima di lanciare il modale "Nuovo Giorno"
+                    }, 1500); // 1.5 secondi per far caricare tutta l'interfaccia prima
                 });
 
-                // 2. FIX MEZZANOTTE: Controlla la data ogni volta che l'app torna in primo piano
+                // 2. FIX MEZZANOTTE: Risveglio dal background
                 document.addEventListener('visibilitychange', () => {
                     if (document.visibilityState === 'visible') {
-                        // Se l'app si "sveglia" dal background, controlla sùbito se è cambiato giorno
                         if (typeof app.checkNewDay === 'function') {
                             app.checkNewDay();
-                        } else if (typeof app.renderMedications === 'function') {
-                            app.renderMedications(); // Ricalcola la grafica
+                            // Risveglia l'interfaccia al ritorno
+                            setTimeout(() => {
+                                if (typeof app.renderMedications === 'function') {
+                                    app.renderMedications();
+                                }
+                            }, 300);
                         }
                     }
                 });
