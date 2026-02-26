@@ -1,4 +1,4 @@
-const CACHE_NAME = 'medicinepro-cache-v17';
+const CACHE_NAME = 'medicinepro-cache-v18';
 
 // 1. Risorse Locali
 const localUrls = [
@@ -99,6 +99,7 @@ self.addEventListener('fetch', event => {
         })
     );
 });
+
 
 
 
