@@ -67,14 +67,21 @@
                     // Modifica 1: Init diventa async
                     async init() {
                         await this.loadData();
-                        // Mettiti in ascolto dello stato di Google (se l'utente è loggato)
                         auth.onAuthStateChanged(user => this.updateAuthUI(user));
+
+                        // --- MAGIA ANTI-BLOCCO: SPOSTA I MODALI NEL BODY ---
+                        // Prende tutti i modali intrappolati nel <main> e li sposta nel <body>
+                        // in modo che il browser non li "addormenti" mai più!
+                        document.querySelectorAll('.modal-overlay').forEach(modal => {
+                            document.body.appendChild(modal);
+                        });
+                        // ---------------------------------------------------
+
                         this.checkDailyReset();
                         this.checkNewDay();
                         this.renderProfiles();
 
                         const usage = document.getElementById('input-med-usage');
-
                         if (usage) {
                             usage.addEventListener('input', () => {
                                 usage.style.height = 'auto';
@@ -83,7 +90,6 @@
                         }
 
                         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-
                         document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('it-IT', options);
                         document.getElementById('btn-back').addEventListener('click', () => this.goBack());
 
@@ -99,7 +105,6 @@
                             this.handleSwipe(touchEndX, touchEndY);
                         }, { passive: true });
 
-                        // Bind confirm button only once
                         document.getElementById('confirm-btn-yes').addEventListener('click', () => {
                             if (this.confirmCallback) {
                                 this.confirmCallback();
@@ -107,24 +112,18 @@
                             this.closeModal('modal-confirm');
                         });
 
-                        // --- 1. NUOVO: CONTROLLO QUANDO L'APP TORNA IN PRIMO PIANO ---
                         document.addEventListener('visibilitychange', () => {
-                            // Se l'utente ha appena riaperto l'app dal background
                             if (document.visibilityState === 'visible') {
                                 this.checkDailyReset();
                                 this.checkNewDay();
                             }
                         });
 
-                        // --- 2. MODIFICA: AGGIORNA IL TIMER ESISTENTE ---
-                        // Fa scattare il controllo della mezzanotte in tempo reale anche 
-                        // se l'utente lascia l'app accesa con lo schermo acceso sul comodino.
                         setInterval(() => {
                             this.checkDailyReset();
-                            this.checkNewDay(); // Controlla se è passata la mezzanotte
-
+                            this.checkNewDay(); 
                             if (this.currentProfileId) {
-                                this.renderMedications(); // Ricarica la grafica se serve
+                                this.renderMedications(); 
                             }
                         }, 60 * 1000);
                     },
@@ -5112,30 +5111,26 @@
                 };
 
                 // ==========================================
-                // SERVICE WORKER E AVVIO SICURO (ANTI-BLOCCO)
+                // SERVICE WORKER & AGGIORNAMENTI
                 // ==========================================
-
-                // 1. Service Worker: Rileva l'aggiornamento SENZA aspettare il click dell'utente
                 if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('./sw.js').then(reg => {
-                        console.log('✅ SW Registrato');
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('./sw.js').then(reg => {
+                            console.log('✅ SW Registrato');
 
-                        reg.addEventListener('updatefound', () => {
-                            const newWorker = reg.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                // Se c'è un nuovo worker installato ed esiste già uno vecchio, è un aggiornamento!
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    setTimeout(() => {
-                                        const updateModal = document.getElementById('modal-app-updated');
-                                        if (updateModal) {
-                                            updateModal.classList.remove('hidden');
-                                            updateModal.style.display = 'flex';
-                                        }
-                                    }, 500);
-                                }
+                            reg.addEventListener('updatefound', () => {
+                                const newWorker = reg.installing;
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        // Mostra il modale di aggiornamento in modo pulito
+                                        setTimeout(() => {
+                                            app.showModal('modal-app-updated');
+                                        }, 500);
+                                    }
+                                });
                             });
-                        });
-                    }).catch(err => console.error('❌ Errore SW:', err));
+                        }).catch(err => console.error('❌ Errore SW:', err));
+                    });
                 }
 
                 // 2. Controllo Nuovo Giorno: Usa un Loop per aggirare il blocco iniziale
