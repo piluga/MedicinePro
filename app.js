@@ -2212,9 +2212,12 @@
 
                             // --- MODIFICA FONDAMENTALE QUI SOTTO ---
 
-                            // Usiamo 'gemini-1.5-flash' invece di '2.0'. Il 1.5 non dà errore 429 così facilmente.
+                            // 'gemini-1.5-flash' e 'gemini-2.0-*' sono stati dismessi da Google (404).
+                            // Usiamo l'alias 'gemini-flash-latest', che punta sempre al modello Flash
+                            // stabile più recente: evita di dover aggiornare questo URL a mano
+                            // ogni volta che Google ritira una versione.
 
-                            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.data.apiKey}`;
+                            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${this.data.apiKey}`;
 
 
 
