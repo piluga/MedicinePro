@@ -890,7 +890,7 @@
 
                     // Refactor: Collect all low stock alerts
                     checkDailyReset() {
-                        const today = new Date().toISOString().slice(0, 10);
+                        const today = this.getLocalDateString();
 
                         if (this.data.lastOpened === today) return;
 
@@ -1666,6 +1666,11 @@
 
                     generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); },
 
+                    // Data locale in formato YYYY-MM-DD (evita i disallineamenti di toISOString, che usa UTC)
+                    getLocalDateString(d = new Date()) {
+                        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    },
+
                     openProfile(id) {
                         this.currentProfileId = id;
                         const profile = this.data.profiles.find(x => x.id === id);
@@ -1968,8 +1973,8 @@
 
                                 el.innerHTML = `
                                                 <div>
-                                                    <p class="font-bold text-slate-700">${drug.name}</p>
-                                                    <p class="text-xs text-slate-500">${drug.dose || ''} ${drug.type ? '• ' + drug.type : ''}</p>
+                                                    <p class="font-bold text-slate-700">${app.escapeHTML(drug.name)}</p>
+                                                    <p class="text-xs text-slate-500">${app.escapeHTML(drug.dose || '')} ${drug.type ? '• ' + app.escapeHTML(drug.type) : ''}</p>
                                                 </div>
                                                 <i class="fa-solid fa-plus text-blue-500 bg-blue-50 p-2 rounded-lg"></i>
                                             `;
@@ -2190,7 +2195,7 @@
                             this.updateTimeUI();
                             this.updateDayUI();
                             // Usa la data salvata, altrimenti usa la data di oggi come fallback
-                            const dateString = med.startDate || new Date().toISOString().split('T')[0];
+                            const dateString = med.startDate || this.getLocalDateString();
                             const start = this.parseLocalDate(dateString);
 
                             this.currentTherapyMonth = new Date(start.getFullYear(), start.getMonth(), 1);
@@ -2443,10 +2448,10 @@
 
                             div.innerHTML = `
                                 <div class="overflow-hidden mr-3">
-                                    <h4 class="font-bold text-slate-700 text-sm truncate">${drug.name}</h4>
+                                    <h4 class="font-bold text-slate-700 text-sm truncate">${app.escapeHTML(drug.name)}</h4>
                                     <div class="flex items-center gap-2 mt-0.5">
-                                         ${drug.type ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 uppercase font-bold tracking-wider">${drug.type}</span>` : ''}
-                                         <span class="text-xs text-slate-500 truncate">${drug.dose || 'Dose non spec.'}</span>
+                                         ${drug.type ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 uppercase font-bold tracking-wider">${app.escapeHTML(drug.type)}</span>` : ''}
+                                         <span class="text-xs text-slate-500 truncate">${app.escapeHTML(drug.dose || 'Dose non spec.')}</span>
                                     </div>
                                     ${drug.category ? `<p class="text-[10px] text-slate-400 mt-0.5 italic">${drug.category}</p>` : ''}
                                 </div>
@@ -2797,7 +2802,7 @@
                         // --- AGGIUNTA RICHIESTA CONFERMA ---
                         this.showConfirm(
                             "Aggiungi al carrello",
-                            `Vuoi aggiungere <b>${med.name}</b> alla lista della spesa?`,
+                            `Vuoi aggiungere <b>${app.escapeHTML(med.name)}</b> alla lista della spesa?`,
                             () => {
                                 // --- LOGICA DI AGGIUNTA (eseguita solo se si preme Conferma) ---
                                 const sharedId = med.sharedId;
@@ -3228,7 +3233,7 @@
                                                                             <div class="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
                                                                                 <i class="fa-solid fa-circle-exclamation text-orange-500 text-xs"></i>
                                                                                 <div class="flex-1">
-                                                                                    <p class="font-bold text-slate-700 text-sm">${med.name}</p>
+                                                                                    <p class="font-bold text-slate-700 text-sm">${app.escapeHTML(med.name)}</p>
                                                                                 </div>
                                                                             </div>
                                                                         `;
@@ -3238,7 +3243,7 @@
                                                                     <div class="p-4">
                                                                         <div class="flex items-center justify-between mb-2">
                                                                             <h4 class="font-bold text-slate-800 flex items-center text-sm uppercase tracking-wider">
-                                                                                <i class="fa-solid fa-user text-slate-400 mr-2"></i> ${profile.name}
+                                                                                <i class="fa-solid fa-user text-slate-400 mr-2"></i> ${app.escapeHTML(profile.name)}
                                                                             </h4>
                                                                             ${docInfo}
                                                                         </div>
@@ -3283,7 +3288,7 @@
                                 if (uniqueOrdered.length > 0) {
                                     const groupDiv = document.createElement('div');
                                     groupDiv.className = "bg-slate-50 border-y border-slate-200 mb-4";
-                                    let listHtml = `<div class="px-4 py-2 bg-slate-100 border-b border-slate-200 flex items-center gap-2"><i class="fa-solid fa-user text-slate-400 text-xs"></i><span class="font-bold text-slate-600 text-xs uppercase">${profile.name}</span></div>`;
+                                    let listHtml = `<div class="px-4 py-2 bg-slate-100 border-b border-slate-200 flex items-center gap-2"><i class="fa-solid fa-user text-slate-400 text-xs"></i><span class="font-bold text-slate-600 text-xs uppercase">${app.escapeHTML(profile.name)}</span></div>`;
 
                                     uniqueOrdered.forEach(m => {
                                         listHtml += `
@@ -3291,7 +3296,7 @@
                                                                             <div class="flex-1 min-w-0 mr-2">
                                                                                 <div class="flex items-center gap-3">
                                                                                     <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid fa-box-open"></i></div>
-                                                                                    <div><p class="font-bold text-slate-700 text-sm truncate leading-tight">${m.name}</p><p class="text-[9px] text-slate-400 mt-0.5">In attesa di ritiro...</p></div>
+                                                                                    <div><p class="font-bold text-slate-700 text-sm truncate leading-tight">${app.escapeHTML(m.name)}</p><p class="text-[9px] text-slate-400 mt-0.5">In attesa di ritiro...</p></div>
                                                                                 </div>
                                                                             </div>
                                                                             <div class="flex items-center gap-2 shrink-0">
@@ -3369,7 +3374,7 @@
                                 header.className = "px-2 py-1.5 bg-slate-100 rounded-lg mb-2 mt-3 flex items-center gap-2 border border-slate-200";
                                 header.innerHTML = `
                                                                         <i class="fa-solid fa-user text-slate-400 text-xs"></i>
-                                                                        <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">${profile.name}</span>
+                                                                        <span class="text-xs font-bold text-slate-600 uppercase tracking-wide">${app.escapeHTML(profile.name)}</span>
                                                                     `;
                                 orderedContainer.appendChild(header);
 
@@ -3480,7 +3485,7 @@
                                                                             <i class="fa-solid fa-pills"></i>
                                                                         </div>
                                                                         <div class="truncate">
-                                                                            <h4 class="font-bold text-slate-700 text-sm truncate">${med.name}</h4>
+                                                                            <h4 class="font-bold text-slate-700 text-sm truncate">${app.escapeHTML(med.name)}</h4>
                                                                             <p class="text-[10px] text-slate-500 font-medium truncate">
                                                                                 ${med.type || 'Generico'}
                                                                             </p>
@@ -3551,7 +3556,7 @@
                             }
                         }
 
-                        this.showConfirm("Rimuovi", `Rimuovere ${medName} dalla lista acquisti?`, () => {
+                        this.showConfirm("Rimuovi", `Rimuovere ${app.escapeHTML(medName)} dalla lista acquisti?`, () => {
                             // Rimuovi flag da TUTTE le istanze con questo sharedId
                             this.data.profiles.forEach(p => {
                                 p.meds.forEach(m => {
@@ -3984,7 +3989,7 @@
 
                         // 2. Imposta Testi del Modale 'modal-confirm'
                         document.getElementById('confirm-title').textContent = "Annulla Ordine";
-                        document.getElementById('confirm-message').innerHTML = `Vuoi rimuovere <b>${medName}</b> dai farmaci in arrivo?<br>Tornerà nella lista "Da Ordinare".`;
+                        document.getElementById('confirm-message').innerHTML = `Vuoi rimuovere <b>${app.escapeHTML(medName)}</b> dai farmaci in arrivo?<br>Tornerà nella lista "Da Ordinare".`;
 
                         // 3. Configura il tasto "Conferma" (Sostituzione nodo per pulire eventi vecchi)
                         const btnYes = document.getElementById('confirm-btn-yes');
@@ -4463,7 +4468,7 @@
                             // MODIFICA QUI: Sostituito category/dose con med.type (Categoria Terapeutica)
                             div.innerHTML = `
                                                             <div>
-                                                                <h2 class="text-2xl font-bold text-slate-800 leading-tight mb-1">${med.name}</h2>
+                                                                <h2 class="text-2xl font-bold text-slate-800 leading-tight mb-1">${app.escapeHTML(med.name)}</h2>
                                                                 <p class="text-slate-500 font-medium text-sm uppercase tracking-wide">
                                                                     ${med.type || 'Categoria non specificata'}
                                                                 </p>
@@ -4578,7 +4583,7 @@
                             tr.className = "border-b border-slate-100";
                             tr.innerHTML = `
                                                                 <td class="py-3 pr-2 align-top">
-                                                                    <div class="font-bold text-slate-800">${med.name}</div>
+                                                                    <div class="font-bold text-slate-800">${app.escapeHTML(med.name)}</div>
                                                                     <div class="text-xs text-slate-500">${med.category || ''}</div>
                                                                 </td>
                                                                 <td class="py-3 pr-2 align-top">
@@ -4703,7 +4708,7 @@
                                                                         <span class="text-[10px] font-bold text-teal-600 uppercase tracking-wide flex items-center gap-1 mb-0.5">
                                                                             <i class="fa-solid fa-user"></i> ${item.profileName}
                                                                         </span>
-                                                                        <h4 class="font-bold text-slate-800 text-sm">${m.name}</h4>
+                                                                        <h4 class="font-bold text-slate-800 text-sm">${app.escapeHTML(m.name)}</h4>
                                                                         <p class="text-xs text-slate-500 mt-1 line-clamp-2 italic">
                                                                             "${m.usage || m.type || 'Nessuna descrizione'}"
                                                                         </p>
@@ -4875,7 +4880,7 @@
 
                         // Salva
                         profile.healthLogs.push({
-                            id: Date.now().toString(),
+                            id: this.generateId(),
                             date: new Date().toISOString(),
                             type: type,
                             values: values
@@ -5149,7 +5154,7 @@
 
                             // Crea un campo di default (es. Telefono)
                             this.tempContactFields = [
-                                { id: Date.now(), type: 'phone', label: 'Cellulare', value: '' }
+                                { id: this.generateId(), type: 'phone', label: 'Cellulare', value: '' }
                             ];
                         }
 
@@ -5176,7 +5181,7 @@
 
                     addContactField() {
                         this.tempContactFields.push({
-                            id: Date.now(),
+                            id: this.generateId(),
                             type: 'text',
                             label: '',
                             value: ''
@@ -5224,12 +5229,12 @@
                                 <option value="link" ${field.type === 'link' ? 'selected' : ''}>Link / Maps</option>
                                 <option value="date" ${field.type === 'date' ? 'selected' : ''}>Data</option>
                             </select>
-                            <input type="text" oninput="app.updateContactField(${field.id}, 'label', this.value)" value="${field.label}" placeholder="Etichetta" class="w-full text-[10px] p-1.5 border border-slate-200 rounded-md bg-white outline-none">
+                            <input type="text" oninput="app.updateContactField(${field.id}, 'label', this.value)" value="${app.escapeHTML(field.label)}" placeholder="Etichetta" class="w-full text-[10px] p-1.5 border border-slate-200 rounded-md bg-white outline-none">
                         </div>
                         <div class="w-[60%] flex-1 flex flex-col justify-end h-full">
                             ${field.type === 'date'
-                                    ? `<input type="date" oninput="app.updateContactField(${field.id}, 'value', this.value)" value="${field.value}" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white outline-none mt-auto">`
-                                    : `<input type="text" oninput="app.updateContactField(${field.id}, 'value', this.value)" value="${field.value}" placeholder="Valore..." class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white outline-none mt-auto">`
+                                    ? `<input type="date" oninput="app.updateContactField(${field.id}, 'value', this.value)" value="${app.escapeHTML(field.value)}" class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white outline-none mt-auto">`
+                                    : `<input type="text" oninput="app.updateContactField(${field.id}, 'value', this.value)" value="${app.escapeHTML(field.value)}" placeholder="Valore..." class="w-full text-xs p-2 border border-slate-200 rounded-lg bg-white outline-none mt-auto">`
                                 }
                         </div>
                         <button onclick="app.removeContactField(${field.id})" class="text-slate-400 hover:text-red-500 w-6 h-6 flex items-center justify-center shrink-0 mt-3 transition-colors">
@@ -5324,16 +5329,16 @@
 
                                     if (f.type === 'phone') {
                                         icon = '<i class="fa-solid fa-phone text-green-500"></i>';
-                                        action = `href="tel:${f.value.replace(/\s+/g, '')}"`;
+                                        action = `href="tel:${app.escapeHTML(f.value.replace(/\s+/g, ''))}"`;
                                         tag = 'a';
                                         btnClass += " font-bold shadow-sm";
                                     } else if (f.type === 'email') {
                                         icon = '<i class="fa-solid fa-envelope text-blue-500"></i>';
-                                        action = `href="mailto:${f.value}"`;
+                                        action = `href="mailto:${app.escapeHTML(f.value)}"`;
                                         tag = 'a';
                                     } else if (f.type === 'link') {
                                         icon = '<i class="fa-solid fa-arrow-up-right-from-square text-indigo-500"></i>';
-                                        action = `href="${f.value.startsWith('http') ? f.value : 'https://' + f.value}" target="_blank"`;
+                                        action = `href="${app.escapeHTML(f.value.startsWith('http') ? f.value : 'https://' + f.value)}" target="_blank"`;
                                         tag = 'a';
                                     } else if (f.type === 'date') {
                                         icon = '<i class="fa-solid fa-calendar-day text-orange-500"></i>';
@@ -5348,8 +5353,8 @@
                                 <${tag} ${action} class="${btnClass}">
                                     <div class="w-6 flex justify-center">${icon}</div>
                                     <div class="flex-1 overflow-hidden">
-                                        <span class="block text-[9px] text-slate-400 font-bold uppercase truncate">${f.label}</span>
-                                        <span class="block truncate">${f.value}</span>
+                                        <span class="block text-[9px] text-slate-400 font-bold uppercase truncate">${app.escapeHTML(f.label)}</span>
+                                        <span class="block truncate">${app.escapeHTML(f.value)}</span>
                                     </div>
                                 </${tag}>
                             `;
