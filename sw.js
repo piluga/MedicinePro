@@ -1,4 +1,4 @@
-const CACHE_NAME = 'medicinepro-cache-v21';
+const CACHE_NAME = 'medicinepro-cache-v22';
 
 // 1. Risorse Locali
 const localUrls = [
@@ -14,7 +14,8 @@ const externalUrls = [
     'https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd.js',
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
     'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap',
-    'https://i.ibb.co/N6db36Sf/medicine.png'
+    'https://i.ibb.co/N6db36Sf/medicine.png',
+    'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js' // OCR gratuito (fallback senza chiave AI)
 ];
 
 // FASE DI INSTALLAZIONE

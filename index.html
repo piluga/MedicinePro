@@ -32,6 +32,9 @@
             <!-- Chart -->
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+            <!-- OCR gratuito (alternativa a Gemini per il riconoscimento farmaci da fotocamera) -->
+            <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
             <!-- CSS ESTERNO -->
             <link rel="stylesheet" href="style.css">
         </head>
@@ -208,9 +211,16 @@
                                 <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> Google Gemini API Key
                             </h3>
                             <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
-                                La chiave serve per abilitare il riconoscimento dei farmaci tramite fotocamera.
+                                La chiave serve per abilitare il riconoscimento AI dei farmaci tramite fotocamera. Senza chiave, lo scanner userà automaticamente l'OCR gratuito (lettura testo, meno preciso ma senza costi).
                             </p>
                             <input type="password" id="input-settings-apikey" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Inserisci la tua API Key">
+
+                            <label class="flex items-center justify-between p-2 mt-3 hover:bg-white/60 rounded-lg cursor-pointer">
+                                <span class="text-xs font-bold text-slate-600 flex items-center gap-2">
+                                    <i class="fa-solid fa-magnifying-glass text-slate-500 w-4"></i> Usa sempre OCR gratuito (anche con chiave attiva)
+                                </span>
+                                <input type="checkbox" id="pref-prefer-ocr" class="accent-blue-600 w-5 h-5">
+                            </label>
                         </div>
 
                         <div class="bg-sky-50 p-5 rounded-2xl card-shadow mb-4">

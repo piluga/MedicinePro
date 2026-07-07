@@ -2008,16 +2008,16 @@
 
 
 
-                        // 5. Se NON è solo modalità foto, procedi con l'analisi AI
-
+                        // 5. Se NON è solo modalità foto, procedi con l'analisi
                         if (!this.isPhotoOnlyMode) {
-
-                            // Passiamo l'immagine compressa all'AI (più veloce da caricare)
-
-                            const base64Data = compressedBase64.split(',')[1];
-
-                            await this.analyzeImage(base64Data);
-
+                            // Scegli il motore: OCR gratuito (nessuna chiave / preferenza utente) oppure Gemini AI
+                            const preferOcr = this.data.preferences && this.data.preferences.preferOcr;
+                            if (preferOcr || !this.data.apiKey) {
+                                await this.analyzeImageOCR(compressedBase64);
+                            } else {
+                                const base64Data = compressedBase64.split(',')[1];
+                                await this.analyzeImage(base64Data);
+                            }
                         }
 
                     },
@@ -2333,6 +2333,70 @@
 
 
 
+                    // NUOVA FUNZIONE: Riconoscimento farmaco gratuito via OCR (Tesseract.js)
+                    // Nessuna chiave API, gira interamente nel browser. Meno preciso di Gemini
+                    // (nessuna comprensione del contenuto, solo lettura del testo), quindi i
+                    // campi vanno sempre controllati/corretti dall'utente dopo il riempimento.
+                    async analyzeImageOCR(dataUrlImage) {
+                        if (typeof Tesseract === 'undefined') {
+                            this.showAlert("OCR non disponibile", "Il modulo di riconoscimento testo non è ancora stato caricato. Verifica la connessione internet (viene scaricato al primo utilizzo) e riprova.");
+                            return;
+                        }
+
+                        this.toggleLoading(true, "Lettura testo (OCR)...");
+
+                        try {
+                            const { data } = await Tesseract.recognize(dataUrlImage, 'ita+eng');
+
+                            const fullText = (data.text || '').trim();
+                            if (!fullText) {
+                                this.showAlert("Attenzione", "L'OCR non ha trovato testo leggibile nella foto. Prova con più luce o inquadrando meglio l'etichetta.");
+                                return;
+                            }
+
+                            // 1. Nome: la riga con il testo più "grande" (bbox più alta) è di solito
+                            // il nome commerciale stampato in evidenza sulla confezione.
+                            const lines = (data.lines || []).filter(l => l.text && l.text.replace(/[^a-zA-Z]/g, '').length >= 3);
+                            let nameGuess = '';
+                            if (lines.length > 0) {
+                                const tallest = lines.reduce((best, l) => {
+                                    const h = l.bbox ? (l.bbox.y1 - l.bbox.y0) : 0;
+                                    const bestH = best.bbox ? (best.bbox.y1 - best.bbox.y0) : 0;
+                                    return h > bestH ? l : best;
+                                }, lines[0]);
+                                nameGuess = tallest.text.trim().replace(/\s+/g, ' ');
+                            }
+
+                            // 2. Dose: prima occorrenza di un numero seguito da un'unità di misura comune
+                            const doseMatch = fullText.match(/(\d+[.,]?\d*)\s?(mg|mcg|µg|ug|g|ml|u\.?i\.?|%)\b/i);
+                            const doseGuess = doseMatch ? `${doseMatch[1]}${doseMatch[2].toLowerCase()}` : '';
+
+                            // 3. Forma farmaceutica: cerca parole chiave note nel testo riconosciuto
+                            const formKeywords = ['compresse', 'capsule', 'sciroppo', 'gocce', 'bustine', 'fiale', 'supposte', 'crema', 'pomata', 'spray', 'collirio', 'granulato', 'effervescenti'];
+                            const lowerText = fullText.toLowerCase();
+                            const formMatch = formKeywords.find(k => lowerText.includes(k));
+                            const formGuess = formMatch ? formMatch.charAt(0).toUpperCase() + formMatch.slice(1) : '';
+
+                            if (nameGuess) {
+                                document.getElementById('input-med-name').value = nameGuess;
+                                if (formGuess) document.getElementById('input-med-category').value = formGuess;
+                                if (doseGuess) document.getElementById('input-med-dose').value = doseGuess;
+
+                                this.showAlert("Lettura OCR completata", `Ho letto: "${nameGuess}". Controlla e correggi i campi se necessario: l'OCR legge il testo ma non "capisce" il farmaco come l'AI.`);
+                            } else {
+                                this.showAlert("Attenzione", "Non sono riuscito a individuare un nome chiaro. Ecco il testo letto, copialo manualmente se utile:\n\n" + fullText.slice(0, 300));
+                            }
+
+                        } catch (err) {
+                            console.error("ERRORE OCR:", err);
+                            this.showAlert("Errore OCR", `Lettura del testo non riuscita: ${err.message || 'errore sconosciuto'}. Verifica la connessione internet e riprova.`);
+                        } finally {
+                            this.toggleLoading(false);
+                        }
+                    },
+
+
+
                     async fetchWithRetry(url, options, retries = 3, backoff = 1000) {
 
                         try {
@@ -2519,6 +2583,9 @@
 
                         document.getElementById('pref-show-image').checked = (prefs.showImage !== false);
 
+                        // Scanner: preferisci sempre l'OCR gratuito, anche se è configurata una chiave Gemini
+                        document.getElementById('pref-prefer-ocr').checked = !!prefs.preferOcr;
+
                         // ----------------------------
 
 
@@ -2603,7 +2670,9 @@
 
                             showDelete: document.getElementById('pref-show-delete').checked,
 
-                            showImage: document.getElementById('pref-show-image').checked
+                            showImage: document.getElementById('pref-show-image').checked,
+
+                            preferOcr: document.getElementById('pref-prefer-ocr').checked
 
                         };
 
