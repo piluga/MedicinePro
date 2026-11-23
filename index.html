@@ -1,0 +1,1638 @@
+        <!DOCTYPE html>
+        <html lang="it">
+        <head>
+            <meta charset="UTF-8">
+            <!-- Zoom consentito (accessibilità); il doppio tap non zooma grazie a touch-action in style.css -->
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+            <title>MedicinePro</title>
+            <!-- PWA -->
+            <meta name="theme-color" content="#2563eb">
+            <meta name="apple-mobile-web-app-capable" content="yes">
+            <meta name="apple-mobile-web-app-status-bar-style" content="default">
+            <meta name="apple-mobile-web-app-title" content="MedicinePro">
+            <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+            <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+            <link rel="manifest" href="./manifest.json">
+            <!-- Google Font -->
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+            <!-- Script con "defer": scaricati in parallelo senza bloccare il disegno della pagina,
+                 eseguiti in ordine (Firebase e idb-keyval prima del codice dell'app in js/) -->
+            <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+            <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+            <script defer src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+            <script defer src="https://cdn.jsdelivr.net/npm/idb-keyval@6.3.0/dist/umd.js"></script>
+            <!-- FontAwesome -->
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <!-- Tesseract (OCR) viene caricato da js/camera.js solo al primo utilizzo -->
+            <!-- CSS ESTERNO -->
+            <link rel="stylesheet" href="style.css">
+            <!-- Tailwind CSS statico (generato con: npm run build:css).
+                 Caricato DOPO style.css per mantenere la stessa priorità che aveva il Play CDN. -->
+            <link rel="stylesheet" href="tailwind.css">
+        </head>
+        <body class="text-slate-800 h-screen flex flex-col overflow-hidden">
+            <!-- HEADER -->
+            <header class="bg-blue-600 text-white p-4 shadow-md z-20 flex justify-between items-center shrink-0 h-16">
+                <div class="flex items-center gap-3">
+                    <button id="btn-back" onclick="app.goBack()" class="hidden text-xl p-1 active:scale-95 transition-transform" aria-label="Indietro">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+                        <i class="fa-solid fa-pills"></i> MedicinePro
+                    </h1>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="app.showContacts()" class="text-xl p-2 hover:bg-blue-700 rounded-full transition-colors" title="Contatti Medici">
+                        <i class="fa-solid fa-address-book"></i>
+                    </button>
+                    <button onclick="app.showManagement()" class="text-xl p-2 hover:bg-blue-700 rounded-full transition-colors" title="Gestione Farmaci & Dati">
+                        <i class="fa-solid fa-briefcase-medical"></i>
+                    </button>
+                    <button onclick="app.openDoctorAI()" class="text-xl p-2 hover:bg-blue-700 rounded-full transition-colors relative group" title="Analisi Sintomi">
+                        <i class="fa-solid fa-user-doctor"></i>
+                        <span class="absolute top-2 right-2 flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+                        </span>
+                    </button>
+                    <button onclick="app.showSettings()" class="text-xl p-2 hover:bg-blue-700 rounded-full transition-colors" title="Impostazioni">
+                        <i class="fa-solid fa-cog"></i>
+                    </button>
+                </div>
+            </header>
+            <input type="file" id="import-file" accept=".json" class="hidden" onchange="app.handleImport(this)">
+            <!-- MAIN -->
+            <main id="app-container" class="flex-1 overflow-y-auto no-scrollbar relative p-4 max-w-lg mx-auto w-full">
+                <!-- VISTA LISTA PROFILI -->
+                <section id="view-profiles" class="fade-in space-y-4">
+                    <div class="bg-white p-6 rounded-2xl card-shadow text-center mb-6">
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">I tuoi Profili</h2>
+                        <p class="text-slate-500 text-sm">Monitora le assunzioni quotidiane.</p>
+                    </div>
+                    <div id="profiles-list" class="space-y-3"></div>
+                    <button onclick="app.showModal('modal-add-profile')" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> Aggiungi Profilo
+                    </button>
+                    <button id="btn-home-pharmacy" onclick="app.openPharmacyMode()" class="hidden w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-basket-shopping"></i> Al Banco
+                    </button>
+                </section>
+                <!-- VISTA DETTAGLIO PROFILO -->
+                <section id="view-medications" class="hidden fade-in pb-24">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <h2 id="current-profile-name" class="text-2xl font-bold text-slate-800 truncate max-w-[180px]">Profilo</h2>
+                                <button onclick="app.openEditProfileModal()" class="text-slate-400 hover:text-blue-600 p-1.5 transition-colors">
+                                    <i class="fa-solid fa-pencil text-sm"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-3 mt-1">
+                                <p id="current-date-display" class="text-[10px] text-slate-500 uppercase font-bold tracking-wider"></p>
+                                <button id="btn-uncheck-all" onclick="app.uncheckAllMeds()" class="hidden text-[10px] text-red-500 uppercase font-bold tracking-wider hover:underline">
+                                    Deseleziona tutto
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                            <button onclick="app.openHealthDiary()" class="text-rose-600 text-xs px-3 py-1.5 border border-rose-200 rounded-lg hover:bg-rose-50 flex items-center gap-1 transition-all shrink-0">
+                                <i class="fa-solid fa-heart-pulse"></i> <span class="hidden xs:inline">Diario Salute</span>
+                            </button>
+                            <button onclick="app.openStatsModal()" class="text-violet-600 text-xs px-3 py-1.5 border border-violet-200 rounded-lg hover:bg-violet-50 flex items-center gap-1 transition-all shrink-0">
+                                <i class="fa-solid fa-chart-pie"></i> <span class="hidden xs:inline">Statistiche</span>
+                            </button>
+                            <button onclick="app.exportProfileTxt()" class="text-blue-600 text-xs px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 flex items-center gap-1 transition-all shrink-0">
+                                <i class="fa-solid fa-file-lines"></i> <span class="hidden xs:inline">Report</span>
+                            </button>
+                            <button onclick="app.printReport()" class="text-rose-600 text-xs px-3 py-1.5 border border-rose-200 rounded-lg hover:bg-rose-50 flex items-center gap-1 transition-all shrink-0">
+                                <i class="fa-solid fa-file-pdf"></i> <span class="hidden xs:inline">Stampa PDF</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="med-toolbar" class="px-4 py-2 mb-2"></div>
+                    <div id="med-list-mattina" class="mb-6"></div>
+                    <div id="med-list-pomeriggio" class="mb-6"></div>
+                    <div id="med-list-sera" class="mb-6"></div>
+                    <div id="med-list-al bisogno" class="mb-6 border-t-2 border-dashed border-slate-200 pt-6"></div>
+                    <div id="med-empty-state" class="hidden flex flex-col items-center justify-center py-12 text-slate-400">
+                        <i class="fa-solid fa-prescription-bottle-medical text-5xl mb-4 text-slate-200"></i>
+                        <p>Nessun farmaco aggiunto.</p>
+                    </div>
+                    <button onclick="app.prepareNewMed()" class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl active:scale-90 transition-transform z-30">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </section>
+                <section id="view-contacts" class="hidden fade-in space-y-6 pb-24">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-2xl font-bold text-slate-800">Rubrica Medica</h2>
+                        <button onclick="app.openContactModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Nuovo
+                        </button>
+                    </div>
+                    <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl mb-4 shadow-sm">
+                        <p class="text-xs text-indigo-800 leading-relaxed"><i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> Gestisci qui i tuoi specialisti, medici, farmacie o strutture. Personalizza i campi dinamicamente.</p>
+                    </div>
+                    <div id="contacts-list" class="space-y-4"></div>
+                </section>
+                <!-- VISTA IMPOSTAZIONI -->
+                <section id="view-management" class="hidden fade-in space-y-6">
+                    <div class="flex items-center gap-4 mb-2">
+                        <h2 class="text-2xl font-bold text-slate-800">Gestione Farmaci</h2>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl card-shadow">
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="app.openShoppingListModal()" class="col-span-2 flex flex-col items-center justify-center gap-2 p-6 h-auto bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-colors group">
+                                <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform text-xl mb-1 shadow-sm border border-emerald-200">
+                                    <i class="fa-solid fa-cart-shopping"></i>
+                                </div>
+                                <div class="text-center w-full">
+                                    <span class="block text-emerald-800 font-bold text-base mb-1">Genera Lista Spesa</span>
+                                    <span id="shopping-btn-subtitle" class="block text-emerald-600/70 text-[10px] font-medium leading-tight">Farmaci in esaurimento</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mt-3">
+                            <button onclick="app.openOTCList()" class="col-span-2 flex flex-col items-center justify-center gap-2 p-6 h-auto bg-indigo-50 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-colors group">
+                                <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform text-xl mb-1 shadow-sm border border-indigo-200">
+                                    <i class="fa-solid fa-basket-shopping"></i>
+                                </div>
+                                <div class="text-center w-full">
+                                    <span class="block text-indigo-800 font-bold text-base mb-1">Farmaci da Banco</span>
+                                    <span class="block text-indigo-600/70 text-[10px] font-medium leading-tight">Gestisci ordini manuali</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+                <section id="view-settings" class="hidden fade-in space-y-6">
+                    <div class="flex items-center gap-4 mb-2">
+                        <h2 class="text-2xl font-bold text-slate-800">Impostazioni</h2>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl card-shadow space-y-4">
+                        <div class="bg-green-50 p-5 rounded-2xl card-shadow mb-4">
+                            <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> Google Gemini API Key
+                            </h3>
+                            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                                La chiave serve per abilitare il riconoscimento AI dei farmaci tramite fotocamera. Senza chiave, lo scanner userà automaticamente l'OCR gratuito (lettura testo, meno preciso ma senza costi).
+                            </p>
+                            <input type="password" id="input-settings-apikey" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Inserisci la tua API Key">
+                            <label class="flex items-center justify-between p-2 mt-3 hover:bg-white/60 rounded-lg cursor-pointer">
+                                <span class="text-xs font-bold text-slate-600 flex items-center gap-2">
+                                    <i class="fa-solid fa-magnifying-glass text-slate-500 w-4"></i> Usa sempre OCR gratuito (anche con chiave attiva)
+                                </span>
+                                <input type="checkbox" id="pref-prefer-ocr" class="accent-blue-600 w-5 h-5">
+                            </label>
+                        </div>
+                        <div class="bg-sky-50 p-5 rounded-2xl card-shadow mb-4">
+                            <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                <i class="fa-regular fa-bell text-rose-500"></i> Promemoria & Sveglia
+                            </h3>
+                            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                                Sincronizza la terapia con il calendario del tuo telefono (Google/iOS) per ricevere avvisi infallibili anche a telefono spento.
+                            </p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="app.exportToCalendar('PUBLISH')" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                        <i class="fa-regular fa-calendar-check"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-600">Attiva Avvisi</span>
+                                </button>
+                                <button onclick="app.exportToCalendar('CANCEL')" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                                    <div class="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                        <i class="fa-regular fa-calendar-xmark"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-600">Disattiva</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 p-5 rounded-2xl card-shadow mb-4">
+                            <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-blue-500"></i> Personalizzazione Interfaccia
+                            </h3>
+                            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                                Configura l'aspetto della lista farmaci: scegli quali pulsanti di azione mostrare sulle schede.
+                            </p>
+                            <div class="space-y-3">
+                                <label class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                                    <span class="text-xs font-bold text-slate-600 flex items-center gap-2">
+                                        <i class="fa-solid fa-image text-purple-500 w-4"></i> Foto Farmaco
+                                    </span>
+                                    <input type="checkbox" id="pref-show-image" class="accent-blue-600 w-5 h-5">
+                                </label>
+                                <label class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                                    <span class="text-xs font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-cart-shopping text-emerald-500 w-4"></i> Carrello Spesa</span>
+                                    <input type="checkbox" id="pref-show-cart" class="accent-blue-600 w-5 h-5">
+                                </label>
+                                <label class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                                    <span class="text-xs font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-note-sticky text-amber-400 w-4"></i> Note</span>
+                                    <input type="checkbox" id="pref-show-notes" class="accent-blue-600 w-5 h-5">
+                                </label>
+                                <label class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                                    <span class="text-xs font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-pen text-blue-400 w-4"></i> Modifica</span>
+                                    <input type="checkbox" id="pref-show-edit" class="accent-blue-600 w-5 h-5">
+                                </label>
+                                <label class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer">
+                                    <span class="text-xs font-bold text-slate-600 flex items-center gap-2"><i class="fa-solid fa-trash text-red-400 w-4"></i> Elimina</span>
+                                    <input type="checkbox" id="pref-show-delete" class="accent-blue-600 w-5 h-5">
+                                </label>
+                            </div>
+                        </div>
+                        <button onclick="app.saveSettings()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-all">
+                            Salva Impostazioni
+                        </button>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl card-shadow">
+                        <div class="bg-sky-50 p-5 rounded-2xl card-shadow mb-4">
+                            <h3 class="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-pills text-indigo-500"></i> Archivio Farmaci
+                            </h3>
+                            <p class="text-[11px] text-slate-400 mb-4 leading-relaxed">
+                                Gestisci il database globale dei tuoi farmaci per riutilizzarli velocemente in futuro.
+                            </p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="app.openDatabaseManagement()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                                    <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                        <i class="fa-solid fa-list-ul"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-600">Gestisci Lista</span>
+                                </button>
+                                <button onclick="app.syncDrugsFromProfiles()" class="flex flex-col items-center justify-center p-4 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors group">
+                                    <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                        <i class="fa-solid fa-rotate"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-600">Sincronizza</span>
+                                </button>
+                            </div>
+                            <p class="text-[9px] text-slate-400 mt-2 text-center">
+                                "Sincronizza" copia nell'archivio tutti i farmaci attualmente presenti nei profili.
+                            </p>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 mb-6">
+                            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"><i class="fa-brands fa-google text-slate-400"></i> Account Cloud</h3>
+                            <div id="cloud-login-section">
+                                <p class="text-xs text-slate-500 mb-3">Accedi per salvare le tue terapie nel Cloud e non perderle mai.</p>
+                                <button onclick="app.loginWithGoogle()" class="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold border border-blue-200 active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
+                                    <i class="fa-brands fa-google"></i> Accedi con Google
+                                </button>
+                            </div>
+                            <div id="cloud-user-section" class="hidden">
+                                <div class="flex items-center justify-between bg-emerald-50 border border-emerald-100 p-3 rounded-xl mb-3">
+                                    <div class="flex items-center gap-3">
+                                        <img id="cloud-user-pic" src="" class="w-8 h-8 rounded-full border border-emerald-200" alt="User">
+                                        <div>
+                                            <p id="cloud-user-name" class="text-xs font-bold text-emerald-800">Nome</p>
+                                            <p class="text-[10px] text-emerald-600">Connesso</p>
+                                        </div>
+                                    </div>
+                                    <button onclick="app.logout()" class="text-xs font-bold text-rose-500 px-3 py-1.5 bg-white border border-rose-100 rounded-lg shadow-sm hover:bg-rose-50 active:scale-95">Esci</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 mb-6">
+                            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up text-slate-400"></i> Cloud Backup</h3>
+                            <p class="text-xs text-slate-500 mb-4">Salva i tuoi dati in una cassaforte sicura su internet, o ripristinali su un nuovo telefono.</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="app.backupToCloud()" class="py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 active:scale-95 transition-all text-xs flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-cloud-arrow-up text-lg"></i> Salva Backup
+                                </button>
+                                <button onclick="app.restoreFromCloud()" class="py-3 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold shadow-sm hover:bg-indigo-50 active:scale-95 transition-all text-xs flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-cloud-arrow-down text-lg"></i> Ripristina
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 mb-6">
+                            <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-file-shield text-slate-400"></i> Backup su File</h3>
+                            <p class="text-xs text-slate-500 mb-4">Salva una copia di tutti i dati in un file sul telefono, oppure ripristinala. Funziona anche senza account e senza internet.</p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="app.exportData()" class="py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-md hover:bg-emerald-700 active:scale-95 transition-all text-xs flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-file-export text-lg"></i> Esporta File
+                                </button>
+                                <button onclick="app.triggerImport()" class="py-3 bg-white text-emerald-700 border-2 border-emerald-100 rounded-xl font-bold shadow-sm hover:bg-emerald-50 active:scale-95 transition-all text-xs flex flex-col items-center gap-1">
+                                    <i class="fa-solid fa-file-import text-lg"></i> Importa File
+                                </button>
+                            </div>
+                        </div>
+                        <button onclick="app.resetAllData()" class="w-full mt-6 bg-red-50 text-red-600 py-3 rounded-xl font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Resetta tutti i dati
+                        </button>
+                    </div>
+                </section>
+            </main>
+            <!-- MODALI DI SISTEMA CUSTOM (Alert, Confirm, Frequency) -->
+            <!-- MODALE ALERT (Sostituisce alert()) -->
+            <div id="modal-alert" class="hidden fixed inset-0 modal-overlay z-[200] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-4 text-xl">
+                        <i class="fa-solid fa-info"></i>
+                    </div>
+                    <h3 id="alert-title" class="text-xl font-bold text-slate-800 mb-2">Avviso</h3>
+                    <p id="alert-message" class="text-slate-500 mb-6 text-sm whitespace-pre-line"></p>
+                    <button onclick="app.closeModal('modal-alert')" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">OK</button>
+                </div>
+            </div>
+            <div id="modal-confirm" class="hidden fixed inset-0 modal-overlay z-[200] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                    <div class="w-12 h-12 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto mb-4 text-xl">
+                        <i class="fa-solid fa-question"></i>
+                    </div>
+                    <h3 id="confirm-title" class="text-xl font-bold text-slate-800 mb-2">Conferma</h3>
+                    <p id="confirm-message" class="text-slate-500 mb-6 text-sm"></p>
+                    <div class="flex gap-3">
+                        <button onclick="app.closeModal('modal-confirm')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+                        <button id="confirm-btn-yes" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">Conferma</button>
+                    </div>
+                </div>
+            </div>
+            <!-- MODALE RIPRESA DI UN FARMACO SOSPESO: recuperare o no i giorni saltati -->
+            <div id="modal-resume-med" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                    <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 text-xl">
+                        <i class="fa-solid fa-play"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Riprendi l'assunzione</h3>
+                    <p id="resume-med-message" class="text-slate-500 mb-5 text-sm"></p>
+                    <div class="space-y-2">
+                        <button id="resume-med-recover" onclick="app.confirmResumeMed(true)" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95"></button>
+                        <button onclick="app.confirmResumeMed(false)" class="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">Non recuperare</button>
+                        <button onclick="app.closeModal('modal-resume-med')" class="w-full py-2 text-slate-400 font-bold text-sm hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-delete-choice" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                    <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4 text-xl">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Elimina Farmaco</h3>
+                    <p class="text-slate-500 mb-6 text-sm">Vuoi eliminare questo farmaco (in tutte le sue fasce orarie) solo dalla terapia attuale o cancellarlo definitivamente anche dall'archivio?</p>
+                    <div class="space-y-3">
+                        <button onclick="app.confirmDeleteMed('archive')" class="w-full py-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl font-bold shadow-sm hover:bg-blue-100 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-box-archive"></i> Solo dalla Terapia
+                            <span class="text-[9px] bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded ml-1">Consigliato</span>
+                        </button>
+                        <button onclick="app.confirmDeleteMed('permanent')" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold shadow-md hover:bg-red-700 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-eraser"></i> Elimina Definitivamente
+                        </button>
+                        <button onclick="app.closeModal('modal-delete-choice')" class="w-full py-2 text-slate-400 font-bold text-sm mt-2 hover:text-slate-600">
+                            Annulla
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-archive-select" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[80vh]">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-database text-blue-500"></i> Archivio Farmaci
+                        </h3>
+                        <button onclick="app.closeModal('modal-archive-select')" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-200">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div id="archive-list-content" class="overflow-y-auto custom-scrollbar p-0 flex-1">
+                    </div>
+                </div>
+            </div>
+            <div id="modal-database-view" class="hidden fixed inset-0 modal-overlay z-[110] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-lg">Archivio Globale</h3>
+                            <p id="db-count-display" class="text-xs text-slate-500">0 farmaci salvati</p>
+                        </div>
+                        <button onclick="app.closeModal('modal-database-view')" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-200 transition-colors">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="p-3 border-b border-slate-100 bg-white">
+                        <input type="text" id="db-search-input" onkeyup="app.filterDatabaseList()" placeholder="Cerca nell'archivio..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div id="database-list-container" class="overflow-y-auto custom-scrollbar p-0 flex-1 bg-white">
+                    </div>
+                    <div class="p-3 border-t border-slate-100 bg-slate-50 text-center">
+                        <p class="text-[9px] text-slate-400">Eliminando un farmaco da qui, NON verrà rimosso dalle terapie attive.</p>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-receive" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                    <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 text-2xl border-4 border-white shadow-sm">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-1">Ricezione Merce</h3>
+                    <p id="receive-med-name" class="text-emerald-600 font-bold text-sm mb-4"></p>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-4 text-left">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Configurazione Scatola</p>
+                        <p id="receive-config-info" class="text-xs text-slate-600 font-medium leading-tight">...</p>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Quante scatole hai preso?</label>
+                        <div class="flex items-center justify-center gap-3">
+                            <button onclick="app.adjustReceiveQty(-1)" class="w-10 h-10 rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 active:scale-95 transition-all">
+                                <i class="fa-solid fa-minus"></i>
+                            </button>
+                            <input type="number" id="receive-qty-input" value="1" min="1" class="w-20 h-10 text-center font-bold text-xl text-slate-700 border border-slate-200 rounded-xl focus:border-emerald-500 outline-none">
+                            <button onclick="app.adjustReceiveQty(1)" class="w-10 h-10 rounded-xl border border-slate-200 text-slate-400 hover:bg-slate-50 active:scale-95 transition-all">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="app.closeModal('modal-receive')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors text-sm">Annulla</button>
+                        <button onclick="app.confirmReceive()" class="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold shadow-md hover:bg-emerald-600 transition-transform active:scale-95 text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check"></i> Conferma
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- MODALE SCELTA FREQUENZA (Sostituisce select) -->
+            <div id="modal-frequency" class="hidden fixed inset-0 modal-overlay z-[70] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">Frequenza Assunzione</h3>
+                    <div class="space-y-3">
+                        <button onclick="app.selectFrequency('daily')" class="freq-option w-full p-4 border rounded-xl flex items-center justify-between transition-all hover:bg-slate-50" data-val="daily">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-calendar-day"></i></div>
+                                <span class="font-bold text-slate-700">Ogni Giorno</span>
+                            </div>
+                            <i class="fa-solid fa-check text-blue-600 hidden check-icon"></i>
+                        </button>
+                        <button onclick="app.selectFrequency('alternate')" class="freq-option w-full p-4 border rounded-xl flex items-center justify-between transition-all hover:bg-slate-50" data-val="alternate">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-calendar-days"></i></div>
+                                <span class="font-bold text-slate-700">Giorni Alterni</span>
+                            </div>
+                            <i class="fa-solid fa-check text-blue-600 hidden check-icon"></i>
+                        </button>
+                    </div>
+                    <button onclick="app.closeModal('modal-frequency')" class="w-full mt-6 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+                </div>
+            </div>
+            <!-- Modale Backup Preview) -->
+            <div id="modal-backup-preview" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 fade-in flex flex-col text-center">
+                    <div class="mb-4">
+                        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800">Backup di Sicurezza</h3>
+                    </div>
+                    <p class="text-sm text-slate-500 mb-6 leading-relaxed">
+                        Stai per scaricare un file contenente tutti i tuoi dati sanitari.
+                        <br><br>
+                        <span class="bg-amber-50 text-amber-700 px-2 py-1 rounded text-xs font-bold border border-amber-100">
+                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> File non criptato
+                        </span>
+                        <br><br>
+                        Conservalo in un luogo sicuro e non inviarlo a persone di cui non ti fidi.
+                    </p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="app.shareBackup()" class="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-slate-600" id="btn-share-backup-native">
+                            <i class="fa-solid fa-share-nodes mb-1 text-lg"></i>
+                            <span class="text-[10px] font-bold">Condividi</span>
+                        </button>
+                        <button onclick="app.confirmBackupDownload()" class="flex flex-col items-center justify-center p-3 bg-green-600 text-white rounded-xl shadow-md hover:bg-green-700 transition-colors">
+                            <i class="fa-solid fa-download mb-1 text-lg"></i>
+                            <span class="text-[10px] font-bold">Scarica</span>
+                        </button>
+                    </div>
+                    <button onclick="app.closeModal('modal-backup-preview')" class="mt-4 w-full py-2 text-slate-400 text-sm hover:text-slate-600 font-bold">Annulla</button>
+                </div>
+            </div>
+            <!-- MODALE ANTEPRIMA ESPORTAZIONE TXT (NUOVO) -->
+            <div id="modal-export-preview" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col max-h-[85vh]">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-file-lines"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800">Anteprima</h3>
+                            <p class="text-xs text-slate-500">Controlla prima di scaricare</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 flex-1 overflow-y-auto custom-scrollbar">
+                        <pre id="export-preview-content" class="text-[10px] font-mono text-slate-700 whitespace-pre-wrap leading-relaxed"></pre>
+                    </div>
+                    <!-- Nuova griglia bottoni (Stile Backup) -->
+                    <div class="grid grid-cols-2 gap-3 shrink-0" id="export-txt-buttons">
+                        <button onclick="app.shareProfileTxt()" id="btn-share-txt" class="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-slate-600">
+                            <i class="fa-solid fa-share-nodes mb-1 text-lg"></i>
+                            <span class="text-[10px] font-bold">Condividi</span>
+                        </button>
+                        <button onclick="app.confirmExportTxt()" class="flex flex-col items-center justify-center p-3 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition-colors">
+                            <i class="fa-solid fa-download mb-1 text-lg"></i>
+                            <span class="text-[10px] font-bold">Scarica</span>
+                        </button>
+                    </div>
+                    <button onclick="app.closeModal('modal-export-preview')" class="mt-3 w-full py-2 text-slate-400 text-sm hover:text-slate-600 font-bold">Chiudi</button>
+                </div>
+            </div>
+            <!-- MODALE API KEY MANCANTE (Nuovo) -->
+            <div id="modal-no-api" class="hidden fixed inset-0 modal-overlay z-[70] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                    <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4 text-xl">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">API Key Mancante</h3>
+                    <p class="text-slate-500 mb-6 text-sm">Per usare lo scanner AI è necessaria una chiave Google Gemini valida.<br>In alternativa puoi usare la lettura del testo gratuita (meno precisa: i campi vanno controllati).</p>
+                    <button onclick="app.startScanner(false, true)" class="w-full mb-3 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-md hover:bg-emerald-700">
+                        <i class="fa-solid fa-font"></i> Usa lettura gratuita
+                    </button>
+                    <div class="flex gap-3">
+                        <button onclick="app.closeModal('modal-no-api')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl">Annulla</button>
+                        <button onclick="app.goToSettingsFromModal()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700">Impostazioni</button>
+                    </div>
+                </div>
+            </div>
+            <!-- ALTRI MODALI -->
+            <!-- MODALE AGGIUNGI PROFILO -->
+            <div id="modal-add-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    <h3 class="text-xl font-bold mb-4">Nuovo Profilo</h3>
+                    <div class="flex flex-col items-center mb-5">
+                        <div class="relative group cursor-pointer" onclick="document.getElementById('input-profile-image').click()">
+                            <div class="w-28 h-28 rounded-full bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden text-slate-400 group-hover:border-blue-500 group-hover:text-blue-500 transition-colors shadow-sm">
+                                <img id="profile-img-preview" class="w-full h-full object-cover hidden" src="" alt="Foto Profilo">
+                                <i id="profile-img-icon" class="fa-solid fa-camera text-3xl"></i>
+                            </div>
+                            <div class="absolute bottom-0 right-1 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-3 font-semibold">Foto (Opzionale)</p>
+                        <input type="file" id="input-profile-image" accept="image/*" class="hidden" onchange="app.handleProfileImageUpload(event)">
+                    </div>
+                    <p class="text-xs text-slate-500 font-bold uppercase mb-2">Scegli Avatar (Definisce il Sesso)</p>
+                    <div class="grid grid-cols-4 gap-3 mb-4">
+                        <button onclick="app.selectAvatar('man')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="man" title="Uomo (M)"><i class="fa-solid fa-person"></i></button>
+                        <button onclick="app.selectAvatar('woman')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="woman" title="Donna (F)"><i class="fa-solid fa-person-dress"></i></button>
+                        <button onclick="app.selectAvatar('dog')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="dog"><i class="fa-solid fa-dog"></i></button>
+                        <button onclick="app.selectAvatar('cat')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="cat"><i class="fa-solid fa-cat"></i></button>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Nome e Cognome *</label>
+                            <input type="text" id="input-profile-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold" placeholder="Es. Mario Rossi">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Nickname</label>
+                                <input type="text" id="input-profile-nickname" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. Nonno">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Data di Nascita</label>
+                                <input type="date" id="input-profile-dob" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Indirizzo</label>
+                            <input type="text" id="input-profile-address" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Via Roma 1...">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Luogo di Nascita</label>
+                            <input type="text" id="input-profile-birthplace" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Comune (es. Milano)">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Codice Fiscale</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="input-profile-cf" class="flex-1 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono uppercase tracking-widest text-slate-700 font-bold" placeholder="CODICE...">
+                                <button onclick="app.generateFiscalCode('add')" class="px-3 bg-slate-800 text-white rounded-lg text-xs font-bold shadow hover:bg-slate-700 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[60px]">
+                                    <i class="fa-solid fa-wand-magic-sparkles mb-1 text-yellow-400"></i> Genera
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+                        <button onclick="app.closeModal('modal-add-profile')" class="px-4 py-2 text-slate-500 text-sm font-bold">Annulla</button>
+                        <button onclick="app.createProfile()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm shadow hover:bg-blue-700 transition-colors">Crea Profilo</button>
+                    </div>
+                </div>
+            </div>
+            <!-- MODALE MODIFICA PROFILO (Aggiornato con Avatar ed Elimina) -->
+            <div id="modal-edit-profile" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                    <h3 class="text-xl font-bold mb-4">Modifica Profilo</h3>
+                    <div class="flex flex-col items-center mb-5">
+                        <div class="relative group cursor-pointer" onclick="document.getElementById('input-edit-profile-image').click()">
+                            <div class="w-28 h-28 rounded-full bg-slate-50 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden text-slate-400 group-hover:border-blue-500 group-hover:text-blue-500 transition-colors shadow-sm">
+                                <img id="edit-profile-img-preview" class="w-full h-full object-cover hidden" src="" alt="Foto Profilo">
+                                <i id="edit-profile-img-icon" class="fa-solid fa-camera text-3xl"></i>
+                            </div>
+                            <div class="absolute bottom-0 right-1 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                                <i class="fa-solid fa-pen text-xs"></i>
+                            </div>
+                        </div>
+                        <input type="file" id="input-edit-profile-image" accept="image/*" class="hidden" onchange="app.handleEditProfileImageUpload(event)">
+                        <button id="btn-remove-edit-image" onclick="app.removeEditProfileImage()" class="hidden text-xs text-red-500 mt-3 font-bold hover:underline">
+                            <i class="fa-solid fa-trash-can mr-1"></i>Rimuovi foto
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-500 font-bold uppercase mb-2">Avatar (Definisce il Sesso)</p>
+                    <div class="grid grid-cols-4 gap-3 mb-4">
+                        <button onclick="app.selectAvatar('man')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="man"><i class="fa-solid fa-person"></i></button>
+                        <button onclick="app.selectAvatar('woman')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="woman"><i class="fa-solid fa-person-dress"></i></button>
+                        <button onclick="app.selectAvatar('dog')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="dog"><i class="fa-solid fa-dog"></i></button>
+                        <button onclick="app.selectAvatar('cat')" class="avatar-btn rounded-xl p-2 flex items-center justify-center text-2xl bg-slate-50 text-slate-400" data-avatar="cat"><i class="fa-solid fa-cat"></i></button>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Nome e Cognome</label>
+                            <input type="text" id="input-edit-profile-name" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold text-slate-700">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Nickname</label>
+                                <input type="text" id="input-edit-profile-nickname" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Data di Nascita</label>
+                                <input type="date" id="input-edit-profile-dob" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Indirizzo</label>
+                            <input type="text" id="input-edit-profile-address" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Luogo di Nascita</label>
+                            <input type="text" id="input-edit-profile-birthplace" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Codice Fiscale</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="input-edit-profile-cf" class="flex-1 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono uppercase tracking-widest text-slate-600 font-bold">
+                                <button onclick="app.generateFiscalCode('edit')" class="px-3 bg-slate-800 text-white rounded-lg text-xs font-bold shadow hover:bg-slate-700 active:scale-95 transition-all flex flex-col items-center justify-center min-w-[60px]">
+                                    <i class="fa-solid fa-wand-magic-sparkles mb-1 text-yellow-400"></i> Genera
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+                        <button onclick="app.deleteCurrentProfile()" class="text-red-500 text-xs px-3 py-2 border border-red-200 rounded-lg hover:bg-red-50 flex items-center gap-1 transition-all">
+                            <i class="fa-solid fa-trash"></i> Elimina
+                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="app.closeModal('modal-edit-profile')" class="px-4 py-2 text-slate-500 font-bold text-sm">Annulla</button>
+                            <button onclick="app.saveEditedProfile()" class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all text-sm">Salva</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- MODALE VISUALIZZA NOTE -->
+            <div id="modal-show-note" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative">
+                    <button onclick="app.closeModal('modal-show-note')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                    <h3 id="note-modal-title" class="text-lg font-bold text-slate-800 mb-2 pr-8">Titolo Farmaco</h3>
+                    <div class="bg-yellow-50 border border-yellow-100 rounded-xl p-4 text-sm text-slate-700 max-h-60 overflow-y-auto">
+                        <i class="fa-solid fa-note-sticky text-yellow-400 mb-2 block text-lg"></i>
+                        <p id="note-modal-content" class="whitespace-pre-wrap"></p>
+                    </div>
+                    <div class="flex justify-end mt-4">
+                        <button onclick="app.closeModal('modal-show-note')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold text-sm transition-colors">Chiudi</button>
+                    </div>
+                </div>
+            </div>
+            <!-- MODALE DETTAGLIO GIORNO (Nuovo) -->
+            <!-- Z-Index aumentato a 60 per apparire sopra il modale principale -->
+            <div id="modal-day-detail" class="hidden fixed inset-0 modal-overlay z-[60] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative max-h-[90vh] overflow-y-auto">
+                    <h3 class="text-xl font-bold text-slate-800 mb-1">Modifica Giorno</h3>
+                    <p id="day-detail-date" class="text-sm text-slate-500 font-semibold mb-5 uppercase tracking-wide"></p>
+                    <p class="text-xs text-slate-400 mb-3">Personalizza orario e momento per questa data:</p>
+                    <div class="mb-5 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">
+                            <i class="fa-solid fa-clock text-blue-500 mr-1"></i> Orario Specifico
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="time"
+                                   id="day-detail-time"
+                                   class="flex-1 h-10 px-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-bold bg-white text-center shadow-sm text-sm">
+                            <button onclick="document.getElementById('day-detail-time').value = ''" class="w-10 h-10 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors shadow-sm" title="Rimuovi orario">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                        <p class="text-[9px] text-slate-400 mt-2 leading-tight">
+                            Se inserito, questo orario sostituirà quello standard solo per oggi.
+                        </p>
+                    </div>
+                    <div class="mb-5 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <label for="day-detail-dose" class="block text-[10px] font-bold text-slate-500 uppercase mb-2">
+                            <i class="fa-solid fa-pills text-amber-500 mr-1"></i> Dose del Giorno
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text"
+                                   id="day-detail-dose"
+                                   maxlength="40"
+                                   class="flex-1 min-w-0 h-10 px-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-bold bg-white text-center shadow-sm text-sm">
+                            <button onclick="document.getElementById('day-detail-dose').value = ''" class="w-10 h-10 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors shadow-sm" title="Torna alla dose standard">
+                                <i class="fa-solid fa-rotate-left text-xs"></i>
+                            </button>
+                        </div>
+                        <p id="day-detail-dose-hint" class="text-[9px] text-slate-400 mt-2 leading-tight"></p>
+                    </div>
+                    <div class="space-y-3 mb-6">
+                        <button onclick="app.toggleDayDetailTime('Mattina')" class="detail-time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm transition-all" data-val="Mattina">
+                            <i class="fa-solid fa-sun mr-3 text-orange-500"></i> Mattina
+                        </button>
+                        <button onclick="app.toggleDayDetailTime('Pomeriggio')" class="detail-time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm transition-all" data-val="Pomeriggio">
+                            <i class="fa-solid fa-cloud-sun mr-3 text-yellow-500"></i> Pomeriggio
+                        </button>
+                        <button onclick="app.toggleDayDetailTime('Sera')" class="detail-time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm transition-all" data-val="Sera">
+                            <i class="fa-solid fa-moon mr-3 text-indigo-500"></i> Sera
+                        </button>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button onclick="app.closeModal('modal-day-detail')" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors">Annulla</button>
+                        <button onclick="app.saveDayDetail()" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">Salva Modifiche</button>
+                    </div>
+                </div>
+            </div>
+            <!-- MODALE FARMACO (Aggiunta/Modifica) -->
+            <div id="modal-med" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 id="med-modal-title" class="text-lg font-bold text-slate-800">Farmaco</h3>
+                        <div class="px-4 pt-4 pb-0 text-center">
+                            <div id="med-img-preview-container" class="relative hidden w-full h-40 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 mb-3 group">
+                                <img id="med-img-preview" class="w-full h-full object-cover" src="" alt="Foto Farmaco">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onclick="app.viewFullImage()" class="w-10 h-10 bg-white rounded-full text-slate-800 flex items-center justify-center hover:scale-110 transition-transform">
+                                        <i class="fa-solid fa-expand"></i>
+                                    </button>
+                                    <button onclick="app.removeMedImage()" class="w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="med-img-placeholder" class="w-full h-24 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-400 mb-3 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onclick="app.startScanner(true)">
+                                <i class="fa-solid fa-camera text-2xl"></i>
+                                <span class="text-xs font-bold uppercase">Aggiungi Foto</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="app.openArchiveModal()" id="btn-open-archive" class="hidden bg-white text-slate-600 border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2 text-xs font-bold shadow-sm">
+                                <i class="fa-solid fa-folder-open text-amber-500"></i> <span class="hidden xs:inline">Archivio</span>
+                            </button>
+                            <button onclick="app.startScanner()" id="btn-scan" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2 text-xs font-bold shadow-sm">
+                                <i class="fa-solid fa-camera"></i> SCANNER
+                            </button>
+                        </div>
+                    </div>
+                    <div id="med-modal-content" class="p-5 overflow-y-auto custom-scrollbar space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Nome Farmaco</label>
+                            <input type="text" id="input-med-name" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-shadow font-bold text-slate-700" placeholder="Es. Pantoprazolo 20mg">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Forma</label>
+                                <input type="text" id="input-med-category" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. Pillole, Sciroppo">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Dose</label>
+                                <input type="text" id="input-med-dose" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm" placeholder="Es. 20mg">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Categoria Terapeutica</label>
+                            <div class="relative">
+                                <input list="med-categories-list" id="input-med-type" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-700 font-medium" placeholder="Seleziona o scrivi...">
+                                <i class="fa-solid fa-chevron-down absolute right-4 top-4 text-slate-300 pointer-events-none text-xs"></i>
+                            </div>
+                            <datalist id="med-categories-list">
+                                <option value="Antibiotico">
+                                <option value="Antimicrobico">
+                                <option value="Antidolorifico">
+                                <option value="Analgesico">
+                                <option value="Antinfiammatorio">
+                                <option value="Antiacido">
+                                <option value="Anticoagulante">
+                                <option value="Antidepressivo">
+                                <option value="Antistaminico">
+                                <option value="Anticonvulsivante">
+                                <option value="Cardiovascolare">
+                                <option value="Integratore">
+                                <option value="Vitamine">
+                                <option value="Gastroprotettore">
+                            </datalist>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Note / A cosa serve</label>
+                            <textarea id="input-med-usage" rows="3" class="w-full p-3 rounded-xl border border-slate-200 text-sm resize-none focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Es. Prendere a stomaco pieno..."></textarea>
+                        </div>
+                        <div class="p-4 bg-violet-50 rounded-2xl border border-violet-100 mb-4">
+                            <p class="text-xs font-bold text-violet-700 uppercase mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-table-cells text-violet-600"></i> Configurazione Confezione
+                            </p>
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1">
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">N° Blister</label>
+                                    <input id="med-blister-count" type="number" min="0" oninput="app.calculateTotalStock()" class="w-full border border-violet-200 rounded-lg p-2 text-sm focus:border-violet-500 outline-none bg-white text-center" placeholder="0">
+                                </div>
+                                <span class="text-violet-300 text-xs mt-4"><i class="fa-solid fa-xmark"></i></span>
+                                <div class="flex-1">
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">Comp./Blister</label>
+                                    <input id="med-pills-per-blister" type="number" min="0" oninput="app.calculateTotalStock()" class="w-full border border-violet-200 rounded-lg p-2 text-sm focus:border-violet-500 outline-none bg-white text-center" placeholder="0">
+                                </div>
+                                <span class="text-violet-300 text-xs mt-4"><i class="fa-solid fa-equals"></i></span>
+                                <div class="flex-1">
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">Totale</label>
+                                    <div class="p-2 bg-white border border-violet-200 rounded-lg text-center text-violet-600 text-sm h-[38px] flex items-center justify-center shadow-sm">
+                                        <span id="calc-preview">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-end mt-3 border-t border-violet-200/50 pt-2">
+                                <button onclick="app.resetPackageConfig()" class="text-[10px] font-bold text-violet-600 hover:text-violet-800 flex items-center gap-1 transition-colors uppercase tracking-wider">
+                                    <i class="fa-solid fa-eraser"></i> Resetta confezione
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                            <p class="text-xs font-bold text-emerald-700 uppercase mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-boxes-stacked text-emerald-600"></i> Magazzino & Scorte
+                            </p>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">Quantità Attuale</label>
+                                    <input id="med-box-qty" type="number" min="0" step="0.5" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white" placeholder="0">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">Soglia Avviso</label>
+                                    <input id="med-min-qty" type="number" min="0" step="1" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white" placeholder="Es. 5">
+                                </div>
+                            </div>
+                            <div class="flex justify-end mt-3 border-t border-emerald-200/50 pt-2">
+                                <button onclick="app.resetStocks()" class="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1 transition-colors uppercase tracking-wider">
+                                    <i class="fa-solid fa-eraser"></i> Resetta scorte
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100 mb-4">
+                            <p class="text-xs font-bold text-blue-700 uppercase mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-calendar-days text-blue-600"></i> Periodo Terapia
+                            </p>
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">Inizio</label>
+                                    <input type="date" id="med-start-date" onchange="app.refreshTherapyUI()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white text-center shadow-sm placeholder:text-slate-400">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">Durata (gg)</label>
+                                    <input type="number" id="med-duration" min="1" oninput="app.refreshTherapyUI()" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white text-center" placeholder="0">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 mb-1">
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">Orario</label>
+                                    <input type="time" id="input-med-specific-time" class="w-full border border-slate-200 rounded-lg p-2 text-sm focus:border-blue-500 outline-none bg-white text-center shadow-sm placeholder:text-slate-400 placeholder:font-normal">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">Frequenza</label>
+                                    <div onclick="app.openFrequencyModal()" class="w-full border border-slate-200 rounded-lg p-2 text-sm flex items-center justify-between bg-white cursor-pointer active:bg-slate-50 transition-colors shadow-sm hover:border-blue-300">
+                                        <div class="flex items-center gap-2 overflow-hidden">
+                                            <i id="freq-icon-display" class="fa-solid fa-calendar-day text-slate-400 text-xs"></i>
+                                            <span id="freq-text-display" class="text-slate-700 truncate">Ogni giorno</span>
+                                        </div>
+                                        <i class="fa-solid fa-chevron-right text-slate-300 text-[10px] flex-shrink-0 ml-1"></i>
+                                    </div>
+                                    <input type="hidden" id="med-frequency" value="daily">
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2 ml-1 flex items-center gap-1">
+                                <i class="fa-solid fa-lock text-[9px]"></i> Blocca il farmaco prima dell'orario
+                            </p>
+                            <div class="flex justify-end mt-3 border-t border-blue-200/50 pt-2">
+                                <button onclick="app.resetTherapyDates()" class="text-[10px] font-bold text-blue-400 hover:text-blue-600 flex items-center gap-1 transition-colors uppercase tracking-wider">
+                                    <i class="fa-solid fa-eraser"></i> Resetta date
+                                </button>
+                            </div>
+                        </div>
+                        <div id="therapy-preview" class="mt-3 hidden">
+                            <p class="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">
+                                Prossimi giorni
+                            </p>
+                            <div id="therapy-calendar" class="flex gap-2 overflow-x-auto pb-2"></div>
+                        </div>
+                        <div id="therapy-month-wrapper" class="mt-4 hidden select-none touch-pan-y w-full">
+                            <p class="text-xs font-bold text-slate-500 uppercase mb-2">
+                                Calendario mensile <span class="text-[9px] font-normal text-slate-400 ml-1">(Tocca un giorno per modificare)</span>
+                            </p>
+                            <div id="therapy-month-header" class="text-center font-bold text-slate-500 uppercase mb-2"></div>
+                            <div id="therapy-month-weekdays" class="grid grid-cols-7 text-center text-[10px] font-bold text-slate-400 mb-1">
+                                <div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div>
+                            </div>
+                            <div id="therapy-month" class="grid grid-cols-7 gap-0.5 text-center text-[10px]"></div>
+                        </div>
+                        <div id="therapy-legend" class="hidden mt-2 text-[9px] text-slate-400">
+                            🟢 Prima assunzione · 🟡 Intermedia · 🔴 Ultima
+                        </div>
+                        <div id="therapy-status-box" class="hidden p-3 rounded-xl border mt-3 text-sm flex items-center gap-3">
+                            <span id="therapy-badge" class="px-3 py-1 rounded-full text-xs font-bold"></span>
+                            <span id="therapy-countdown" class="text-slate-700"></span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Fascia Oraria</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="app.toggleTimeSelection('Mattina', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-val="Mattina"><i class="fa-solid fa-sun mr-2 text-orange-500"></i> Mattina</button>
+                                <button onclick="app.toggleTimeSelection('Pomeriggio', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-val="Pomeriggio"><i class="fa-solid fa-cloud-sun mr-2 text-yellow-500"></i> Pom.</button>
+                                <button onclick="app.toggleTimeSelection('Sera', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-val="Sera"><i class="fa-solid fa-moon mr-2 text-indigo-500"></i> Sera</button>
+                                <button onclick="app.toggleTimeSelection('Al Bisogno', this)" class="time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm font-bold text-slate-600" data-val="Al Bisogno"><i class="fa-solid fa-kit-medical mr-2 text-red-500"></i> Al Bisogno</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Giorni</label>
+                            <div class="grid grid-cols-7 gap-1">
+                                <button class="day-btn time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-day="Lun" onclick="app.toggleDaySelection('Lun', this)">L</button>
+                                <button class="day-btn time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-day="Mar" onclick="app.toggleDaySelection('Mar', this)">M</button>
+                                <button class="day-btn time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-day="Mer" onclick="app.toggleDaySelection('Mer', this)">M</button>
+                                <button class="day-btn time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-day="Gio" onclick="app.toggleDaySelection('Gio', this)">G</button>
+                                <button class="day-btn time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-day="Ven" onclick="app.toggleDaySelection('Ven', this)">V</button>
+                                <button class="day-btn time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-day="Sab" onclick="app.toggleDaySelection('Sab', this)">S</button>
+                                <button class="day-btn time-btn w-full p-3 border border-slate-200 rounded-xl outline-none text-sm" data-day="Dom" onclick="app.toggleDaySelection('Dom', this)">D</button>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2 text-center">Nessun giorno selezionato = Tutti i giorni</p>
+                        </div>
+                    </div>
+                    <input type="hidden" id="input-med-edit-id">
+                    <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                        <button onclick="app.closeModal('modal-med')" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition-colors">Chiudi</button>
+                        <button onclick="app.handleMedicationSubmit()" class="px-8 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">Salva</button>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-stats" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+                    <div class="bg-blue-600 p-6 text-white text-center relative shrink-0">
+                        <button onclick="app.closeModal('modal-stats')" class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                        <h3 class="text-xl font-bold mb-1">Aderenza Terapia</h3>
+                        <p class="text-blue-100 text-xs opacity-90">I tuoi progressi in tempo reale</p>
+                    </div>
+                    <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 flex-1">
+                        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-5 flex items-center justify-between relative overflow-hidden">
+                            <div class="z-10">
+                                <p class="text-xs text-slate-400 font-bold uppercase mb-1">Aderenza Mensile</p>
+                                <h2 id="stat-adherence-val" class="text-3xl font-bold text-slate-800">0%</h2>
+                                <p class="text-[10px] text-slate-400 mt-1">Assunzioni vs Programmate</p>
+                            </div>
+                            <div class="relative w-24 h-24 flex items-center justify-center">
+                                <svg class="w-full h-full transform -rotate-90">
+                                    <circle cx="48" cy="48" r="45" stroke="#f1f5f9" stroke-width="8" fill="transparent" />
+                                    <circle id="stat-progress-ring" cx="48" cy="48" r="45" stroke="#3b82f6" stroke-width="8" fill="transparent" stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-in-out;" />
+                                </svg>
+                                <i class="fa-solid fa-chart-pie absolute text-slate-200 text-2xl"></i>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-5">
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center">
+                                <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center mb-2 text-xl">
+                                    <i class="fa-solid fa-fire"></i>
+                                </div>
+                                <span id="stat-streak-val" class="text-xl font-bold text-slate-800">0 gg</span>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase">Streak Attuale</span>
+                            </div>
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mb-2 text-xl">
+                                    <i class="fa-solid fa-calendar-week"></i>
+                                </div>
+                                <span class="text-[10px] text-slate-500 mt-1 leading-tight">
+                                    Ultimi 7 giorni
+                                </span>
+                                <span class="text-[9px] text-slate-400">Trend Settimanale</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-5">
+                            <h4 class="text-xs font-bold text-slate-600 uppercase mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-simple text-blue-500"></i> Andamento Settimana
+                            </h4>
+                            <div id="stat-weekly-chart" class="flex items-end justify-between gap-2 h-32">
+                            </div>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 items-start">
+                            <i class="fa-solid fa-lightbulb text-blue-500 mt-0.5"></i>
+                            <p id="stat-insight" class="text-xs text-blue-800 leading-relaxed">
+                                Inizia a segnare i tuoi farmaci per vedere le statistiche.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- UI SCANNER -->
+            <div id="camera-container">
+                <video id="camera-feed" autoplay playsinline></video>
+                <canvas id="camera-canvas" class="hidden"></canvas>
+                <div class="scanner-overlay">
+                    <div class="scanner-frame">
+                        <div class="scanner-line"></div>
+                    </div>
+                </div>
+                <div class="absolute bottom-10 left-0 right-0 flex justify-center items-center gap-10">
+                    <button onclick="app.stopScanner()" class="w-12 h-12 rounded-full bg-white/20 text-white text-xl flex items-center justify-center">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <button onclick="app.captureImage()" class="w-20 h-20 rounded-full border-4 border-white bg-blue-600 flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                        <i class="fa-solid fa-camera text-3xl text-white"></i>
+                    </button>
+                    <div class="w-12"></div> <!-- Spacer -->
+                </div>
+            </div>
+            <!-- LOADING OVERLAY -->
+            <div id="loading-overlay">
+                <div class="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mb-4"></div>
+                <p id="loading-text" class="font-bold">Analisi in corso...</p>
+            </div>
+            <!-- Lista Spesa -->
+            <div id="modal-shopping-list" class="hidden fixed inset-0 modal-overlay z-[90] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-0 overflow-hidden flex flex-col max-h-[85vh]">
+                    <div class="p-4 bg-emerald-50 border-b border-emerald-100 flex justify-between items-center shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center border border-emerald-200">
+                                <i class="fa-solid fa-cart-shopping"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">Lista Farmaci</h3>
+                                <p class="text-xs text-slate-500">Gestione ordini e scorte</p>
+                            </div>
+                        </div>
+                        <button onclick="app.closeModal('modal-shopping-list')" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/50 transition-colors">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <div id="shopping-list-content" class="p-0 overflow-y-auto custom-scrollbar flex-1 bg-slate-50">
+                    </div>
+                    <div class="p-3 border-t border-slate-200 bg-white grid grid-cols-2 gap-3 shrink-0">
+                        <button onclick="app.copyShoppingList()" class="flex items-center justify-center gap-2 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-all active:scale-95 text-xs uppercase">
+                            <i class="fa-regular fa-copy"></i> Copia Tutto
+                        </button>
+                        <button onclick="app.shareShoppingList()" class="flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-600 border border-blue-100 font-bold rounded-xl hover:bg-blue-100 transition-all active:scale-95 text-xs uppercase">
+                            <i class="fa-solid fa-share-nodes"></i> Condividi
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-otc-list" class="hidden fixed inset-0 modal-overlay z-[90] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                    <div class="p-4 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center border border-indigo-200">
+                                <i class="fa-solid fa-basket-shopping"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">Farmaci da Banco</h3>
+                                <p class="text-xs text-slate-500">Acquisto e Ricezione</p>
+                            </div>
+                        </div>
+                        <button onclick="app.closeModal('modal-otc-list')" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/50 transition-colors">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="overflow-y-auto custom-scrollbar flex-1 bg-slate-50 p-4 space-y-6">
+                        <div id="otc-ordered-section" class="hidden">
+                            <h4 class="font-bold text-xs text-orange-500 uppercase mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-truck-fast"></i> Da Acquistare (Lista)
+                            </h4>
+                            <div id="otc-ordered-list" class="space-y-2"></div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-500 uppercase mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-pills"></i> Cerca e Aggiungi
+                            </h4>
+                            <input type="text" id="otc-search" onkeyup="app.filterOTCList()" placeholder="Cerca farmaco..." class="w-full p-3 mb-3 text-sm border border-slate-200 rounded-xl outline-none focus:border-indigo-500 bg-white">
+                            <div id="otc-all-list" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-otc-detail" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                    <div class="w-16 h-16 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm">
+                        <i class="fa-solid fa-capsules"></i>
+                    </div>
+                    <h3 id="otc-detail-name" class="text-xl font-bold text-slate-800 mb-1">Nome Farmaco</h3>
+                    <p id="otc-detail-form" class="text-xs text-slate-500 font-bold uppercase mb-4 tracking-wide">Forma</p>
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-left mb-4 space-y-2">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase block">Dosaggio</span>
+                            <span id="otc-detail-dose" class="text-sm font-semibold text-slate-700">-</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase block">Descrizione / Uso</span>
+                            <p id="otc-detail-usage" class="text-xs text-slate-600 italic leading-relaxed">-</p>
+                        </div>
+                    </div>
+                    <div class="mb-6">
+                        <p class="text-xs text-slate-400 font-bold uppercase mb-2">Quantità da ordinare</p>
+                        <div class="flex items-center justify-center gap-4">
+                            <button onclick="app.adjustOTCQty(-1)" class="w-10 h-10 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 font-bold text-xl transition-colors shadow-sm active:scale-95">-</button>
+                            <input type="number" id="otc-qty-input" value="1" min="1" class="w-16 text-center font-bold text-2xl text-indigo-600 outline-none bg-transparent" readonly>
+                            <button onclick="app.adjustOTCQty(1)" class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-bold text-xl transition-colors shadow-sm active:scale-95">+</button>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="app.closeModal('modal-otc-detail')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+                        <button id="btn-confirm-otc-buy" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-cart-plus"></i> Ordina
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-pharmacy-view" class="hidden fixed inset-0 bg-white z-[150] flex flex-col fade-in">
+                <div class="bg-indigo-600 p-4 text-white flex justify-between items-center shadow-md shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                            <i class="fa-solid fa-prescription-bottle-medical text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg leading-tight">Lista per la Farmacia</h3>
+                            <p class="text-[10px] text-indigo-200 font-medium opacity-90 uppercase tracking-wide">Mostra questo schermo</p>
+                        </div>
+                    </div>
+                    <button onclick="app.closeModal('modal-pharmacy-view')" class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+                <div id="pharmacy-view-content" class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
+                </div>
+                <div class="p-4 bg-white border-t border-slate-200 text-center shrink-0">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Generato da MedicinePro</p>
+                </div>
+            </div>
+            <!-- Scheda Medico -->
+            <div id="modal-doctor" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-0 overflow-hidden flex flex-col max-h-[90vh]">
+                    <div class="bg-blue-600 p-4 text-white flex justify-between items-center shadow-md shrink-0">
+                        <div class="flex gap-3 items-center">
+                            <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30">
+                                <i class="fa-solid fa-user-doctor text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg leading-tight">Medico di Famiglia</h3>
+                                <p id="doc-profile-name" class="text-[10px] text-blue-100 font-medium opacity-90 uppercase tracking-wide">Profilo: ...</p>
+                            </div>
+                        </div>
+                        <button onclick="app.closeModal('modal-doctor')" class="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="p-5 space-y-4 overflow-y-auto custom-scrollbar">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Nome e Cognome</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-user-md absolute left-3 top-3.5 text-slate-400 text-sm"></i>
+                                <input type="text" id="doc-name" class="w-full pl-9 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all" placeholder="Es. Dott. Mario Rossi">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Numero Studio</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-phone absolute left-3 top-3.5 text-slate-400 text-sm"></i>
+                                    <input type="tel" id="doc-phone-studio" class="w-full pl-8 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all" placeholder="02 123...">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Cell. Dottore</label>
+                                <div class="relative">
+                                    <i class="fa-solid fa-mobile-screen absolute left-3 top-3.5 text-slate-400 text-xs"></i>
+                                    <input type="tel" id="doc-phone-mobile" class="w-full pl-8 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all" placeholder="333...">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <div class="flex items-center gap-1 mb-1.5 ml-1 h-4">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase leading-none">WhatsApp</label>
+                                    <button onclick="document.getElementById('wa-tooltip-box').classList.toggle('hidden')" class="text-blue-400 hover:text-blue-600 focus:outline-none active:scale-95 transition-transform flex items-center justify-center">
+                                        <i class="fa-solid fa-circle-info text-xs"></i>
+                                    </button>
+                                </div>
+                                <div id="wa-tooltip-box" class="hidden mb-2 p-2.5 bg-blue-50 border border-blue-100 rounded-lg text-[10px] text-blue-800 leading-relaxed shadow-sm fade-in absolute z-10 w-64">
+                                    <p class="font-bold mb-0.5"><i class="fa-brands fa-whatsapp mr-1"></i> Richiesta Ricette</p>
+                                    Questo numero sarà usato per inviare la lista dei farmaci da acquistare/prescrivere.
+                                </div>
+                                <div class="relative">
+                                    <i class="fa-brands fa-whatsapp absolute left-3 top-3.5 text-green-500 text-sm"></i>
+                                    <input type="tel" id="doc-phone-wa" class="w-full pl-9 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all" placeholder="Num. WhatsApp...">
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex items-center mb-1.5 ml-1 h-4">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase leading-none">N. Emergenza</label>
+                                </div>
+                                <div class="relative">
+                                    <i class="fa-solid fa-truck-medical absolute left-3 top-3.5 text-red-500 text-xs"></i>
+                                    <input type="tel" id="doc-phone-emergency" class="w-full pl-9 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none text-slate-800 font-bold bg-slate-50 text-sm transition-all">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                            <label class="block text-[10px] font-bold text-blue-600 uppercase mb-2 flex items-center gap-1">
+                                <i class="fa-regular fa-clock"></i> Orari di Ricevimento
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <span class="text-[9px] text-slate-400 font-bold uppercase block mb-1.5 flex items-center gap-1">
+                                        <i class="fa-regular fa-sun text-orange-400"></i> Mattina
+                                    </span>
+                                    <div class="relative mb-1">
+                                        <input type="text" id="doc-days-am" class="w-full p-2 border border-blue-200 rounded-t-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-medium bg-white text-xs" placeholder="Giorni (es. Lun-Ven)">
+                                    </div>
+                                    <div class="relative">
+                                        <input type="text" id="doc-hours-am" class="w-full p-2 border-x border-b border-blue-200 rounded-b-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-bold bg-blue-50/30 text-xs text-center" placeholder="Orario (es. 09-12)">
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 font-bold uppercase block mb-1.5 flex items-center gap-1">
+                                        <i class="fa-solid fa-cloud-sun text-yellow-500"></i> Pomeriggio
+                                    </span>
+                                    <div class="relative mb-1">
+                                        <input type="text" id="doc-days-pm" class="w-full p-2 border border-blue-200 rounded-t-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-medium bg-white text-xs" placeholder="Giorni (es. Mar-Gio)">
+                                    </div>
+                                    <div class="relative">
+                                        <input type="text" id="doc-hours-pm" class="w-full p-2 border-x border-b border-blue-200 rounded-b-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 font-bold bg-blue-50/30 text-xs text-center" placeholder="Orario (es. 15-18)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Indirizzo Studio</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-location-dot absolute left-3 top-3.5 text-slate-400 text-sm"></i>
+                                <textarea id="doc-address" rows="2" class="w-full pl-9 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 font-medium bg-slate-50 resize-none text-sm transition-all" placeholder="Via Roma 1, Milano..."></textarea>
+                            </div>
+                        </div>
+                        <div id="doc-actions" class="grid grid-cols-3 gap-2 pt-1 hidden">
+                            <a id="btn-call-doc" href="#" class="flex flex-col items-center justify-center py-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl hover:bg-blue-100 active:scale-95 transition-all">
+                                <i class="fa-solid fa-phone text-lg mb-1"></i>
+                                <span class="text-[9px] font-bold uppercase">Studio</span>
+                            </a>
+                            <a id="btn-call-mobile" href="#" class="flex flex-col items-center justify-center py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl hover:bg-indigo-100 active:scale-95 transition-all">
+                                <i class="fa-solid fa-mobile-screen text-lg mb-1"></i>
+                                <span class="text-[9px] font-bold uppercase">Cellulare</span>
+                            </a>
+                            <a id="btn-wa-doc" href="#" target="_blank" class="flex flex-col items-center justify-center py-2 bg-green-50 text-green-600 border border-green-100 rounded-xl hover:bg-green-100 active:scale-95 transition-all">
+                                <i class="fa-brands fa-whatsapp text-lg mb-1"></i>
+                                <span class="text-[9px] font-bold uppercase">WhatsApp</span>
+                            </a>
+                        </div>
+                        <a id="btn-map-doc" href="#" target="_blank" class="hidden w-full flex items-center justify-center gap-2 py-2 bg-amber-50 text-amber-600 border border-amber-100 rounded-xl hover:bg-amber-100 active:scale-95 transition-all">
+                            <i class="fa-solid fa-map-location-dot"></i> <span class="text-xs font-bold uppercase">Apri Mappa</span>
+                        </a>
+                    </div>
+                    <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
+                        <button onclick="app.saveDoctorInfo()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-blue-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-save"></i> Salva Scheda
+                        </button>
+                    </div>
+                </div>
+                </div>
+                <div id="modal-new-day" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                        <div class="w-16 h-16 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center mx-auto mb-4 text-3xl border-4 border-white shadow-sm animate-bounce">
+                            <i class="fa-solid fa-sun"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Buongiorno! ☀️</h3>
+                        <p class="text-slate-500 mb-6 text-sm">È un nuovo giorno. Ho resettato le assunzioni dei farmaci per te. Buona terapia!</p>
+                        <button onclick="app.closeModal('modal-new-day')" class="w-full py-3 bg-orange-500 text-white rounded-xl font-bold shadow-md hover:bg-orange-600 transition-transform active:scale-95">
+                            Iniziamo
+                        </button>
+                    </div>
+                </div>
+                <div id="modal-app-updated" class="hidden fixed inset-0 modal-overlay z-[200] flex items-center justify-center p-4 fade-in">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                        <div class="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm animate-bounce">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">App Aggiornata! 🎉</h3>
+                        <p class="text-slate-500 mb-6 text-sm">Abbiamo appena scaricato una nuova versione di MedicinePro. Ricarica per applicare i miglioramenti.</p>
+                        <button onclick="window.location.reload()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-rotate-right"></i> Ricarica ora
+                        </button>
+                    </div>
+                </div>
+                <div id="printable-area" class="p-8 max-w-[210mm] mx-auto">
+                    <div class="flex justify-between items-end border-b-2 border-slate-800 pb-4 mb-8">
+                        <div>
+                            <h1 class="text-3xl font-bold text-slate-800 uppercase tracking-wider mb-1">Report Terapia</h1>
+                            <p class="text-sm text-slate-500">Generato da MedicinePro</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-slate-400 uppercase">Data Report</p>
+                            <p id="print-date" class="text-lg font-bold text-slate-800">--/--/----</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-8 flex gap-8">
+                        <div class="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center text-4xl text-slate-400 overflow-hidden shrink-0">
+                            <i id="print-avatar-icon" class="fa-solid fa-user"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h2 id="print-patient-name" class="text-2xl font-bold text-slate-800 mb-2">Nome Paziente</h2>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="block text-slate-400 font-bold uppercase text-[10px]">Codice Fiscale</span>
+                                    <span id="print-cf" class="font-bold text-slate-700">-</span>
+                                </div>
+                                <div>
+                                    <span class="block text-slate-400 font-bold uppercase text-[10px]">Età</span>
+                                    <span id="print-age" class="font-bold text-slate-700">-</span>
+                                </div>
+                                <div class="col-span-2">
+                                    <span class="block text-slate-400 font-bold uppercase text-[10px]">Medico Curante</span>
+                                    <span id="print-doctor" class="font-bold text-slate-700">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right flex flex-col justify-center px-6 border-l border-slate-200">
+                            <span class="block text-slate-400 font-bold uppercase text-[10px]">Aderenza Globale</span>
+                            <span id="print-adherence" class="text-3xl font-black text-slate-800">0%</span>
+                        </div>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-800 uppercase border-l-4 border-blue-600 pl-3 mb-4">Piano Terapeutico & Storico (30gg)</h3>
+                    <table class="w-full text-left border-collapse mb-8">
+                        <thead>
+                            <tr class="border-b-2 border-slate-200">
+                                <th class="py-2 font-bold text-xs text-slate-500 uppercase w-1/3">Farmaco</th>
+                                <th class="py-2 font-bold text-xs text-slate-500 uppercase">Posologia</th>
+                                <th class="py-2 font-bold text-xs text-slate-500 uppercase">Orari</th>
+                                <th class="py-2 font-bold text-xs text-slate-500 uppercase text-right">Aderenza</th>
+                            </tr>
+                        </thead>
+                        <tbody id="print-meds-list" class="text-sm text-slate-700">
+                        </tbody>
+                    </table>
+                    <div class="mt-12 p-4 border border-slate-200 rounded-lg h-32">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Note del Medico / Variazioni</p>
+                    </div>
+                    <div class="fixed bottom-0 left-0 w-full text-center py-4 border-t border-slate-100">
+                        <p class="text-[10px] text-slate-400">Documento generato automaticamente. Consultare sempre il medico per variazioni della terapia.</p>
+                    </div>
+                </div>
+            <div id="modal-doctor-ai" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col max-h-[85vh]">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-2xl border-4 border-white shadow-sm">
+                                <i class="fa-solid fa-user-doctor"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800 leading-tight">Come ti senti?</h3>
+                                <p class="text-xs text-slate-500">Descrivi il sintomo</p>
+                            </div>
+                        </div>
+                        <button onclick="app.closeModal('modal-doctor-ai')" class="text-slate-400 hover:text-slate-600 p-1">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="relative mb-4">
+                        <textarea id="symptom-input" rows="2" class="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none text-slate-700 font-medium resize-none text-sm bg-slate-50" placeholder="Es. Ho mal di testa, bruciore di stomaco..."></textarea>
+                        <button onclick="app.analyzeSymptoms()" class="absolute bottom-2 right-2 bg-teal-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md hover:bg-teal-700 transition-transform active:scale-95">
+                            <i class="fa-solid fa-magnifying-glass mr-1"></i> Cerca
+                        </button>
+                    </div>
+                    <div id="doctor-results" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 min-h-[150px]">
+                        <div class="flex flex-col items-center justify-center h-full text-slate-400 opacity-60">
+                            <i class="fa-solid fa-notes-medical text-3xl mb-2"></i>
+                            <p class="text-xs">I risultati appariranno qui</p>
+                        </div>
+                    </div>
+                    <p class="text-[9px] text-slate-400 text-center mt-3 border-t border-slate-100 pt-2">
+                        L'app cerca tra le note e le categorie dei tuoi farmaci inseriti. Consulta sempre un medico reale.
+                    </p>
+                </div>
+            </div>
+            <div id="modal-image-view" class="hidden fixed inset-0 modal-overlay z-[200] flex items-center justify-center p-4 fade-in bg-black/90" onclick="app.closeModal('modal-image-view')">
+                <div class="relative max-w-full max-h-full">
+                    <img id="full-image-display" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl object-contain" src="">
+                    <button class="absolute -top-12 right-0 text-white text-xl p-2">
+                        <i class="fa-solid fa-xmark"></i> Chiudi
+                    </button>
+                </div>
+            </div>
+            <div id="modal-health-diary" class="hidden fixed inset-0 modal-overlay z-[80] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+                    <div class="p-4 bg-rose-50 border-b border-rose-100 flex justify-between items-center shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center border border-rose-200 shadow-sm">
+                                <i class="fa-solid fa-heart-pulse"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">Diario Salute</h3>
+                                <p class="text-xs text-slate-500">Monitoraggio parametri vitali</p>
+                            </div>
+                        </div>
+                        <button onclick="app.closeModal('modal-health-diary')" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-white transition-colors">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <div id="health-diary-list" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3 bg-slate-50">
+                    </div>
+                    <div class="p-4 bg-white border-t border-slate-200 shrink-0 relative">
+                        <p class="text-[10px] text-slate-400 text-center mb-2">Tocca un elemento per eliminarlo.</p>
+                        <button onclick="app.openAddHealthEntry()" class="w-full py-3 bg-rose-600 text-white rounded-xl font-bold shadow-lg hover:bg-rose-700 active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Nuova Misurazione
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-add-health" class="hidden fixed inset-0 modal-overlay z-[90] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Nuova Misurazione</h3>
+                    <div class="grid grid-cols-3 gap-2 mb-4">
+                        <button onclick="app.setHealthType('pressure')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors selected" data-type="pressure">
+                            <i class="fa-solid fa-heart-pulse text-rose-500"></i>
+                            <span class="text-[9px] font-bold uppercase">Pressione</span>
+                        </button>
+                        <button onclick="app.setHealthType('weight')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="weight">
+                            <i class="fa-solid fa-weight-scale text-blue-500"></i>
+                            <span class="text-[9px] font-bold uppercase">Peso</span>
+                        </button>
+                        <button onclick="app.setHealthType('glucose')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="glucose">
+                            <i class="fa-solid fa-droplet text-purple-500"></i>
+                            <span class="text-[9px] font-bold uppercase">Glicemia</span>
+                        </button>
+                        <button onclick="app.setHealthType('temp')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="temp">
+                            <i class="fa-solid fa-temperature-half text-orange-500"></i>
+                            <span class="text-[9px] font-bold uppercase">Febbre</span>
+                        </button>
+                        <button onclick="app.setHealthType('spo2')" class="health-type-btn p-2 rounded-xl border border-slate-200 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors" data-type="spo2">
+                            <i class="fa-solid fa-lungs text-cyan-500"></i>
+                            <span class="text-[9px] font-bold uppercase">Ossigeno</span>
+                        </button>
+                    </div>
+                    <div id="health-inputs-container" class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                        <div id="input-group-pressure" class="health-input-group">
+                            <div class="flex gap-3 mb-2">
+                                <div class="flex-1">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Sistolica (Max)</label>
+                                    <input type="number" id="health-sys" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold text-lg outline-none focus:border-rose-500" placeholder="120">
+                                </div>
+                                <div class="flex-1">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Diastolica (Min)</label>
+                                    <input type="number" id="health-dia" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold text-lg outline-none focus:border-rose-500" placeholder="80">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase">Pulsazioni (BPM)</label>
+                                <input type="number" id="health-pulse" class="w-full p-2 rounded-lg border border-slate-300 text-center font-bold outline-none focus:border-rose-500" placeholder="Opzionale">
+                            </div>
+                        </div>
+                        <div id="input-group-weight" class="health-input-group hidden">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">Peso (Kg)</label>
+                            <div class="relative">
+                                <input type="number" id="health-weight" step="0.1" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-blue-500" placeholder="0.0">
+                                <span class="absolute right-4 top-4 text-slate-400 font-bold">Kg</span>
+                            </div>
+                        </div>
+                        <div id="input-group-glucose" class="health-input-group hidden">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">Glicemia (mg/dL)</label>
+                            <input type="number" id="health-glucose" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-purple-500" placeholder="100">
+                            <div class="mt-2 flex gap-2 justify-center">
+                                <button onclick="app.setGlucoseTag('digiuno')" class="glucose-tag px-2 py-1 rounded border border-slate-200 text-[10px] bg-white hover:bg-slate-100">Digiuno</button>
+                                <button onclick="app.setGlucoseTag('post-pranzo')" class="glucose-tag px-2 py-1 rounded border border-slate-200 text-[10px] bg-white hover:bg-slate-100">Post-Pranzo</button>
+                            </div>
+                            <input type="hidden" id="health-glucose-tag">
+                        </div>
+                        <div id="input-group-temp" class="health-input-group hidden">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">Temperatura (°C)</label>
+                            <div class="relative">
+                                <input type="number" id="health-temp" step="0.1" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-orange-500" placeholder="36.5">
+                                <span class="absolute right-4 top-4 text-slate-400 font-bold">°C</span>
+                            </div>
+                        </div>
+                        <div id="input-group-spo2" class="health-input-group hidden">
+                            <label class="text-[10px] font-bold text-slate-500 uppercase">Saturazione (%)</label>
+                            <div class="relative">
+                                <input type="number" id="health-spo2" class="w-full p-3 rounded-lg border border-slate-300 text-center font-bold text-2xl outline-none focus:border-cyan-500" placeholder="98">
+                                <span class="absolute right-4 top-4 text-slate-400 font-bold">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="app.closeModal('modal-add-health')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">Annulla</button>
+                        <button onclick="app.saveHealthEntry()" class="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold shadow-md hover:bg-rose-700 active:scale-95 transition-all">Salva</button>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-ics-instruction" class="hidden fixed inset-0 modal-overlay z-[200] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+                    <div class="w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-4 text-2xl border-4 border-white shadow-sm">
+                        <i class="fa-regular fa-calendar-check"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">File Generato!</h3>
+                    <p class="text-slate-500 mb-6 text-sm leading-relaxed">
+                        Il file della terapia è stato scaricato. <br>
+                        <strong>Tocca "Apri"</strong> nella notifica di download del browser per aggiungerlo al tuo calendario.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-6 text-left">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Non trovi il file?</p>
+                        <p class="text-xs text-slate-600">Cerca nella cartella <strong>Download</strong> del telefono il file <span class="font-mono bg-slate-200 px-1 rounded">Terapia_MedPro.ics</span></p>
+                    </div>
+                    <button onclick="app.closeModal('modal-ics-instruction')" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-transform active:scale-95">
+                        Ho Capito
+                    </button>
+                </div>
+            </div>
+            <div id="modal-reminder-update" class="hidden fixed inset-0 modal-overlay z-[200] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center border-t-4 border-orange-500">
+                    <div class="w-16 h-16 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center mx-auto mb-4 text-3xl shadow-sm animate-pulse">
+                        <i class="fa-regular fa-calendar-xmark"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Attenzione ai Promemoria!</h3>
+                    <p class="text-slate-500 mb-4 text-sm leading-relaxed">
+                        La terapia per <b id="reminder-med-name" class="text-orange-600"></b> è stata slittata in avanti di un giorno.<br><br>
+                        Se avevi esportato gli avvisi sul calendario del telefono, ricordati di <b>Disattivarli</b> e <b>Attivarli di nuovo</b> per ricevere le notifiche nei giorni corretti.
+                    </p>
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="app.closeModal('modal-reminder-update')" class="flex-1 py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors text-sm">
+                            Ho Capito
+                        </button>
+                        <button onclick="app.goToSettingsFromReminder()" class="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold shadow-md hover:bg-orange-600 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-cog"></i> Vai a Impostazioni
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-contact" class="hidden fixed inset-0 modal-overlay z-[100] flex items-center justify-center p-4 fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+                    <div class="p-4 bg-indigo-50 border-b border-indigo-100 flex justify-between items-center shrink-0">
+                        <h3 id="contact-modal-title" class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-address-card text-indigo-600"></i> Nuovo Contatto
+                        </h3>
+                        <button onclick="app.closeModal('modal-contact')" class="text-slate-400 hover:text-slate-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/50 transition-colors">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="p-5 overflow-y-auto custom-scrollbar space-y-4 flex-1">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Categoria Contatto</label>
+                            <div class="relative">
+                                <select id="input-contact-type" onchange="app.updateContactAvatarUI()" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm text-slate-700 font-bold bg-white appearance-none">
+                                    <option value="doctor">Medico / Specialista</option>
+                                    <option value="pharmacy">Farmacia</option>
+                                    <option value="hospital">Struttura / Ospedale</option>
+                                    <option value="emergency">Contatto di Emergenza</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-4 top-4 text-slate-300 pointer-events-none text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 items-center">
+                            <div id="contact-avatar-icon" class="w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl shrink-0 shadow-sm border border-white">
+                                <i class="fa-solid fa-user-doctor"></i>
+                            </div>
+                            <div class="flex-1 space-y-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Nome *</label>
+                                    <input type="text" id="input-contact-name" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-sm text-slate-800" placeholder="Es. Dr. Bianchi / Farmacia Roma">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1 ml-1">Specializzazione / Ruolo</label>
+                            <input type="text" id="input-contact-spec" class="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm text-slate-700" placeholder="Es. Neurologo, Centro Analisi...">
+                        </div>
+                        <div class="pt-4 border-t border-slate-100">
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="block text-xs font-bold text-indigo-700 uppercase">
+                                    <i class="fa-solid fa-list-check mr-1"></i> Campi Personalizzati
+                                </label>
+                                <button onclick="app.addContactField()" class="text-[10px] font-bold bg-indigo-50 text-indigo-600 px-2 py-1 rounded hover:bg-indigo-100 transition-colors">
+                                    + Aggiungi
+                                </button>
+                            </div>
+                            <div id="contact-dynamic-fields-container" class="space-y-3">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
+                        <button onclick="app.closeModal('modal-contact')" class="px-5 py-2.5 text-slate-500 font-bold hover:bg-slate-200 rounded-xl transition-colors text-sm">Annulla</button>
+                        <button onclick="app.saveContact()" class="px-8 py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-transform active:scale-95 text-sm">Salva Contatto</button>
+                    </div>
+                </div>
+            </div>
+            <!-- JS ESTERNO -->
+            <!-- Codice dell'app, diviso per area (l'ordine conta: config e core prima, main per ultimo) -->
+            <script defer src="js/config.js"></script>
+            <script defer src="js/core.js"></script>
+            <script defer src="js/profiles.js"></script>
+            <script defer src="js/medications.js"></script>
+            <script defer src="js/therapy.js"></script>
+            <script defer src="js/drug-database.js"></script>
+            <script defer src="js/camera.js"></script>
+            <script defer src="js/stock.js"></script>
+            <script defer src="js/doctor.js"></script>
+            <script defer src="js/health.js"></script>
+            <script defer src="js/reminders.js"></script>
+            <script defer src="js/backup.js"></script>
+            <script defer src="js/contacts.js"></script>
+            <script defer src="js/main.js"></script>
+        </body>
+        </html>
