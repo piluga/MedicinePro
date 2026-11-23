@@ -201,7 +201,7 @@ Object.assign(app, {
             this.showAlert("Successo!", `Il tuo backup è ora al sicuro nel Cloud! ☁️\n(${mb} MB)`);
         } catch (error) {
             console.error(error);
-            this.showAlert("Errore", "Impossibile salvare il backup. Motivo: " + error.message);
+            this.showAlert("Errore", "Impossibile salvare il backup. " + this.cloudErrorMessage(error));
         } finally {
             this.toggleLoading(false);
         }
@@ -256,11 +256,24 @@ Object.assign(app, {
                 }
             } catch (error) {
                 console.error(error);
-                this.showAlert("Errore", "Impossibile scaricare il backup. Motivo: " + error.message);
+                this.showAlert("Errore", "Impossibile scaricare il backup. " + this.cloudErrorMessage(error));
             } finally {
                 this.toggleLoading(false);
             }
         });
+    },
+    // Spiegazione comprensibile degli errori di Firestore più comuni
+    cloudErrorMessage(error) {
+        const code = error && error.code;
+        if (code === 'permission-denied') {
+            return "Il cloud ha rifiutato l'accesso (permessi insufficienti).\n\n" +
+                "Le regole di sicurezza del database Firebase non sono aggiornate: vanno pubblicate " +
+                "quelle del file firestore.rules (Console Firebase > Firestore Database > Regole > Pubblica).";
+        }
+        if (code === 'unavailable') return "Il servizio cloud non è raggiungibile. Verifica la connessione internet e riprova.";
+        if (code === 'unauthenticated') return "La sessione Google è scaduta. Esci e accedi di nuovo.";
+        if (code === 'resource-exhausted') return "Il limite gratuito di Firebase per oggi è stato raggiunto. Riprova domani.";
+        return "Motivo: " + ((error && error.message) || "sconosciuto");
     },
     triggerImport() { document.getElementById('import-file').click(); },
     async handleImport(input) {
